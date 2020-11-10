@@ -5,24 +5,24 @@
 
 Runs over AOD files and writes file with histos and tree.
 
----------------------------------------------------------
-python plantTrees.py inputFiles="..." tag="tag1 tag2 ..."
----------------------------------------------------------
+----------------------------------------------------------------------
+python plantTrees.py inputFiles="file1, file2,..." tag="tag1 tag2 ..."
+----------------------------------------------------------------------
 
 tags:
 -----
 
 local -> don't open file via xrootd
-redirinfn -> use infn redirector instead of global cern redirector
-redirfnal -> use fnal redirector instead of global cern redirector
-data -> don't load GEN collections, check trigger flags and runnum/lumisec/eventnum
-geninfoZ -> check GEN Z boson decay
-geninfoW -> check GEN W boson decay
+redirinfn -> use infn redirector for xrootd
+redirfnal -> use fnal redirector for xrootd
+data -> check trigger flags and runnum/lumisec, save json file
+geninfoZ -> save GEN info for DY process
+geninfoW -> save GEN info for W boson production process
 cleanleptons -> perform DY cleaning
 signal -> signal GEN variables and FastSim correction for MET
 noleptonveto -> don't veto events with leptons
-genmatchtracks -> find GEN match to every 10. track
-genmatchalltracks -> find GEN match to every track
+genmatchtracks -> try to find GEN match to every 10. track
+genmatchalltracks -> try to find GEN match to every track
 
 '''
 
@@ -169,7 +169,7 @@ nMaxTracksPerEvent = 10000
 
 #TODO: check if test
 saveOutputFile = True
-isTest = True
+isTest = False
 neventsTest = 100  # number of events to run over in case of test
 printevery = 100  # print event number for every Xth event
 
@@ -541,27 +541,6 @@ if True:
 '''
 options = VarParsing('python')
 options.parseArguments()
-
- 
-# in order to set grid environment on centos7 nodes
-if not 'local' in options.tag:
-# 	os.system('export XRD_LOGLEVEL=Debug')
-# 	print 'xrd debug'
-# 	os.system('printenv')
-	os.system('xrdfs cms-xrd-global.cern.ch locate /store/mc/RunIISummer16DR80Premix/ZJetsToNuNu_Zpt-200toInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/AODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/120000/6EA5C939-FAC9-E611-86E5-FA163E5F2D05.root')
-	os.system('xrdcp -d 1 -f root://cms-xrd-global.cern.ch//store/mc/RunIISummer16DR80Premix/ZJetsToNuNu_Zpt-200toInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/AODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/120000/6EA5C939-FAC9-E611-86E5-FA163E5F2D05.root /dev/null')
-# 	os.system('xrd cms-xrd-global.cern.ch locateall /store/mc/RunIISummer16DR80Premix/ZJetsToNuNu_Zpt-200toInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/AODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/120000/6EA5C939-FAC9-E611-86E5-FA163E5F2D05.root')
-# 	os.system('export X509_USER_PROXY=/afs/desy.de/user/w/wolfmor/private/x509_voms')
-# 	print ''
-# 	os.system('source /afs/desy.de/user/w/wolfmor/.bashrc')
-# 	print 'bashrc'
-# 	print ''
-# 	os.system('export XRD_LOGLEVEL=Debug')
-# 	print 'xrd debug'
-# 	os.system('xrd cms-xrd-global.cern.ch locateall /store/mc/RunIISummer16DR80Premix/ZJetsToNuNu_Zpt-200toInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/AODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/120000/6EA5C939-FAC9-E611-86E5-FA163E5F2D05.root')
-# 	os.system('source /cvmfs/grid.cern.ch/etc/profile.d/setup-cvmfs-ui.sh')
-# 	os.system('voms-proxy-info')
-# if not 'local' in options.tag: os.system('source /cvmfs/grid.desy.de/etc/profile.d/grid-ui-env.sh')
 
 
 '''
@@ -1554,6 +1533,72 @@ for f in options.inputFiles:
 					
 				i += 1
 				
+		event_level_var_array['chipmmFILE'][0] = chipmmFILE
+		event_level_var_array['deltamFILE'][0] = deltamFILE
+		
+		event_level_var_array['numC1'][0] = numC1
+		event_level_var_array['numN2'][0] = numN2
+		event_level_var_array['numN1'][0] = numN1
+		
+		event_level_var_array['chipmmGEN'][0] = chipmmGEN
+		event_level_var_array['deltamGEN'][0] = deltamGEN
+		
+		event_level_var_array['chiN2mGEN'][0] = chiN2mGEN
+		event_level_var_array['deltamN2GEN'][0] = deltamN2GEN
+		
+		event_level_var_array['chipmptGEN'][0] = chipmptGEN
+		event_level_var_array['chipmetaGEN'][0] = chipmetaGEN
+		event_level_var_array['chipmphiGEN'][0] = chipmphiGEN
+		
+		event_level_var_array['chiN2ptGEN'][0] = chiN2ptGEN
+		event_level_var_array['chiN2etaGEN'][0] = chiN2etaGEN
+		event_level_var_array['chiN2phiGEN'][0] = chiN2phiGEN
+		
+		event_level_var_array['pionptGEN'][0] = pionptGEN
+		event_level_var_array['pionetaGEN'][0] = pionetaGEN
+		event_level_var_array['pionphiGEN'][0] = pionphiGEN
+		
+		event_level_var_array['hasChargino'][0] = hasChargino
+		event_level_var_array['hasPion'][0] = hasPion
+		event_level_var_array['hasMatchedTrack'][0] = hasMatchedTrack
+		
+		event_level_var_array['tminmatching'][0] = tminmatching
+		event_level_var_array['dxyzmin'][0] = dxyzmin
+		event_level_var_array['drmin'][0] = drmin
+		event_level_var_array['dxyzminrandom'][0] = dxyzminrandom
+		event_level_var_array['drminrandom'][0] = drminrandom
+		event_level_var_array['drminold'][0] = drminold
+		event_level_var_array['drminoldrandom'][0] = drminoldrandom
+		
+		event_level_var_array['chidecaylength3D'][0] = decaylength3D
+		event_level_var_array['chidecaylengthXY'][0] = decaylengthXY
+		event_level_var_array['chidecaylengthZ'][0] = decaylengthZ
+		if decaylength3D > 0:
+			event_level_var_array['log10(chidecaylength3D)'][0] = ROOT.TMath.Log10(decaylength3D)
+			event_level_var_array['log10(chidecaylengthXY)'][0] = ROOT.TMath.Log10(decaylengthXY)
+			event_level_var_array['log10(chidecaylengthZ)'][0] = ROOT.TMath.Log10(decaylengthZ)
+		else:
+			event_level_var_array['log10(chidecaylength3D)'][0] = -1
+			event_level_var_array['log10(chidecaylengthXY)'][0] = -1
+			event_level_var_array['log10(chidecaylengthZ)'][0] = -1
+		
+		event_level_var_array['chidecaylength3DN2'][0] = decaylength3DN2
+		event_level_var_array['chidecaylengthXYN2'][0] = decaylengthXYN2
+		event_level_var_array['chidecaylengthZN2'][0] = decaylengthZN2
+		if decaylength3DN2 > 0:
+			event_level_var_array['log10(chidecaylength3DN2)'][0] = ROOT.TMath.Log10(decaylength3DN2)
+			event_level_var_array['log10(chidecaylengthXYN2)'][0] = ROOT.TMath.Log10(decaylengthXYN2)
+			event_level_var_array['log10(chidecaylengthZN2)'][0] = ROOT.TMath.Log10(decaylengthZN2)
+		else:
+			event_level_var_array['log10(chidecaylength3DN2)'][0] = -1
+			event_level_var_array['log10(chidecaylengthXYN2)'][0] = -1
+			event_level_var_array['log10(chidecaylengthZN2)'][0] = -1
+		
+		event_level_var_array['chipmnumdaughters'][0] = chipmnumdaughters
+		event_level_var_array['chiN2numdaughters'][0] = chiN2numdaughters
+		event_level_var_array['numchidaughters'][0] = numchidaughters
+		
+				
 		'''
 		###############################################################################################
 		# get event-level info
@@ -1880,70 +1925,6 @@ for f in options.inputFiles:
 		hMtmetleadingjet.Fill(mtmetleadingjet)
 		event_level_var_array['mtmetleadingjet'][0] = mtmetleadingjet
 
-		event_level_var_array['chipmmFILE'][0] = chipmmFILE
-		event_level_var_array['deltamFILE'][0] = deltamFILE
-		
-		event_level_var_array['numC1'][0] = numC1
-		event_level_var_array['numN2'][0] = numN2
-		event_level_var_array['numN1'][0] = numN1
-		
-		event_level_var_array['chipmmGEN'][0] = chipmmGEN
-		event_level_var_array['deltamGEN'][0] = deltamGEN
-		
-		event_level_var_array['chiN2mGEN'][0] = chiN2mGEN
-		event_level_var_array['deltamN2GEN'][0] = deltamN2GEN
-		
-		event_level_var_array['chipmptGEN'][0] = chipmptGEN
-		event_level_var_array['chipmetaGEN'][0] = chipmetaGEN
-		event_level_var_array['chipmphiGEN'][0] = chipmphiGEN
-		
-		event_level_var_array['chiN2ptGEN'][0] = chiN2ptGEN
-		event_level_var_array['chiN2etaGEN'][0] = chiN2etaGEN
-		event_level_var_array['chiN2phiGEN'][0] = chiN2phiGEN
-		
-		event_level_var_array['pionptGEN'][0] = pionptGEN
-		event_level_var_array['pionetaGEN'][0] = pionetaGEN
-		event_level_var_array['pionphiGEN'][0] = pionphiGEN
-		
-		event_level_var_array['hasChargino'][0] = hasChargino
-		event_level_var_array['hasPion'][0] = hasPion
-		event_level_var_array['hasMatchedTrack'][0] = hasMatchedTrack
-		
-		event_level_var_array['tminmatching'][0] = tminmatching
-		event_level_var_array['dxyzmin'][0] = dxyzmin
-		event_level_var_array['drmin'][0] = drmin
-		event_level_var_array['dxyzminrandom'][0] = dxyzminrandom
-		event_level_var_array['drminrandom'][0] = drminrandom
-		event_level_var_array['drminold'][0] = drminold
-		event_level_var_array['drminoldrandom'][0] = drminoldrandom
-		
-		event_level_var_array['chidecaylength3D'][0] = decaylength3D
-		event_level_var_array['chidecaylengthXY'][0] = decaylengthXY
-		event_level_var_array['chidecaylengthZ'][0] = decaylengthZ
-		if decaylength3D > 0:
-			event_level_var_array['log10(chidecaylength3D)'][0] = ROOT.TMath.Log10(decaylength3D)
-			event_level_var_array['log10(chidecaylengthXY)'][0] = ROOT.TMath.Log10(decaylengthXY)
-			event_level_var_array['log10(chidecaylengthZ)'][0] = ROOT.TMath.Log10(decaylengthZ)
-		else:
-			event_level_var_array['log10(chidecaylength3D)'][0] = -1
-			event_level_var_array['log10(chidecaylengthXY)'][0] = -1
-			event_level_var_array['log10(chidecaylengthZ)'][0] = -1
-		
-		event_level_var_array['chidecaylength3DN2'][0] = decaylength3DN2
-		event_level_var_array['chidecaylengthXYN2'][0] = decaylengthXYN2
-		event_level_var_array['chidecaylengthZN2'][0] = decaylengthZN2
-		if decaylength3DN2 > 0:
-			event_level_var_array['log10(chidecaylength3DN2)'][0] = ROOT.TMath.Log10(decaylength3DN2)
-			event_level_var_array['log10(chidecaylengthXYN2)'][0] = ROOT.TMath.Log10(decaylengthXYN2)
-			event_level_var_array['log10(chidecaylengthZN2)'][0] = ROOT.TMath.Log10(decaylengthZN2)
-		else:
-			event_level_var_array['log10(chidecaylength3DN2)'][0] = -1
-			event_level_var_array['log10(chidecaylengthXYN2)'][0] = -1
-			event_level_var_array['log10(chidecaylengthZN2)'][0] = -1
-		
-		event_level_var_array['chidaughterpdgid'][0] = chidaughterpdgid  # TODO: change to nums
-		event_level_var_array['chiN2daughterpdgid'][0] = chiN2daughterpdgid
-		
 
 		if phifirsttrack == tracks[0].phi() and etafirsttrack == tracks[0].eta():
 			print 'suspicious... better get out of here!'
