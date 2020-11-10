@@ -25,4 +25,7 @@ Tag | Meaning
 `genmatchtracks` | try to find GEN match to every 10. track
 `genmatchalltracks` | try to find GEN match to every track
 ## Input files
-Can be a single file or list of files (either local or starting with /store/...). Also possible to use with grid-control (see examples).
+Can be a single file or list of files (either local or starting with /store/...). Also possible to use with grid-control (see examples and https://grid-control.github.io/index.html):
+```
+grid-control -cG example.conf
+```
