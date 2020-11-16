@@ -137,7 +137,7 @@ class DataJEC:
 	def __init__(self, inputmap, jettype):
 		for minrun,maxrun,version in inputmap:
 			JECMap = {}
-			JECMap['jecAK4'] = createJEC('/afs/desy.de/user/w/wolfmor/cmssw/CMSSW_10_1_7/src/SoftLeptonBDT/JECs/'+version+'/'+version, ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+			JECMap['jecAK4'] = createJEC('/nfs/dust/cms/user/wolfmor/JECs/'+version+'/'+version, ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 			self.JECList.append([minrun, maxrun, JECMap])
 	
 	def GetJECMap(self, run):
@@ -247,8 +247,8 @@ if True:
 		,('l1ptCleaning', 'F'), ('l2ptCleaning', 'F')
 		,('l1etaCleaning', 'F'), ('l2etaCleaning', 'F')
 		,('l1phiCleaning', 'F'), ('l2phiCleaning', 'F')
-		,('l1absisodbeta', 'F'), ('l2absisodbeta', 'F')
-		,('l1relisodbeta', 'F'), ('l2relisodbeta', 'F')
+		,('l1absisodbetaCleaning', 'F'), ('l2absisodbetaCleaning', 'F')
+		,('l1relisodbetaCleaning', 'F'), ('l2relisodbetaCleaning', 'F')
 		]
 	event_level_var_names += var_names_cleaning
 	
@@ -267,6 +267,7 @@ if True:
 		,('numpfleptons', 'I'), ('numpfleptonsiso', 'I')
 		,('numelectrons', 'I'), ('numelectronsiso', 'I')
 		,('nummuons', 'I'), ('nummuonsiso', 'I')
+		,('numleptons', 'I'), ('numleptonsiso', 'I')
 		,('numtaus', 'I'), ('numtausiso', 'I')
 		,('numtrackstotal', 'I'), ('numtracksbasicpreselection', 'I'), ('numtracksfinalpreselection', 'I')
 		]
@@ -611,9 +612,9 @@ jettype = 'AK4PFchs'
 if 'data' in options.tag: # data
 	DataJECs = DataJEC(jet_energy_corrections, jettype)
 elif 'signal' in options.tag: # FastSim
-	jecAK4 = createJEC('/afs/desy.de/user/w/wolfmor/cmssw/CMSSW_10_1_7/src/SoftLeptonBDT/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC', ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+	jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC', ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 else: # FullSim
-	jecAK4 = createJEC('/afs/desy.de/user/w/wolfmor/cmssw/CMSSW_10_1_7/src/SoftLeptonBDT/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC', ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+	jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC', ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 
 
 runs = {}
@@ -1248,10 +1249,10 @@ for f in options.inputFiles:
 		event_level_var_array['l2etaCleaning'][0] = l2eta
 		event_level_var_array['l1phiCleaning'][0] = l1phi
 		event_level_var_array['l2phiCleaning'][0] = l2phi
-		event_level_var_array['l1absisodbeta'][0] = l1absisodbeta
-		event_level_var_array['l1relisodbeta'][0] = l1relisodbeta
-		event_level_var_array['l2absisodbeta'][0] = l2absisodbeta
-		event_level_var_array['l2relisodbeta'][0] = l2relisodbeta
+		event_level_var_array['l1absisodbetaCleaning'][0] = l1absisodbeta
+		event_level_var_array['l1relisodbetaCleaning'][0] = l1relisodbeta
+		event_level_var_array['l2absisodbetaCleaning'][0] = l2absisodbeta
+		event_level_var_array['l2relisodbetaCleaning'][0] = l2relisodbeta
 			
 		'''
 		###############################################################################################
@@ -1777,6 +1778,8 @@ for f in options.inputFiles:
 		
 		event_level_var_array['nummuonsiso'][0] = nummuonsiso
 		
+		event_level_var_array['numleptons'][0] = len(electrons) + len(muons)
+		event_level_var_array['numleptonsiso'][0] = numelectronsiso + nummuonsiso
 		
 		hNumleptons.Fill(numelectronsiso+nummuonsiso)
 		
