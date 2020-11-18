@@ -21,6 +21,8 @@ geninfoW -> save GEN info for W boson production process
 cleanleptons -> perform DY cleaning
 signal -> signal GEN variables and FastSim correction for MET
 noleptonveto -> don't veto events with leptons
+nonumjets100veto -> don't veto events with no jet with pT > 100 GeV
+nodphimetjetsveto -> don't veto events with dphi(MET, jets) < 0.5
 genmatchtracks -> try to find GEN match to every 10. track
 genmatchalltracks -> try to find GEN match to every track
 
@@ -268,7 +270,7 @@ if True:
 		,('numelectrons', 'I'), ('numelectronsiso', 'I')
 		,('nummuons', 'I'), ('nummuonsiso', 'I')
 		,('numleptons', 'I'), ('numleptonsiso', 'I')
-		,('numtaus', 'I'), ('numtausiso', 'I')
+		,('numtaus', 'I'), ('numtausvloose', 'I'), ('numtausloose', 'I'), ('numtausmedium', 'I'), ('numtaustight', 'I'), ('numtausvtight', 'I'), ('numtausvvtight', 'I')
 		,('numtrackstotal', 'I'), ('numtracksbasicpreselection', 'I'), ('numtracksfinalpreselection', 'I')
 		]
 	event_level_var_names += var_names_event
@@ -586,8 +588,23 @@ label_taus = ('hpsPFTauProducer')
 handle_taudiscriminatorDM = Handle('reco::PFTauDiscriminator')
 label_taudiscriminatorDM = ('hpsPFTauDiscriminationByDecayModeFindingNewDMs')
 
-handle_taudiscriminatorMVA = Handle('reco::PFTauDiscriminator')
-label_taudiscriminatorMVA = ('hpsPFTauDiscriminationByVLooseIsolationMVArun2v1DBnewDMwLT')
+handle_taudiscriminatorMVA_VLoose = Handle('reco::PFTauDiscriminator')
+label_taudiscriminatorMVA_VLoose = ('hpsPFTauDiscriminationByVLooseIsolationMVArun2v1DBnewDMwLT')
+
+handle_taudiscriminatorMVA_Loose = Handle('reco::PFTauDiscriminator')
+label_taudiscriminatorMVA_Loose = ('hpsPFTauDiscriminationByLooseIsolationMVArun2v1DBnewDMwLT')
+
+handle_taudiscriminatorMVA_Medium = Handle('reco::PFTauDiscriminator')
+label_taudiscriminatorMVA_Medium = ('hpsPFTauDiscriminationByMediumIsolationMVArun2v1DBnewDMwLT')
+
+handle_taudiscriminatorMVA_Tight = Handle('reco::PFTauDiscriminator')
+label_taudiscriminatorMVA_Tight = ('hpsPFTauDiscriminationByTightIsolationMVArun2v1DBnewDMwLT')
+
+handle_taudiscriminatorMVA_VTight = Handle('reco::PFTauDiscriminator')
+label_taudiscriminatorMVA_VTight = ('hpsPFTauDiscriminationByVTightIsolationMVArun2v1DBnewDMwLT')
+
+handle_taudiscriminatorMVA_VVTight = Handle('reco::PFTauDiscriminator')
+label_taudiscriminatorMVA_VVTight = ('hpsPFTauDiscriminationByVVTightIsolationMVArun2v1DBnewDMwLT')
 
 handle_taudiscriminatorMVAraw = Handle('reco::PFTauDiscriminator')
 label_taudiscriminatorMVAraw = ('hpsPFTauDiscriminationByIsolationMVArun2v1DBnewDMwLTraw')
@@ -892,13 +909,36 @@ for f in options.inputFiles:
 		event.getByLabel(label_taudiscriminatorDM, handle_taudiscriminatorDM)
 		taudiscriminatorDM = handle_taudiscriminatorDM.product()
 		
-		event.getByLabel(label_taudiscriminatorMVA, handle_taudiscriminatorMVA)
-		taudiscriminatorMVA = handle_taudiscriminatorMVA.product()
+		event.getByLabel(label_taudiscriminatorMVA_VLoose, handle_taudiscriminatorMVA_VLoose)
+		taudiscriminatorMVA_VLoose = handle_taudiscriminatorMVA_VLoose.product()
+		
+		event.getByLabel(label_taudiscriminatorMVA_Loose, handle_taudiscriminatorMVA_Loose)
+		taudiscriminatorMVA_Loose = handle_taudiscriminatorMVA_Loose.product()
+		
+		event.getByLabel(label_taudiscriminatorMVA_Medium, handle_taudiscriminatorMVA_Medium)
+		taudiscriminatorMVA_Medium = handle_taudiscriminatorMVA_Medium.product()
+		
+		event.getByLabel(label_taudiscriminatorMVA_Tight, handle_taudiscriminatorMVA_Tight)
+		taudiscriminatorMVA_Tight = handle_taudiscriminatorMVA_Tight.product()
+		
+		event.getByLabel(label_taudiscriminatorMVA_VTight, handle_taudiscriminatorMVA_VTight)
+		taudiscriminatorMVA_VTight = handle_taudiscriminatorMVA_VTight.product()
+		
+		event.getByLabel(label_taudiscriminatorMVA_VVTight, handle_taudiscriminatorMVA_VVTight)
+		taudiscriminatorMVA_VVTight = handle_taudiscriminatorMVA_VVTight.product()
 		
 		event.getByLabel(label_taudiscriminatorMVAraw, handle_taudiscriminatorMVAraw)
 		taudiscriminatorMVAraw = handle_taudiscriminatorMVAraw.product()
 
-		tauswithdiscriminators = [(tau, taudiscriminatorDM.value(itau), taudiscriminatorMVA.value(itau), taudiscriminatorMVAraw.value(itau)) for itau, tau in enumerate(taus)]
+		tauswithdiscriminators = [(tau, taudiscriminatorDM.value(itau)
+								, taudiscriminatorMVAraw.value(itau)
+								, taudiscriminatorMVA_VLoose.value(itau)
+								, taudiscriminatorMVA_Loose.value(itau)
+								, taudiscriminatorMVA_Medium.value(itau)
+								, taudiscriminatorMVA_Tight.value(itau)
+								, taudiscriminatorMVA_VTight.value(itau)
+								, taudiscriminatorMVA_VVTight.value(itau)
+								) for itau, tau in enumerate(taus)]
 
 		
 		'''
@@ -1695,14 +1735,16 @@ for f in options.inputFiles:
 		hCutflow.Fill(6)
 		cutflow = 6
 		
-		if not numjets100 > 0: continue
+		if not 'nonumjets100veto' in options.tag:
+			if not numjets100 > 0: continue
 		
 		###########################################################################################veto
 		
 		hCutflow.Fill(7)
 		cutflow = 7
 
-		if not min(dphimetjets) > 0.5: continue
+		if not 'nodphimetjetsveto' in options.tag:
+			if not min(dphimetjets) > 0.5: continue
 		
 		###########################################################################################veto
 		
@@ -1861,7 +1903,12 @@ for f in options.inputFiles:
 				
 		event_level_var_array['numtaus'][0] = len(tauswithdiscriminators)
 		
-		numtausiso = 0
+		numtausvloose = 0
+		numtausloose = 0
+		numtausmedium = 0
+		numtaustight = 0
+		numtausvtight = 0
+		numtausvvtight = 0
 		for it, t in enumerate(tauswithdiscriminators):
 			
 			tau_var_array['chargetau'][it] = t[0].charge()
@@ -1881,12 +1928,23 @@ for f in options.inputFiles:
 			tau_var_array['chhadisotau'][it] = t[0].isolationPFChargedHadrCandsPtSum()
 			tau_var_array['photisotau'][it] = t[0].isolationPFGammaCandsEtSum()
 			tau_var_array['decaymodetau'][it] = t[0].decayMode()
-			tau_var_array['mvadiscrtau'][it] = t[3]
+			tau_var_array['mvadiscrtau'][it] = t[2]
 			
-			if t[2] > 0.5: numtausiso += 1
-			
-		event_level_var_array['numtausiso'][0] = numtausiso
-		hNumtaus.Fill(numtausiso)
+			if t[3] > 0.5: numtausvloose += 1
+			if t[4] > 0.5: numtausloose += 1
+			if t[5] > 0.5: numtausmedium += 1
+			if t[6] > 0.5: numtaustight += 1
+			if t[7] > 0.5: numtausvtight += 1
+			if t[8] > 0.5: numtausvvtight += 1
+		
+		hNumtaus.Fill(numtausvloose)	
+		event_level_var_array['numtausvloose'][0] = numtausvloose
+		event_level_var_array['numtausloose'][0] = numtausloose
+		event_level_var_array['numtausmedium'][0] = numtausmedium
+		event_level_var_array['numtaustight'][0] = numtaustight
+		event_level_var_array['numtausvtight'][0] = numtausvtight
+		event_level_var_array['numtausvvtight'][0] = numtausvvtight
+		
 
 		
 		btagvalues = []
