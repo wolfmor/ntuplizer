@@ -172,7 +172,7 @@ nMaxTracksPerEvent = 10000
 #TODO: check if test
 saveOutputFile = True
 isTest = False
-neventsTest = 100  # number of events to run over in case of test
+neventsTest = 10  # number of events to run over in case of test
 printevery = 100  # print event number for every Xth event
 
 #TODO: check thresholds for "new" matching
@@ -261,6 +261,7 @@ if True:
 		,('nofastsimcorrmetpt', 'F'), ('nofastsimcorrmetphi', 'F')
 		,('ht', 'F'), ('htmiss', 'F')
 		,('numbadjets', 'F'), ('minetaabsbadjets', 'F')
+		,('ptleadingjet', 'F'), ('etaleadingjet', 'F'), ('phileadingjet', 'F')
 		,('numjets', 'I'), ('numjets30', 'I'), ('numjets50','I'), ('numjets100', 'I'), ('numjets200', 'I')
 		,('njetsbtagmedium', 'I'), ('njetsbtagmediumTIGHT', 'I')
 		,('mtmetleadingjet', 'F')
@@ -453,6 +454,9 @@ if True:
 		,('pttrack','F')
         ,('pttrackerror/pttrack','F'), ('log10(pttrackerror/pttrack)','F')
         ,('eta','F'), ('phi','F')
+
+		,('dxynoabs','F')
+		,('dznoabs','F')
         
 		,('dxy','F'), ('dxyhandmade','F'), ('dxyclosestpv','F'), ('dxyclosestpvPU','F')
 		,('dz','F'), ('dzhandmade','F'), ('dzclosestpv','F'), ('dzclosestpvPU','F')
@@ -466,9 +470,12 @@ if True:
         ,('chpfabsiso','F'), ('chpfreliso','F'), ('chpfdrmin','F'), ('chpfnumneighbours','I')
         ,('jetiso','F'), ('jetisomulti','F'), ('jetdrmin','F') 
         ,('jetisotight','F'), ('jetisomultitight','F'), ('jetdrmintight','F')
+        ,('jetisomedium','F'), ('jetisomultimedium','F'), ('jetdrminmedium','F')
+        ,('jetisoloose','F'), ('jetisomultiloose','F'), ('jetdrminloose','F')
         
         ,('drminphoton', 'F'), ('drminelectron', 'F'), ('drminmuon', 'F')
         ,('drmintau', 'F'), ('closesttaumvadiscr', 'F')
+        ,('taudr3wp', 'I'), ('taudr4wp', 'I'), ('taudr5wp', 'I')
         
         ,('detahighestptjet','F'), ('dphihighestptjet','F')
         ,('dphimet','F'), ('dphimetpca','F')
@@ -480,9 +487,10 @@ if True:
         ,('issignaltrack','I'), ('issusytrack','I'), ('susytrackmother','I'), ('susytrackpdgid','I')
         
         ,('hasGenMatch','I')
-        ,('genmatchpdgid','F'), ('genmatchstatus','F'), ('genmatchishardprocess','F'), ('genmatchisfromhardprocess','F')
+        ,('genmatchpdgid','F'), ('genmatchpt','F'), ('genmatchstatus','F'), ('genmatchishardprocess','F'), ('genmatchisfromhardprocess','F')
         ,('genmatchisprompt','F'), ('genmatchisdirecthadrondecayproduct','F'), ('genmatchisdirecttaudecayproduct','F')
-        ,('genmatchmotherpdgid','F'), ('genmatchmotherstatus','F'), ('genmatchmotherishardprocess','F')
+        ,('genmatchmotherpdgid','F'), ('genmatchmotherpt','F'), ('genmatchmotherstatus','F'), ('genmatchmotherishardprocess','F')
+        ,('genmatchmotheristhetau','I'), ('genmatchmothertaudecay','F')
         ]
 	
 	track_level_var_array = {}
@@ -1029,6 +1037,7 @@ for f in options.inputFiles:
 		numWDaughters = 0
 		ptWneutrino = -1
 		decayWtau = 0
+		thetau = None
 		if 'geninfoW' in options.tag:
 			
 			Ws = [gp for gp in genparticles if gp.isLastCopy() and gp.statusFlags().fromHardProcess() and abs(gp.pdgId()) == 24]
@@ -1064,6 +1073,8 @@ for f in options.inputFiles:
 					wdaughter_var_array['phiWdaughter'][i] = daughter.phi()
 					
 					if abs(daughter.pdgId()) == 15:  # seems to be awfully complicated just to get the tau decay mode
+						
+						thetau = daughter
 						
 						for k in range(daughter.numberOfDaughters()):
 							if abs(daughter.daughter(k).pdgId()) == 16: continue
@@ -1303,7 +1314,7 @@ for f in options.inputFiles:
 		pTneutrinosum = 0
 		genmetpt = -1
 		genmetphi = -10
-		genht = -1
+		genht = 0
 		genhtmiss = -1
 		nofastsimcorrmetpt = -1
 		nofastsimcorrmetphi = -10
@@ -1676,7 +1687,10 @@ for f in options.inputFiles:
 			if jetpt > 200: numjets200 += 1
 
 			if jetpt > jets[idxhighestptjet].pt(): idxhighestptjet = ijet
-			
+
+		event_level_var_array['ptleadingjet'][0] = jets[idxhighestptjet].pt()
+		event_level_var_array['etaleadingjet'][0] = jets[idxhighestptjet].eta()
+		event_level_var_array['phileadingjet'][0] = jets[idxhighestptjet].phi()
 		event_level_var_array['numjets'][0] = numjets
 		event_level_var_array['numjets30'][0] = numjets30
 		event_level_var_array['numjets50'][0] = numjets50
@@ -2002,6 +2016,8 @@ for f in options.inputFiles:
 		
 		tracksforiso = [t for t in tracks if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1)]
 		jetsforisotight = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=30)]
+		jetsforisomedium = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=15)]
+		jetsforisoloose = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=5)]
 		
 		if 'genmatchtracks' in options.tag or 'genmatchalltracks' in options.tag:
 			genparticlesformatching = [gp for gp in genparticles if gp.status() == 1]
@@ -2037,6 +2053,9 @@ for f in options.inputFiles:
 			
 			track_level_var_array['eta'][i] = track.eta()
 			track_level_var_array['phi'][i] = track.phi()
+
+			track_level_var_array['dxynoabs'][i] = track.dxy(pv_pos)
+			track_level_var_array['dznoabs'][i] = track.dz(pv_pos)
 			
 			track_level_var_array['dxy'][i] = abs(track.dxy(pv_pos))
 			track_level_var_array['dz'][i] = abs(track.dz(pv_pos))
@@ -2091,7 +2110,10 @@ for f in options.inputFiles:
 			track_level_var_array['jetisotight'][i] = jetisotight
 			track_level_var_array['jetisomultitight'][i] = jetisomultitight
 			track_level_var_array['jetdrmintight'][i] = jetdrmintight
-			
+			track_level_var_array['jetisomedium'][i], track_level_var_array['jetisomultimedium'][i], track_level_var_array['jetdrminmedium'][i] = calcIso_jet_new(track, jetsforisomedium, isTrack=True)
+			track_level_var_array['jetisoloose'][i], track_level_var_array['jetisomultiloose'][i], track_level_var_array['jetdrminloose'][i] = calcIso_jet_new(track, jetsforisoloose, isTrack=True)
+
+
 			drminphoton = 10
 			for p in photons:
 				dr = deltaR(track.eta(), p.eta(), track.phi(), p.phi())
@@ -2115,13 +2137,35 @@ for f in options.inputFiles:
 			
 			drmintau = 10
 			closesttaumvadiscr = -1
+			taudr3wp = 0
+			taudr4wp = 0
+			taudr5wp = 0
 			for t in tauswithdiscriminators:
 				dr = deltaR(track.eta(), t[0].eta(), track.phi(), t[0].phi())
 				if dr < drmintau:
 					drmintau = dr
-					closesttaumvadiscr = t[3]
+					closesttaumvadiscr = t[2]
+				if dr < 0.5:
+					itauwp = 1
+					while itauwp < 7 and t[2+itauwp] > 0.5:
+						if taudr5wp < itauwp: taudr5wp = itauwp
+						itauwp += 1
+					if dr < 0.4:
+						itauwp = 1
+						while itauwp < 7 and t[2+itauwp] > 0.5:
+							if taudr4wp < itauwp: taudr4wp = itauwp
+							itauwp += 1
+						if dr < 0.3:
+							itauwp = 1
+							while itauwp < 7 and t[2+itauwp] > 0.5:
+								if taudr3wp < itauwp: taudr3wp = itauwp
+								itauwp += 1
+				
 			track_level_var_array['drmintau'][i] = drmintau
 			track_level_var_array['closesttaumvadiscr'][i] = closesttaumvadiscr
+			track_level_var_array['taudr3wp'][i] = taudr3wp
+			track_level_var_array['taudr4wp'][i] = taudr4wp
+			track_level_var_array['taudr5wp'][i] = taudr5wp
 			
 			track_level_var_array['detahighestptjet'][i] = abs(track.eta() - jets[idxhighestptjet].eta())
 			track_level_var_array['dphihighestptjet'][i] = deltaPhi(track.phi(), jets[idxhighestptjet].phi())
@@ -2144,6 +2188,8 @@ for f in options.inputFiles:
 			hasGenMatch = -1
 			genmatchpdgid = -1
 			genmatchmotherpdgid = -1
+			genmatchpt = -1
+			genmatchmotherpt = -1
 			genmatchstatus = -1
 			genmatchmotherstatus = -1
 			genmatchishardprocess = -1
@@ -2152,6 +2198,7 @@ for f in options.inputFiles:
 			genmatchisprompt = -1
 			genmatchisdirecthadrondecayproduct = -1
 			genmatchisdirecttaudecayproduct = -1
+			genmatchmotheristhetau = 0
 			
 			dothegenmatch = False
 
@@ -2199,6 +2246,9 @@ for f in options.inputFiles:
 					genmatchpdgid = genmatch.pdgId()
 					genmatchmotherpdgid = genmatchmother.pdgId()
 					
+					genmatchpt = genmatch.pt()
+					genmatchmotherpt = genmatchmother.pt()
+					
 					genmatchstatus = genmatch.status()
 					genmatchmotherstatus = genmatchmother.status()
 					
@@ -2215,10 +2265,14 @@ for f in options.inputFiles:
 					genmatchisprompt = genmatch.statusFlags().isPrompt()
 					genmatchisdirecthadrondecayproduct = genmatch.statusFlags().isDirectHadronDecayProduct()
 					genmatchisdirecttaudecayproduct = genmatch.statusFlags().isDirectTauDecayProduct()
+					
+					if genmatchmother == thetau: genmatchmotheristhetau = 1
 						
 			track_level_var_array['hasGenMatch'][i] = hasGenMatch
 			track_level_var_array['genmatchpdgid'][i] = genmatchpdgid
 			track_level_var_array['genmatchmotherpdgid'][i] = genmatchmotherpdgid
+			track_level_var_array['genmatchpt'][i] = genmatchpt
+			track_level_var_array['genmatchmotherpt'][i] = genmatchmotherpt
 			track_level_var_array['genmatchstatus'][i] = genmatchstatus
 			track_level_var_array['genmatchmotherstatus'][i] = genmatchmotherstatus
 			track_level_var_array['genmatchishardprocess'][i] = genmatchishardprocess
@@ -2227,6 +2281,8 @@ for f in options.inputFiles:
 			track_level_var_array['genmatchisprompt'][i] = genmatchisprompt
 			track_level_var_array['genmatchisdirecthadrondecayproduct'][i] = genmatchisdirecthadrondecayproduct
 			track_level_var_array['genmatchisdirecttaudecayproduct'][i] = genmatchisdirecttaudecayproduct
+			track_level_var_array['genmatchmotheristhetau'][i] = genmatchmotheristhetau
+			track_level_var_array['genmatchmothertaudecay'][i] = decayWtau
 				
 			
 			issignaltrack = 0
