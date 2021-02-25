@@ -935,7 +935,7 @@ def distance(t, track, vertex):
 	return d
 
 
-'''Distance between a specific point along a track (given by t) and a vertex in XY.
+'''Distance in XY between a specific point along a track (given by t) and a vertex.
 '''
 def distanceXY(t, track, vertex):
 	
@@ -945,7 +945,7 @@ def distanceXY(t, track, vertex):
 	return d
 
 
-'''Distance between a specific point along a track (given by t) and a vertex in Z.
+'''Distance in Z between a specific point along a track (given by t) and a vertex.
 '''
 def distanceZ(t, track, vertex):
 	

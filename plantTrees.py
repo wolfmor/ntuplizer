@@ -116,7 +116,7 @@ def createJEC(jecSrc, jecLevelList, jetAlgo):
 	
 	# Load the different JEC levels (the order matters!)
 	for jecLevel in jecLevelList:
-		jecParameter = ROOT.JetCorrectorParameters('%s_%s_%s.txt' % (jecSrc, jecLevel, jetAlgo));
+		jecParameter = ROOT.JetCorrectorParameters('%s_%s_%s.txt' % (jecSrc, jecLevel, jetAlgo))
 		jecParameterList.push_back(jecParameter)
 	
 	# Chain the JEC levels together
@@ -169,7 +169,7 @@ if True:
 nMaxEventsPerFile = 100000
 nMaxTracksPerEvent = 10000
 
-#TODO: check if test
+#TODO: check if saveoutputfile and if test
 saveOutputFile = True
 isTest = False
 neventsTest = 10  # number of events to run over in case of test
@@ -223,6 +223,7 @@ if True:
 		,('tminmatching', 'F'), ('dxyzmin', 'F'), ('drmin', 'F')
 		,('dxyzminrandom', 'F'), ('drminrandom', 'F')
 		,('drminold', 'F'), ('drminoldrandom', 'F')
+		,('matchedTrackIdxCharginoPion1', 'F'), ('matchedTrackIdxCharginoPion2', 'F')
 		
 		,('numchidaughters', 'I')
 		]
@@ -452,8 +453,10 @@ if True:
 		,('charge','F')
 		,('pxtrack','F'), ('pytrack','F'), ('pztrack','F')
 		,('pttrack','F')
+        ,('pttrackerror','F'), ('log10(pttrackerror)','F')
         ,('pttrackerror/pttrack','F'), ('log10(pttrackerror/pttrack)','F')
         ,('eta','F'), ('phi','F')
+		,('etaerror', 'F'), ('phierror', 'F')
 
 		,('dxynoabs','F')
 		,('dznoabs','F')
@@ -1419,54 +1422,34 @@ for f in options.inputFiles:
 
 				decaylengthZ = abs(gp.vz() - gp.daughter(0).vz())
 				
-				c1daughters = findDaughters(gp)
+				c1daughters += findDaughters(gp)
 				
-				chipmnumdaughters = len(c1daughters)
-				
-				for c1d in c1daughters:
-					
-					if abs(c1d.pdgId()) == 211:
-				
-						pion = c1d
-						
-						hasPion += 1
-						
-						chidaughterpdgid = pion.pdgId()
-						
-						pionptGEN = pion.pt()
-						pionetaGEN = pion.eta()
-						pionphiGEN = pion.phi()
-					
-						
-						idxold, drminold = findMatch_track_old(pion, tracks)
-						_, drminoldrandom = findMatch_track_old_random(pion, tracks)
-					
-						idx, dxyzmin, tminmatching, drmin = findMatch_track_new(pion, tracks)
-						_, dxyzminrandom, _, drminrandom = findMatch_track_new_random(pion, tracks)
-	
-						if not idx == -1:
-							if drmin < matchingDrThreshold and dxyzmin < matchingDxyzThreshold:
-								hasMatchedTrack += 1
-								if not hasMatchedTrack:
-									matchedTrackIdxCharginoPion1 = idx
-								else:
-									matchedTrackIdxCharginoPion2 = idx
-								
-# 				else:
-# 					
-# 					lepton, neutrino = findLeptonNeutrino(gp)
-# 					
-# 					if not lepton == None:
-# 						
-# 						chidaughterpdgid = lepton.pdgId()
-# 					
-# 						idxlepton, dxyzminlepton, _, drminlepton = findMatch_track_new(lepton, tracks)
-# 						
-# 						if not idxlepton == -1:
-# 							if drminlepton < matchingDrThreshold and dxyzminlepton < matchingDxyzThreshold:
-# 								susytracks[idxlepton] = 1
+			for c1d in c1daughters:
 
-		
+				if abs(c1d.pdgId()) == 211:
+
+					pion = c1d
+
+					hasPion += 1
+
+					chidaughterpdgid = pion.pdgId()
+
+					pionptGEN = pion.pt()
+					pionetaGEN = pion.eta()
+					pionphiGEN = pion.phi()
+
+					idxold, drminold = findMatch_track_old(pion, tracks)
+					_, drminoldrandom = findMatch_track_old_random(pion, tracks)
+
+					idx, dxyzmin, tminmatching, drmin = findMatch_track_new(pion, tracks)
+					_, dxyzminrandom, _, drminrandom = findMatch_track_new_random(pion, tracks)
+
+					if not idx == -1:
+						if drmin < matchingDrThreshold and dxyzmin < matchingDxyzThreshold:
+							if not hasMatchedTrack: matchedTrackIdxCharginoPion1 = idx
+							else: matchedTrackIdxCharginoPion2 = idx
+							hasMatchedTrack += 1
+
 			for gp in N2s:
 				
 				decaylength3DN2 = ROOT.TMath.Sqrt(pow(gp.vx() - gp.daughter(0).vx(),2)
@@ -1488,57 +1471,10 @@ for f in options.inputFiles:
 
 				decaylengthZN2 = abs(gp.vz() - gp.daughter(0).vz())
 				
-				n2daughters = findDaughters(gp)
-				
-				chiN2numdaughters = len(n2daughters)
-				
-# 				print ''
-# 				print 'n2'
-# 				
-# 				for n2d in n2daughters:
-# 					
-# 					print n2d.pdgId()
-# 					
-# 				ancestors = []
-# 				
-# 				for idaughter in range(gp.numberOfDaughters()):
-# 					
-# 					daughter = gp.daughter(idaughter)
-# 					pdgIdDaughter = abs(daughter.pdgId())
-# 					
-# 					if pdgIdDaughter == 11 or pdgIdDaughter == 13:
-# 						
-# 						daughter = getLastCopyStatusOne(daughter)
-# 						
-# 						if daughter not in ancestors: ancestors.append(daughter)
-# 						
-# 					else:
-# 						
-# 						if daughter not in ancestors: ancestors.append(daughter)
-# 						
-# 						while len([a for a in ancestors if a.status() != 1]) > 0:
-# 							
-# 							for b in [a for a in ancestors if a.status() != 1]:
-# 								
-# 								for ibdaughter in range(b.numberOfDaughters()):
-# 									
-# 									if b.daughter(ibdaughter) not in ancestors: ancestors.append(b.daughter(ibdaughter))
-# 									
-# 								ancestors.remove(b)
-# 								
-# 				for a in ancestors:
-# 					
-# 					if a.charge() == 0: continue
-# 					
-# 					chiN2daughterpdgid = a.pdgId()
-# 					
-# 					idxN2, dxyzminN2, _, drminN2 = findMatch_track_new(a, tracks)
-# 					
-# 					if not idxN2 == -1:
-# 						if drminN2 < matchingDrThreshold and dxyzminN2 < matchingDxyzThreshold:
-# 							susytracks[idxN2] = abs(a.pdgId())
-			
-			
+				n2daughters += findDaughters(gp)
+
+			chipmnumdaughters = len(c1daughters)
+			chiN2numdaughters = len(n2daughters)
 			numchidaughters = chipmnumdaughters + chiN2numdaughters
 			
 			i = 0
@@ -1551,7 +1487,7 @@ for f in options.inputFiles:
 				chidaughter_var_array['etachidaughter'][i] = c1d.eta()
 				chidaughter_var_array['phichidaughter'][i] = c1d.phi()
 				
-				chidaughter_var_array['hasmatchedtrackchidaughter'][i] = 0
+				chidaughter_var_array['hasmatchedtrackchidaughter'][i] = -1
 				
 				if c1d.charge() != 0:
 				
@@ -1560,7 +1496,7 @@ for f in options.inputFiles:
 					if not idxC1 == -1:
 						if drminC1 < matchingDrThreshold and dxyzminC1 < matchingDxyzThreshold:
 							susytracks[idxC1] = (1, c1d.pdgId())
-							chidaughter_var_array['hasmatchedtrackchidaughter'][i] = 1
+							chidaughter_var_array['hasmatchedtrackchidaughter'][i] = idxC1
 				
 				i += 1
 				
@@ -1572,7 +1508,7 @@ for f in options.inputFiles:
 				chidaughter_var_array['etachidaughter'][i] = n2d.eta()
 				chidaughter_var_array['phichidaughter'][i] = n2d.phi()
 				
-				chidaughter_var_array['hasmatchedtrackchidaughter'][i] = 0
+				chidaughter_var_array['hasmatchedtrackchidaughter'][i] = -1
 				
 				if n2d.charge() != 0: 
 				
@@ -1581,7 +1517,7 @@ for f in options.inputFiles:
 					if not idxN2 == -1:
 						if drminN2 < matchingDrThreshold and dxyzminN2 < matchingDxyzThreshold:
 							susytracks[idxN2] = (2, n2d.pdgId())
-							chidaughter_var_array['hasmatchedtrackchidaughter'][i] = 1
+							chidaughter_var_array['hasmatchedtrackchidaughter'][i] = idxN2
 					
 				i += 1
 				
@@ -1621,6 +1557,9 @@ for f in options.inputFiles:
 		event_level_var_array['drminrandom'][0] = drminrandom
 		event_level_var_array['drminold'][0] = drminold
 		event_level_var_array['drminoldrandom'][0] = drminoldrandom
+
+		event_level_var_array['matchedTrackIdxCharginoPion1'][0] = matchedTrackIdxCharginoPion1
+		event_level_var_array['matchedTrackIdxCharginoPion2'][0] = matchedTrackIdxCharginoPion2
 		
 		event_level_var_array['chidecaylength3D'][0] = decaylength3D
 		event_level_var_array['chidecaylengthXY'][0] = decaylengthXY
@@ -2017,7 +1956,7 @@ for f in options.inputFiles:
 		tracksforiso = [t for t in tracks if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1)]
 		jetsforisotight = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=30)]
 		jetsforisomedium = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=15)]
-		jetsforisoloose = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=5)]
+		jetsforisoloose = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=10)]
 		
 		if 'genmatchtracks' in options.tag or 'genmatchalltracks' in options.tag:
 			genparticlesformatching = [gp for gp in genparticles if gp.status() == 1]
@@ -2050,6 +1989,12 @@ for f in options.inputFiles:
 			track_level_var_array['pttrack'][i] = track.pt()
 			track_level_var_array['pttrackerror/pttrack'][i] = track.ptError()/track.pt()
 			track_level_var_array['log10(pttrackerror/pttrack)'][i] = ROOT.TMath.Log10(track.ptError()/track.pt())
+
+			track_level_var_array['pttrackerror'][i] = track.ptError()
+			track_level_var_array['log10(pttrackerror)'][i] = ROOT.TMath.Log10(track.ptError())
+
+			track_level_var_array['etaerror'][i] = track.etaError()
+			track_level_var_array['phierror'][i] = track.phiError()
 			
 			track_level_var_array['eta'][i] = track.eta()
 			track_level_var_array['phi'][i] = track.phi()
@@ -2283,7 +2228,6 @@ for f in options.inputFiles:
 			track_level_var_array['genmatchisdirecttaudecayproduct'][i] = genmatchisdirecttaudecayproduct
 			track_level_var_array['genmatchmotheristhetau'][i] = genmatchmotheristhetau
 			track_level_var_array['genmatchmothertaudecay'][i] = decayWtau
-				
 			
 			issignaltrack = 0
 			if itrack == matchedTrackIdxCharginoPion1 or itrack == matchedTrackIdxCharginoPion2: issignaltrack = 1
@@ -2300,7 +2244,7 @@ for f in options.inputFiles:
 				susytrackpdgid = susytracks[itrack][1]
 			track_level_var_array['susytrackmother'][i] = susytrackmother
 			track_level_var_array['susytrackpdgid'][i] = susytrackpdgid
-			
+
 			i += 1
 		
 		event_level_var_array['numtrackstotal'][0] = len(tracks)
