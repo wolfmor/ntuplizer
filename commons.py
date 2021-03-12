@@ -162,7 +162,7 @@ def passesEleID(e, pv_pos, wp='veto'):
 		
 	else:
 		
-		print 'working point not implemented'
+		print('working point not implemented')
 		sys.exit(0)
 
 
@@ -181,7 +181,7 @@ def passesMuonID(m, wp='loose'):
 		
 	elif wp == 'medium':
 		
-		print 'working point not implemented'  # don't know how to access segment compatibility...
+		print('working point not implemented')  # don't know how to access segment compatibility...
 		sys.exit(0)
 		
 		if not passesMuonID(m, 'loose'): return False
@@ -199,7 +199,7 @@ def passesMuonID(m, wp='loose'):
 		
 	else:
 		
-		print 'working point not implemented'
+		print('working point not implemented')
 		sys.exit(0)
 
 
@@ -231,7 +231,7 @@ def passesPhotID(p, wp='loose'):
 		
 	else:
 		
-		print 'working point not implemented'
+		print('working point not implemented')
 		sys.exit(0)
 
 
@@ -664,7 +664,7 @@ def passesPreselection_basic_track(track):
 
 '''Defines preselection used for calculation of isolation-variables for tracks.
 '''
-def passesPreselection_iso_track(track, pv_pos, dz_threshold):
+def passesPreselection_iso_track(track, pv_pos, dz_threshold, dxy_threshold, pt_threshold):
 		
 	if track.numberOfValidHits() == 0: return False
 	
@@ -673,6 +673,9 @@ def passesPreselection_iso_track(track, pv_pos, dz_threshold):
 	if track.charge() == 0: return False
 	
 	if abs(track.dz(pv_pos)) >= dz_threshold: return False
+	if abs(track.dxy(pv_pos)) >= dxy_threshold: return False
+
+	if track.pt() <= pt_threshold: return False
 			
 	return True
 

@@ -469,6 +469,7 @@ if True:
         ,('log10(dxyerror)','F'), ('log10(dzerror)','F')
         
         ,('trackabsiso','F'), ('trackreliso','F'), ('trackdrmin','F'), ('tracknumneighbours','I')
+        ,('trackabsisotight','F'), ('trackrelisotight','F'), ('trackdrmintight','F'), ('tracknumneighbourstight','I')
         ,('pfabsiso','F'), ('pfreliso','F'), ('pfdrmin','F'), ('pfnumneighbours','I')
         ,('chpfabsiso','F'), ('chpfreliso','F'), ('chpfdrmin','F'), ('chpfnumneighbours','I')
         ,('jetiso','F'), ('jetisomulti','F'), ('jetdrmin','F') 
@@ -1953,7 +1954,8 @@ for f in options.inputFiles:
 		###############################################################################################
 		'''
 		
-		tracksforiso = [t for t in tracks if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1)]
+		tracksforiso = [t for t in tracks if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=1000., pt_threshold=0.)]
+		tracksforisotight = [t for t in tracks if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=1.)]
 		jetsforisotight = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=30)]
 		jetsforisomedium = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=15)]
 		jetsforisoloose = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=10)]
@@ -2045,7 +2047,10 @@ for f in options.inputFiles:
 			track_level_var_array['dzerror'][i] = abs(track.dzError())
 			track_level_var_array['log10(dxyerror)'][i] = ROOT.TMath.Log10(abs(track.dxyError()))
 			track_level_var_array['log10(dzerror)'][i] = ROOT.TMath.Log10(abs(track.dzError()))
-			
+
+			dontSubtractTrackPt = False
+			if abs(track.dz(pv_pos)) >= 0.1 or abs(track.dxy(pv_pos)) >= 0.1 or track.pt() <= 1.: dontSubtractTrackPt = True
+			track_level_var_array['trackabsisotight'][i], track_level_var_array['trackrelisotight'][i], track_level_var_array['trackdrmintight'][i], track_level_var_array['tracknumneighbourstight'][i] = calcIso_pf_or_track_new(track, tracksforisotight, dontSubtractObject=dontSubtractTrackPt)
 			dontSubtractTrackPt = False
 			if abs(track.dz(pv_pos)) >= 0.1: dontSubtractTrackPt = True
 			track_level_var_array['trackabsiso'][i], track_level_var_array['trackreliso'][i], track_level_var_array['trackdrmin'][i], track_level_var_array['tracknumneighbours'][i] = calcIso_pf_or_track_new(track, tracksforiso, dontSubtractObject=dontSubtractTrackPt)
