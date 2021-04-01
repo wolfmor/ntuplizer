@@ -219,7 +219,7 @@ if True:
 		,('log10(chidecaylengthXYN2)', 'F'), ('log10(chidecaylengthZN2)', 'F'), ('log10(chidecaylength3DN2)', 'F')
 		,('chiN2numdaughters', 'I')
 		
-		,('pionptGEN', 'F'), ('pionetaGEN', 'F'), ('pionphiGEN', 'F')
+		,('pionptGEN', 'F'), ('pionetaGEN', 'F'), ('pionphiGEN', 'F'), ('pionchargeGEN', 'F')
 		,('tminmatching', 'F'), ('dxyzmin', 'F'), ('drmin', 'F')
 		,('dxyzminrandom', 'F'), ('drminrandom', 'F')
 		,('drminold', 'F'), ('drminoldrandom', 'F')
@@ -339,7 +339,16 @@ if True:
 		wdaughter_var_array[n[0]] = array('f', 100*[0.])
 		tEvent.Branch(nice_string(n[0]), wdaughter_var_array[n[0]], nice_string(n[0]) + '[numWDaughters]/F')
 
-	
+	var_names_pv = [
+		('idxpv', 'I'), ('numtrackspv', 'F')
+		,('xpv', 'F'), ('ypv', 'F'), ('zpv', 'F')
+		]
+
+	pv_var_array = {}
+	for n in var_names_pv:
+		pv_var_array[n[0]] = array('f', 100*[0.])
+		tEvent.Branch(nice_string(n[0]), pv_var_array[n[0]], nice_string(n[0]) + '[numpvs]/F')
+
 	var_names_jet = [
 		('pxjet', 'F'), ('pyjet', 'F'), ('pzjet', 'F')
 		,('ptjet', 'F'), ('energyjet', 'F')
@@ -458,14 +467,28 @@ if True:
         ,('eta','F'), ('phi','F')
 		,('etaerror', 'F'), ('phierror', 'F')
 
+		,('associatedpv', 'I')
+
+		,('idxpvPU', 'I')
+
+		,('IPsignificance', 'F'), ('IPxyz', 'F'), ('IPxy', 'F'), ('IPz', 'F')
+		,('log10(IPsignificance)', 'F'), ('log10(IPxyz)', 'F'), ('log10(IPxy)', 'F'), ('log10(IPz)', 'F')
+
+		,('IPsignificancePU', 'F'), ('IPxyzPU', 'F'), ('IPxyPU', 'F'), ('IPzPU', 'F')
+		,('log10(IPsignificancePU)', 'F'), ('log10(IPxyzPU)', 'F'), ('log10(IPxyPU)', 'F'), ('log10(IPzPU)', 'F')
+
+		,('dxy0', 'F'), ('dz0', 'F')
+		,('log10(dxy0)', 'F'), ('log10(dz0)', 'F')
+
 		,('dxynoabs','F')
 		,('dznoabs','F')
         
 		,('dxy','F'), ('dxyhandmade','F'), ('dxyclosestpv','F'), ('dxyclosestpvPU','F')
 		,('dz','F'), ('dzhandmade','F'), ('dzclosestpv','F'), ('dzclosestpvPU','F')
-		,('dxyerror','F'), ('dzerror','F')
         ,('log10(dxy)','F'), ('log10(dxyhandmade)','F'), ('log10(dxyclosestpv)','F'), ('log10(dxyclosestpvPU)','F')
         ,('log10(dz)','F'), ('log10(dzhandmade)','F'), ('log10(dzclosestpv)','F'), ('log10(dzclosestpvPU)','F')
+
+		,('dxyerror','F'), ('dzerror','F')
         ,('log10(dxyerror)','F'), ('log10(dzerror)','F')
         
         ,('trackabsiso','F'), ('trackreliso','F'), ('trackdrmin','F'), ('tracknumneighbours','I')
@@ -490,7 +513,7 @@ if True:
         
         ,('issignaltrack','I'), ('issusytrack','I'), ('susytrackmother','I'), ('susytrackpdgid','I')
         
-        ,('hasGenMatch','I')
+        ,('hasGenMatch','I'), ('genmatchtmin', 'F')
         ,('genmatchpdgid','F'), ('genmatchpt','F'), ('genmatchstatus','F'), ('genmatchishardprocess','F'), ('genmatchisfromhardprocess','F')
         ,('genmatchisprompt','F'), ('genmatchisdirecthadrondecayproduct','F'), ('genmatchisdirecttaudecayproduct','F')
         ,('genmatchmotherpdgid','F'), ('genmatchmotherpt','F'), ('genmatchmotherstatus','F'), ('genmatchmotherishardprocess','F')
@@ -802,6 +825,7 @@ for f in options.inputFiles:
 		pionptGEN = -1
 		pionetaGEN = -999
 		pionphiGEN = -999
+		pionchargeGEN = -999
 		
 		hasChargino = 0
 		hasPion = 0
@@ -841,6 +865,7 @@ for f in options.inputFiles:
 		
 		event.getByLabel(label_pv, handle_pv)
 		primaryvertices = handle_pv.product()
+		primaryvertices = [pv for pv in primaryvertices if pv.isValid()]
 		if not len(primaryvertices) > 0: continue
 		pv_pos = primaryvertices[0].position()
 		
@@ -1438,6 +1463,7 @@ for f in options.inputFiles:
 					pionptGEN = pion.pt()
 					pionetaGEN = pion.eta()
 					pionphiGEN = pion.phi()
+					pionchargeGEN = pion.charge()
 
 					idxold, drminold = findMatch_track_old(pion, tracks)
 					_, drminoldrandom = findMatch_track_old_random(pion, tracks)
@@ -1546,6 +1572,7 @@ for f in options.inputFiles:
 		event_level_var_array['pionptGEN'][0] = pionptGEN
 		event_level_var_array['pionetaGEN'][0] = pionetaGEN
 		event_level_var_array['pionphiGEN'][0] = pionphiGEN
+		event_level_var_array['pionchargeGEN'][0] = pionchargeGEN
 		
 		event_level_var_array['hasChargino'][0] = hasChargino
 		event_level_var_array['hasPion'][0] = hasPion
@@ -1599,8 +1626,8 @@ for f in options.inputFiles:
 		
 		event_level_var_array['numpvs'][0] = len(primaryvertices)
 		event_level_var_array['rho'][0] = rho
-		
-		
+
+
 		numjets = 0
 		numjets30 = 0
 		numjets50 = 0
@@ -1898,9 +1925,18 @@ for f in options.inputFiles:
 		event_level_var_array['numtaustight'][0] = numtaustight
 		event_level_var_array['numtausvtight'][0] = numtausvtight
 		event_level_var_array['numtausvvtight'][0] = numtausvvtight
-		
 
-		
+
+		tracksByPV = {}
+		for ipv, pv in enumerate(primaryvertices):
+			pv_var_array['idxpv'][ipv] = ipv
+			pv_var_array['numtrackspv'][ipv] = pv.tracksSize()
+			pv_var_array['xpv'][ipv] = pv.position().x()
+			pv_var_array['ypv'][ipv] = pv.position().y()
+			pv_var_array['zpv'][ipv] = pv.position().z()
+			tracksByPV[ipv] = [pv.trackRefAt(i).get() for i in range(pv.tracksSize())]
+
+
 		btagvalues = []
 		i = 0
 		for jet in jets:
@@ -2001,6 +2037,47 @@ for f in options.inputFiles:
 			track_level_var_array['eta'][i] = track.eta()
 			track_level_var_array['phi'][i] = track.phi()
 
+			track_level_var_array['associatedpv'][i] = -1
+			for ipv in range(len(primaryvertices)):
+				if track in tracksByPV[ipv]: track_level_var_array['associatedpv'][i] = ipv
+
+			ip = IPcalculator(track, primaryvertices[0])
+			track_level_var_array['IPsignificance'][i] = ip.getIPsignificance()
+			track_level_var_array['IPxyz'][i] = ip.getIP()
+			track_level_var_array['IPxy'][i] = ip.getDxy()
+			track_level_var_array['IPz'][i] = ip.getDz()
+			track_level_var_array['log10(IPsignificance)'][i] = ROOT.TMath.Log10(ip.getIPsignificance())
+			track_level_var_array['log10(IPxyz)'][i] = ROOT.TMath.Log10(ip.getIP())
+			track_level_var_array['log10(IPxy)'][i] = ROOT.TMath.Log10(ip.getDxy())
+			track_level_var_array['log10(IPz)'][i] = ROOT.TMath.Log10(ip.getDz())
+
+			minipPU = None
+			minivPU = -1
+			minIPsignificancePU = 999
+			for iv, v in enumerate(primaryvertices[1:]):
+				thisipPU = IPcalculator(track, v)
+				thisIPsignificancePU = thisipPU.getIPsignificance()
+				if thisIPsignificancePU < minIPsignificancePU:
+					minipPU = thisipPU
+					minivPU = iv
+					minIPsignificancePU = thisIPsignificancePU
+
+			if not minivPU == -1:
+				track_level_var_array['idxpvPU'][i] = minivPU+1
+				track_level_var_array['IPsignificancePU'][i] = minipPU.getIPsignificance()
+				track_level_var_array['IPxyzPU'][i] = minipPU.getIP()
+				track_level_var_array['IPxyPU'][i] = minipPU.getDxy()
+				track_level_var_array['IPzPU'][i] = minipPU.getDz()
+				track_level_var_array['log10(IPsignificancePU)'][i] = ROOT.TMath.Log10(minipPU.getIPsignificance())
+				track_level_var_array['log10(IPxyzPU)'][i] = ROOT.TMath.Log10(minipPU.getIP())
+				track_level_var_array['log10(IPxyPU)'][i] = ROOT.TMath.Log10(minipPU.getDxy())
+				track_level_var_array['log10(IPzPU)'][i] = ROOT.TMath.Log10(minipPU.getDz())
+
+			track_level_var_array['dxy0'][i] = abs(track.dxy())
+			track_level_var_array['dz0'][i] = abs(track.dz())
+			track_level_var_array['log10(dxy0)'][i] = ROOT.TMath.Log10(abs(track.dxy()))
+			track_level_var_array['log10(dz0)'][i] = ROOT.TMath.Log10(abs(track.dz()))
+
 			track_level_var_array['dxynoabs'][i] = track.dxy(pv_pos)
 			track_level_var_array['dznoabs'][i] = track.dz(pv_pos)
 			
@@ -2051,17 +2128,20 @@ for f in options.inputFiles:
 			dontSubtractTrackPt = False
 			if abs(track.dz(pv_pos)) >= 0.1 or abs(track.dxy(pv_pos)) >= 0.1 or track.pt() <= 1.: dontSubtractTrackPt = True
 			track_level_var_array['trackabsisotight'][i], track_level_var_array['trackrelisotight'][i], track_level_var_array['trackdrmintight'][i], track_level_var_array['tracknumneighbourstight'][i] = calcIso_pf_or_track_new(track, tracksforisotight, dontSubtractObject=dontSubtractTrackPt)
+
 			dontSubtractTrackPt = False
 			if abs(track.dz(pv_pos)) >= 0.1: dontSubtractTrackPt = True
 			track_level_var_array['trackabsiso'][i], track_level_var_array['trackreliso'][i], track_level_var_array['trackdrmin'][i], track_level_var_array['tracknumneighbours'][i] = calcIso_pf_or_track_new(track, tracksforiso, dontSubtractObject=dontSubtractTrackPt)
+
 			track_level_var_array['pfabsiso'][i], track_level_var_array['pfreliso'][i], track_level_var_array['pfdrmin'][i], track_level_var_array['pfnumneighbours'][i] = calcIso_pf_or_track_new(track, pfcands)
 			track_level_var_array['chpfabsiso'][i], track_level_var_array['chpfreliso'][i], track_level_var_array['chpfdrmin'][i], track_level_var_array['chpfnumneighbours'][i] = calcIso_pf_or_track_new(track, chpfcandsforiso, dontSubtractObject=dontSubtractTrackPt)
+
 			track_level_var_array['jetiso'][i], track_level_var_array['jetisomulti'][i], track_level_var_array['jetdrmin'][i] = calcIso_jet_new(track, jets, isTrack=True)
+			track_level_var_array['jetisoloose'][i], track_level_var_array['jetisomultiloose'][i], track_level_var_array['jetdrminloose'][i] = calcIso_jet_new(track, jetsforisoloose, isTrack=True)
+			track_level_var_array['jetisomedium'][i], track_level_var_array['jetisomultimedium'][i], track_level_var_array['jetdrminmedium'][i] = calcIso_jet_new(track, jetsforisomedium, isTrack=True)
 			track_level_var_array['jetisotight'][i] = jetisotight
 			track_level_var_array['jetisomultitight'][i] = jetisomultitight
 			track_level_var_array['jetdrmintight'][i] = jetdrmintight
-			track_level_var_array['jetisomedium'][i], track_level_var_array['jetisomultimedium'][i], track_level_var_array['jetdrminmedium'][i] = calcIso_jet_new(track, jetsforisomedium, isTrack=True)
-			track_level_var_array['jetisoloose'][i], track_level_var_array['jetisomultiloose'][i], track_level_var_array['jetdrminloose'][i] = calcIso_jet_new(track, jetsforisoloose, isTrack=True)
 
 
 			drminphoton = 10
@@ -2136,6 +2216,7 @@ for f in options.inputFiles:
 			
 			
 			hasGenMatch = -1
+			tmingen = -999
 			genmatchpdgid = -1
 			genmatchmotherpdgid = -1
 			genmatchpt = -1
@@ -2219,6 +2300,7 @@ for f in options.inputFiles:
 					if genmatchmother == thetau: genmatchmotheristhetau = 1
 						
 			track_level_var_array['hasGenMatch'][i] = hasGenMatch
+			track_level_var_array['genmatchtmin'][i] = tmingen
 			track_level_var_array['genmatchpdgid'][i] = genmatchpdgid
 			track_level_var_array['genmatchmotherpdgid'][i] = genmatchmotherpdgid
 			track_level_var_array['genmatchpt'][i] = genmatchpt

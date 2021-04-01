@@ -11,6 +11,7 @@ from array import array
 from math import ceil
 import numpy as np
 import scipy.optimize
+from scipy.linalg import block_diag
 
 import ROOT
 
@@ -67,6 +68,7 @@ class Dummy:
 	def energy(self):
 		return self._energy
 
+###############################################################################################
 
 '''Angle between two angles, returns value between -pi and +pi.
 '''
@@ -113,6 +115,7 @@ def deltaR(eta1, eta2, phi1, phi2):
 	
 	return TMath.Sqrt(deta * deta + dphi * dphi)
 
+###############################################################################################
 
 '''Check if electron passes ID (without isolation requirement)
 https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/Heppy/python/physicsobjects/Electron.py
@@ -203,7 +206,6 @@ def passesMuonID(m, wp='loose'):
 		sys.exit(0)
 
 
-
 '''Check if photon passes ID (without isolation requirement)
 https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedPhotonIdentificationRun2#Working_points_for_2016_data_for
 '''
@@ -234,6 +236,7 @@ def passesPhotID(p, wp='loose'):
 		print('working point not implemented')
 		sys.exit(0)
 
+###############################################################################################
 
 '''Calculates delta-beta corrected isolation.
 https://twiki.cern.ch/twiki/bin/view/CMS/EgammaPFBasedIsolationRun2
@@ -452,6 +455,7 @@ def calcIso_gen(one, many, pv_pos, isTight):
 			
 	return ptsum/one.pt(), dRmin, num
 
+###############################################################################################
 
 '''Returns last copy of a gen. particle with status 1 = final state.
 '''
@@ -604,7 +608,8 @@ def findDaughters(gp):
 				daughters.append(granddaughter)
 	
 	return daughters
-	
+
+###############################################################################################
 
 '''Defines basic preselection for PFs.
 '''
@@ -697,152 +702,7 @@ def passesPreselection_iso_jet(jet, pt_threshold):
 
 	return True
 
-
-'''Finds matching gp for track via dxyz.
-'''
-def findMatch_gen_new(track, genparticles):
-	
-	dxyzmin = 10
-	tmin = 10
-	drmin = 10
-	idx = -1
-	
-	if track.pt() > 0:
-	
-		for igp, gp in enumerate(genparticles):
-			
-			if not track.charge() * gp.charge() > 0: continue
-			
-			if not abs(track.pt() - gp.pt()) / track.pt() < 0.2: continue
-					
-			if not abs(track.eta() - gp.eta()) < 0.1: continue
-			
-			if not abs(deltaPhi(track.phi(), gp.phi())) < 1.57: continue
-			
-			res = scipy.optimize.minimize(distance, x0=0.0, bounds=((-1.57, 1.57),), args=(track, gp.vertex()))  # other minimization method?
-			
-			dxyz = distance(res.x, track, gp.vertex())
-			
-			if dxyz < dxyzmin:
-					
-				dxyzmin = dxyz
-				tmin = res.x[0]
-				drmin = deltaR(gp.eta(), track.eta(), gp.phi(), addPhi(track.phi(), res.x[0]))
-				idx = igp
-				
-	return idx, dxyzmin, tmin, drmin
-
-
-'''Finds matching track for lepton via dxyz.
-'''
-def findMatch_track_new(lepton, tracks):
-	
-	dxyzmin = 10
-	tmin = 10
-	drmin = 10
-	idx = -1
-	
-	if lepton.pt() > 0:
-	
-		for itrack, track in enumerate(tracks):
-			
-			if not passesPreselection_basic_track(track): continue
-			
-			if not track.charge() * lepton.charge() > 0: continue
-			
-			if not abs(track.pt() - lepton.pt()) / lepton.pt() < 0.2: continue
-					
-			if not abs(track.eta() - lepton.eta()) < 0.1: continue
-			
-			if not abs(deltaPhi(track.phi(), lepton.phi())) < 1.57: continue
-			
-			res = scipy.optimize.minimize(distance, x0=0.0, bounds=((-1.57, 1.57),), args=(track, lepton.vertex()))  # other minimization method?
-			
-			dxyz = distance(res.x, track, lepton.vertex())
-			
-			if dxyz < dxyzmin:
-					
-				dxyzmin = dxyz
-				tmin = res.x[0]
-				drmin = deltaR(lepton.eta(), track.eta(), lepton.phi(), addPhi(track.phi(), res.x[0]))
-				idx = itrack
-				
-	return idx, dxyzmin, tmin, drmin
-
-
-'''Finds matching track for lepton via dxyz, random with opposite charge.
-'''
-def findMatch_track_new_random(lepton, tracks):
-	
-	dxyzmin = 10
-	tmin = 10
-	drmin = 10
-	idx = -1
-	
-	if lepton.pt() > 0:
-	
-		for itrack, track in enumerate(tracks):
-			
-			if not passesPreselection_basic_track(track): continue
-			
-			if not track.charge() * lepton.charge() < 0: continue
-			
-			if not abs(track.pt() - lepton.pt()) / lepton.pt() < 0.2: continue
-			
-			if not abs(track.eta() - lepton.eta()) < 0.1: continue
-			
-			if not abs(deltaPhi(track.phi(), lepton.phi())) < 1.57: continue
-			
-			res = scipy.optimize.minimize(distance, x0=0.0, bounds=((-1.57, 1.57),), args=(track, lepton.vertex()))  # other minimization method?
-			
-			dxyz = distance(res.x, track, lepton.vertex())
-			
-			if dxyz < dxyzmin:
-				
-				dxyzmin = dxyz
-				tmin = res.x[0]
-				drmin = deltaR(lepton.eta(), track.eta(), lepton.phi(), addPhi(track.phi(), res.x[0]))
-				idx = itrack
-			
-	return idx, dxyzmin, tmin, drmin
-
-
-'''Finds matching pfc for lepton via dxyz.
-'''
-def findMatch_pfc_new(lepton, pfcands):
-	
-	dxyzmin = 10
-	tmin = 10
-	drmin = 10
-	idx = -1
-	
-	if lepton.pt() > 0:
-		
-		for ipfc, pfc in enumerate(pfcands):
-			
-			if not passesPreselection_basic_pfc(pfc): continue
-			
-			if not pfc.charge() * lepton.charge() > 0: continue
-			
-			if not abs(pfc.pt() - lepton.pt()) / lepton.pt() < 0.2: continue
-			
-			if not abs(pfc.eta() - lepton.eta()) < 0.1: continue
-			
-			if not abs(deltaPhi(pfc.phi(), lepton.phi())) < 1.57: continue
-			
-			res = scipy.optimize.minimize(distance, x0=0.0, bounds=((-1.57, 1.57),), args=(pfc.trackRef().get(), lepton.vertex()))  # other minimization method?
-			
-			dxyz = distance(res.x, pfc.trackRef().get(), lepton.vertex())
-			
-			if dxyz < dxyzmin:
-				
-				dxyzmin = dxyz
-				tmin = res.x[0]
-				drmin = deltaR(lepton.eta(), pfc.eta(), lepton.phi(), addPhi(pfc.phi(), res.x[0]))
-				idx = ipfc
-				
-	return idx, dxyzmin, tmin, drmin
-
+###############################################################################################
 
 '''Finds a common vertex for two tracks if the minimin distance is smaller than 0.1 cm and returns the vertex' distance to the PV.
 '''
@@ -874,7 +734,7 @@ def vertexFinder(track1, track2, pv_pos):
 '''
 def minDistanceTrackTrack(track1, track2):
 	
-	res = scipy.optimize.minimize(distanceTrackTrack, x0=[0.0, 0.0], bounds=((-1.57, 1.57), (-1.57, 1.57)), args=(track1, track2))
+	res = scipy.optimize.minimize(distanceTrackTrack, x0=np.array([0.0, 0.0]), bounds=((-1.57, 1.57), (-1.57, 1.57)), args=(track1, track2))
 	
 	tmin1 = res.x[0]
 	tmin2 = res.x[1]
@@ -892,8 +752,8 @@ def getDistanceAndPoints(tarray, track1, track2):
 	t1 = np.array([tarray[0]])
 	t2 = np.array([tarray[1]])
 	
-	p1 = helix(t1, track1.phi(), track1.eta(), track1.charge(), track1.pt(), track1.vx(), track1.vy(), track1.vz())
-	p2 = helix(t2, track2.phi(), track2.eta(), track2.charge(), track2.pt(), track2.vx(), track2.vy(), track2.vz())
+	p1 = helixOld(t1, track1.phi(), track1.eta(), track1.charge(), track1.pt(), track1.vx(), track1.vy(), track1.vz())
+	p2 = helixOld(t2, track2.phi(), track2.eta(), track2.charge(), track2.pt(), track2.vx(), track2.vy(), track2.vz())
 	
 	d = np.linalg.norm(p1 - p2)
 	
@@ -907,53 +767,53 @@ def distanceTrackTrack(tarray, track1, track2):
 	t1 = np.array([tarray[0]])
 	t2 = np.array([tarray[1]])
 	
-	d = np.linalg.norm(helix(t1, track1.phi(), track1.eta(), track1.charge(), track1.pt(), track1.vx(), track1.vy(), track1.vz())
-					 - helix(t2, track2.phi(), track2.eta(), track2.charge(), track2.pt(), track2.vx(), track2.vy(), track2.vz()))
+	d = np.linalg.norm(helixOld(t1, track1.phi(), track1.eta(), track1.charge(), track1.pt(), track1.vx(), track1.vy(), track1.vz())
+					 - helixOld(t2, track2.phi(), track2.eta(), track2.charge(), track2.pt(), track2.vx(), track2.vy(), track2.vz()))
 	
 	return d
 
 
-'''Helix parametrization in 3D.
+'''Helix parametrization in 3D. Same result as helix(...) but not using CMSSW track parameters. 
 '''
-def helix(t, phi, eta, q, pt, vx, vy, vz):
+def helixOld(t, phi, eta, q, pt, vx, vy, vz):
 	
 	r = 87.78  # radius [cm] for particle with pT=1GeV in B=3.8T
 	
-	x = vx + r * q * pt * (np.sin(phi) - np.sin(phi + t))
+	x = vx + r * q * pt * (np.sin(phi) - np.sin(phi - t))
 	
-	y = vy + r * q * pt * (-np.cos(phi) + np.cos(phi + t))
+	y = vy + r * q * pt * (-np.cos(phi) + np.cos(phi - t))
 	
-	z = vz - t * r * q * pt / np.tan(2 * np.arctan(np.exp(-eta)))
+	z = vz + t * r * q * pt / np.tan(2 * np.arctan(np.exp(-eta)))
 	
 	return np.array([x[0], y[0], z[0]])
 
 
 '''Distance between a specific point along a track (given by t) and a vertex in 3D.
 '''
-def distance(t, track, vertex):
+def distanceOld(t, track, vertex):
 	
-	d = np.linalg.norm(helix(t, track.phi(), track.eta(), track.charge(), track.pt(), track.vx(), track.vy(), track.vz())
-                    - np.array([vertex.x(), vertex.y(), vertex.z()]))
+	d = np.linalg.norm(helixOld(t, track.phi(), track.eta(), track.charge(), track.pt(), track.vx(), track.vy(), track.vz())
+					- np.array([vertex.x(), vertex.y(), vertex.z()]))
 	
 	return d
 
 
 '''Distance in XY between a specific point along a track (given by t) and a vertex.
 '''
-def distanceXY(t, track, vertex):
+def distanceXYOld(t, track, vertex):
 	
-	d = np.linalg.norm(helix(t, track.phi(), track.eta(), track.charge(), track.pt(), track.vx(), track.vy(), track.vz())[:2]
-                    - np.array([vertex.x(), vertex.y()]))
+	d = np.linalg.norm(helixOld(t, track.phi(), track.eta(), track.charge(), track.pt(), track.vx(), track.vy(), track.vz())[:2]
+					- np.array([vertex.x(), vertex.y()]))
 	
 	return d
 
 
 '''Distance in Z between a specific point along a track (given by t) and a vertex.
 '''
-def distanceZ(t, track, vertex):
+def distanceZOld(t, track, vertex):
 	
-	d = np.linalg.norm(helix(t, track.phi(), track.eta(), track.charge(), track.pt(), track.vx(), track.vy(), track.vz())[2:]
-                    - np.array([vertex.z()]))
+	d = np.linalg.norm(helixOld(t, track.phi(), track.eta(), track.charge(), track.pt(), track.vx(), track.vy(), track.vz())[2:]
+					- np.array([vertex.z()]))
 	
 	return d
 
@@ -962,10 +822,10 @@ def distanceZ(t, track, vertex):
 '''
 def handmadeDxyDz(track, pv_pos):
 	
-	res = scipy.optimize.minimize(distance, x0=0.0, bounds=((-1.57, 1.57),), args=(track, pv_pos))
+	res = scipy.optimize.minimize(distanceOld, x0=np.array([0.0]), bounds=((-1.57, 1.57),), args=(track, pv_pos))
 	
-	dxy = distanceXY(res.x, track, pv_pos)
-	dz = distanceZ(res.x, track, pv_pos)
+	dxy = distanceXYOld(res.x, track, pv_pos)
+	dz = distanceZOld(res.x, track, pv_pos)
 	
 	return dxy, dz
 
@@ -974,10 +834,10 @@ def handmadeDxyDz(track, pv_pos):
 '''
 def handmadeDxyDzTransversePCA(track, pv_pos):
 	
-	res = scipy.optimize.minimize(distanceXY, x0=0.0, bounds=((-1.57, 1.57),), args=(track, pv_pos))
+	res = scipy.optimize.minimize(distanceXYOld, x0=np.array([0.0]), bounds=((-1.57, 1.57),), args=(track, pv_pos))
 	
-	dxy = distanceXY(res.x, track, pv_pos)
-	dz = distanceZ(res.x, track, pv_pos)
+	dxy = distanceXYOld(res.x, track, pv_pos)
+	dz = distanceZOld(res.x, track, pv_pos)
 	
 	return dxy, dz
 
@@ -987,10 +847,10 @@ def handmadeDxyDzTransversePCA(track, pv_pos):
 def handmadeDphiMetPCA(track, pv_pos, met):
 	
 	#gives the helix parameter value for which the distance is minimal
-	res = scipy.optimize.minimize(distance, x0=0.0, bounds=((-1.57, 1.57),), args=(track, pv_pos))
+	res = scipy.optimize.minimize(distanceOld, x0=np.array([0.0]), bounds=((-1.57, 1.57),), args=(track, pv_pos))
 	
 	#insert found helix parameter and track parameters to get PCA
-	pca = helix(res.x, track.phi(), track.eta(), track.charge(), track.pt(), track.vx(), track.vy(), track.vz())
+	pca = helixOld(res.x, track.phi(), track.eta(), track.charge(), track.pt(), track.vx(), track.vy(), track.vz())
 	
 	#compute phi angle of vector from PV to PCA
 	phipca = np.arctan2(pca[1] - pv_pos.y(), pca[0] - pv_pos.x())
@@ -999,7 +859,153 @@ def handmadeDphiMetPCA(track, pv_pos, met):
 	dphi = deltaPhi(phipca, met.phi())
 	
 	return dphi, phipca, res.x[0]
-	
+
+
+def distance(t, track, (vtx_x, vtx_y, vtx_z)):
+
+	return np.linalg.norm(helix(t, track) - np.array([vtx_x, vtx_y, vtx_z]))
+
+
+'''Helix parametrization using CMSSW track parameters.
+
+Particles with positive (negative) charge travel along their helix in direction of positive (negative) t parameter.
+To get the azimuthal angle phi for a given t parameter, -t has to be added to phi0 (same for positive and negative charges).
+Apart from phi, the track parameters don't change.
+
+Mostly taken from Lucas Wiens (Higgs -> tau tau CP analysis: CMS AN-19-192),
+but simplified trigonometric phi term and respecting track charge (differnt direction of rotation).
+'''
+def helix(t, track):
+
+		# conversion factor to convert from T to GeV/(e * cm) = c [m/s] * 10^-9 * 10^-2
+		# 1 T = 1 V s / m^2 = 1 eV s / (e m^2) = 1 s/m * eV / (e m) = c * eV / (e m)
+		B = 3.8 * 0.0029979
+
+		qoverp = track.parameter(0)
+		lmbd = track.parameter(1)
+		phi = track.parameter(2)
+
+		x = track.referencePoint().x() + np.cos(lmbd) / B / qoverp * (np.sin(phi) - np.sin(phi - t))
+
+		y = track.referencePoint().y() + np.cos(lmbd) / B / qoverp * (-np.cos(phi) + np.cos(phi - t))
+
+		z =  track.referencePoint().z() + t * np.sin(lmbd) / B / qoverp
+
+		return np.array([x[0], y[0], z[0]])
+
+
+###############################################################################################
+
+'''Finds matching track for lepton/pion/... via dxyz.
+'''
+def findMatch_track_new(lepton, tracks):
+
+	dxyzmin = 10
+	tmin = 10
+	drmin = 10
+	idx = -1
+
+	if lepton.pt() > 0:
+
+		for itrack, track in enumerate(tracks):
+
+			if not passesPreselection_basic_track(track): continue
+
+			if not track.charge() * lepton.charge() > 0: continue
+
+			if not abs(track.pt() - lepton.pt()) / lepton.pt() < 0.2: continue
+
+			if not abs(track.eta() - lepton.eta()) < 0.1: continue
+
+			if not abs(deltaPhi(track.phi(), lepton.phi())) < 1.57: continue
+
+			res = scipy.optimize.minimize(distance, x0=np.array([0.0]), bounds=((-1.57, 1.57),), args=(track, (lepton.vertex().x(), lepton.vertex().y(), lepton.vertex().z())))
+
+			dxyz = distance(res.x, track, (lepton.vertex().x(), lepton.vertex().y(), lepton.vertex().z()))
+
+			if dxyz < dxyzmin:
+
+				dxyzmin = dxyz
+				tmin = res.x[0]
+				drmin = deltaR(lepton.eta(), track.eta(), lepton.phi(), addPhi(track.phi(), -1. * res.x[0]))
+				idx = itrack
+
+	return idx, dxyzmin, tmin, drmin
+
+
+'''Finds matching track for lepton via dxyz, random with opposite charge.
+'''
+def findMatch_track_new_random(lepton, tracks):
+
+	dxyzmin = 10
+	tmin = 10
+	drmin = 10
+	idx = -1
+
+	if lepton.pt() > 0:
+
+		for itrack, track in enumerate(tracks):
+
+			if not passesPreselection_basic_track(track): continue
+
+			if not track.charge() * lepton.charge() < 0: continue
+
+			if not abs(track.pt() - lepton.pt()) / lepton.pt() < 0.2: continue
+
+			if not abs(track.eta() - lepton.eta()) < 0.1: continue
+
+			if not abs(deltaPhi(track.phi(), lepton.phi())) < 1.57: continue
+
+			res = scipy.optimize.minimize(distance, x0=np.array([0.0]), bounds=((-1.57, 1.57),), args=(track, (lepton.vertex().x(), lepton.vertex().y(), lepton.vertex().z())))
+
+			dxyz = distance(res.x, track, (lepton.vertex().x(), lepton.vertex().y(), lepton.vertex().z()))
+
+			if dxyz < dxyzmin:
+
+				dxyzmin = dxyz
+				tmin = res.x[0]
+				drmin = deltaR(lepton.eta(), track.eta(), lepton.phi(), addPhi(track.phi(), -1. * res.x[0]))
+				idx = itrack
+
+	return idx, dxyzmin, tmin, drmin
+
+
+'''Finds matching pfc for lepton via dxyz.
+'''
+def findMatch_pfc_new(lepton, pfcands):
+
+	dxyzmin = 10
+	tmin = 10
+	drmin = 10
+	idx = -1
+
+	if lepton.pt() > 0:
+
+		for ipfc, pfc in enumerate(pfcands):
+
+			if not passesPreselection_basic_pfc(pfc): continue
+
+			if not pfc.charge() * lepton.charge() > 0: continue
+
+			if not abs(pfc.pt() - lepton.pt()) / lepton.pt() < 0.2: continue
+
+			if not abs(pfc.eta() - lepton.eta()) < 0.1: continue
+
+			if not abs(deltaPhi(pfc.phi(), lepton.phi())) < 1.57: continue
+
+			res = scipy.optimize.minimize(distance, x0=np.array([0.0]), bounds=((-1.57, 1.57),), args=(pfc.trackRef().get(), (lepton.vertex().x(), lepton.vertex().y(), lepton.vertex().z())))
+
+			dxyz = distance(res.x, pfc.trackRef().get(), (lepton.vertex().x(), lepton.vertex().y(), lepton.vertex().z()))
+
+			if dxyz < dxyzmin:
+
+				dxyzmin = dxyz
+				tmin = res.x[0]
+				drmin = deltaR(lepton.eta(), pfc.eta(), lepton.phi(), addPhi(pfc.phi(), -1. * res.x[0]))
+				idx = ipfc
+
+	return idx, dxyzmin, tmin, drmin
+
 
 '''Finds matching track for lepton via dR.
 '''
@@ -1132,6 +1138,41 @@ def findMatch_jet_old(lepton, jets):
 	return idx, drmin
 
 
+'''Finds matching gp for track via dxyz.
+'''
+def findMatch_gen_new(track, genparticles):
+
+	dxyzmin = 10
+	tmin = 10
+	drmin = 10
+	idx = -1
+
+	if track.pt() > 0:
+
+		for igp, gp in enumerate(genparticles):
+
+			if not track.charge() * gp.charge() > 0: continue
+
+			if not abs(track.pt() - gp.pt()) / track.pt() < 0.2: continue
+
+			if not abs(track.eta() - gp.eta()) < 0.1: continue
+
+			if not abs(deltaPhi(track.phi(), gp.phi())) < 1.57: continue
+
+			res = scipy.optimize.minimize(distance, x0=np.array([0.0]), bounds=((-1.57, 1.57),), args=(track, (gp.vertex().x(), gp.vertex().y(), gp.vertex().z())))
+
+			dxyz = distance(res.x, track, (gp.vertex().x(), gp.vertex().y(), gp.vertex().z()))
+
+			if dxyz < dxyzmin:
+
+				dxyzmin = dxyz
+				tmin = res.x[0]
+				drmin = deltaR(gp.eta(), track.eta(), gp.phi(), addPhi(track.phi(), -1. * res.x[0]))
+				idx = igp
+
+	return idx, dxyzmin, tmin, drmin
+
+
 '''Finds matching gp for track via dR.
 '''
 def findMatch_gen_old(track, genparticles):
@@ -1179,4 +1220,144 @@ def findMatch_gen_old_easy(track, genparticles):
 				
 	return idx, drmin
 
+###############################################################################################
 
+
+class IPcalculator:
+
+	def __init__(self, track, vertex, verbose=False):
+
+		self.verbose = verbose
+
+		self.track = track
+
+		self.vtx_x = vertex.x()
+		self.vtx_y = vertex.y()
+		self.vtx_z = vertex.z()
+		self.vtx_covariance = np.array([[vertex.covariance(i,j) for j in range(3)] for i in range(3)])
+
+		# 0:qoverp, 1:lambda, 2:phi, 3:dxy, 4:dsz
+		self.track_parameters = np.array([track.parameter(i) for i in range(5)])
+		self.track_covariance = np.array([[track.covariance(i,j) for j in range(5)] for i in range(5)])
+
+		self.IPvector, self.tmin = self.calculateIPvector()
+		self.IPcovariance = self.calculateIPcovariance()
+
+		self.PCA = helix(self.tmin, self.track)
+		self.newPhi = addPhi(self.track.phi(), -1.*self.tmin)
+
+		self.dxyz = np.linalg.norm(self.IPvector)
+		self.dxy = np.linalg.norm(self.IPvector[:2])
+		self.dz = np.linalg.norm(self.IPvector[2:])
+
+		if self.dxyz == 0: self.IPvectorNorm = self.IPvector
+		else: self.IPvectorNorm = self.IPvector / self.dxyz
+
+		self.IPerror = np.sqrt(np.dot(self.IPvectorNorm, np.dot(self.IPcovariance, self.IPvectorNorm)))
+
+		if self.verbose:
+			print 'vertex', (self.vtx_x, self.vtx_y, self.vtx_z)
+
+			print 'track parameters'
+			print self.track_parameters
+			print 'track covariance matrix'
+			print self.track_covariance
+
+			print 'IPvector', self.IPvector
+			print 'IPvectorNorm', self.IPvectorNorm
+
+			print 'IPcovariance', self.IPcovariance
+			print 'IPerror', self.IPerror
+
+	def calculateIPvector(self):
+
+		res = scipy.optimize.minimize(distance, x0=np.array([0.0]), bounds=((-1.57, 1.57),), args=(self.track, (self.vtx_x, self.vtx_y, self.vtx_z)))
+
+		return helix(res.x, self.track) - np.array([self.vtx_x, self.vtx_y, self.vtx_z]), res.x
+
+	def calculateIPcovariance(self):
+
+		# conversion factor to convert from T to GeV/(e * cm) = c [m/s] * 10^-9 * 10^-2
+		# 1 T = 1 V s / m^2 = 1 eV s / (e m^2) = 1 s/m * eV / (e m) = c * eV / (e m)
+		B = 3.8 * 0.0029979
+
+		qoverp = self.track_parameters[0]
+		lmbd = self.track_parameters[1]
+		phi = self.track_parameters[2]
+		dxy = self.track_parameters[3]
+		dsz = self.track_parameters[4]
+
+		HelixJacobian = np.zeros((3,5))
+		# derivatives of the helix coordinates with respect to
+		# qoverp
+		HelixJacobian[0][0] = - (np.cos(lmbd) * (np.sin(phi) - np.sin(phi - self.tmin))) / (B * qoverp**2.)
+		HelixJacobian[1][0] = - (np.cos(lmbd) * (-np.cos(phi) + np.cos(phi - self.tmin))) / (B * qoverp**2.)
+		HelixJacobian[2][0] = - (np.sin(lmbd) * self.tmin) / (B * qoverp**2.)
+		# lambda
+		HelixJacobian[0][1] = - (np.sin(lmbd) * (np.sin(phi) - np.sin(phi - self.tmin))) / (B * qoverp)
+		HelixJacobian[1][1] = - (np.sin(lmbd) * (-np.cos(phi) + np.cos(phi - self.tmin))) / (B * qoverp)
+		HelixJacobian[2][1] = (dsz * np.tan(lmbd)) / (np.cos(lmbd)) + (np.cos(lmbd) * self.tmin) / (B * qoverp)
+		# phi
+		HelixJacobian[0][2] = - dxy * np.cos(phi) + (np.cos(lmbd) * (np.cos(phi) - np.cos(phi - self.tmin))) / (B * qoverp)
+		HelixJacobian[1][2] = - dxy * np.sin(phi) + (np.cos(lmbd) * (np.sin(phi) - np.sin(phi - self.tmin))) / (B * qoverp)
+		HelixJacobian[2][2] = 0.
+		# dxy
+		HelixJacobian[0][3] = - np.sin(phi)
+		HelixJacobian[1][3] = np.cos(phi)
+		HelixJacobian[2][3] = 0.
+		# dsz
+		HelixJacobian[0][4] = 0.
+		HelixJacobian[1][4] = 0.
+		HelixJacobian[2][4] = 1. / np.cos(lmbd)
+
+		HelixCovariance = np.dot(HelixJacobian, np.dot(self.track_covariance, HelixJacobian.T))
+
+		HelixAndPVcovariance = block_diag(HelixCovariance, self.vtx_covariance)
+
+		IPjacobian = np.zeros((3,6))
+		# derivatives of the IP with respect to
+		# helix
+		IPjacobian[0][0] = 1.
+		IPjacobian[1][1] = 1.
+		IPjacobian[2][2] = 1.
+		# PV
+		IPjacobian[0][3] = -1.
+		IPjacobian[1][4] = -1.
+		IPjacobian[2][5] = -1.
+
+		if self.verbose:
+			print 'HelixJacobian'
+			print HelixJacobian
+			print 'HelixCovariance'
+			print HelixCovariance
+			print 'HelixAndPVcovariance'
+			print HelixAndPVcovariance
+			print 'IPjacobian'
+			print IPjacobian
+
+		return np.dot(IPjacobian, np.dot(HelixAndPVcovariance, IPjacobian.T))
+
+	def getPCAonTrack(self):
+		return self.PCA[0], self.PCA[1], self.PCA[2]
+
+	def getPhiAtPCA(self):
+		return self.newPhi[0]
+
+	def getIPvector(self):
+		return self.IPvector
+
+	def getDxy(self):
+		return self.dxy
+
+	def getDz(self):
+		return self.dz
+
+	def getDxyDz(self):
+		return self.dxy, self.dz
+
+	def getIP(self):
+		return self.dxyz
+
+	def getIPsignificance(self):
+		if self.IPerror == 0: return 0.
+		return self.getIP() / self.IPerror
