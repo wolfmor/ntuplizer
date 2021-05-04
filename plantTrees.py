@@ -25,6 +25,7 @@ nonumjets100veto -> don't veto events with no jet with pT > 100 GeV
 nodphimetjetsveto -> don't veto events with dphi(MET, jets) < 0.5
 genmatchtracks -> try to find GEN match to every 10. track
 genmatchalltracks -> try to find GEN match to every track
+skiptau -> don't use taus (because not supported for UL data?? have to check)
 
 '''
 
@@ -940,8 +941,9 @@ for f in options.inputFiles:
 		photons = handle_photons.product()
 		electrons = handle_electrons.product()
 		muons = handle_muons.product()
-		
-		taus = handle_taus.product()
+
+		if 'skiptaus' in options.tag: taus = []
+		else: taus = handle_taus.product()
 				
 		event.getByLabel(label_taudiscriminatorDM, handle_taudiscriminatorDM)
 		taudiscriminatorDM = handle_taudiscriminatorDM.product()
@@ -1181,6 +1183,10 @@ for f in options.inputFiles:
 		event_level_var_array['minetaabsbadjets'][0] = minetaabsbadjets
 
 		jets = [j for ij, j in enumerate(jets) if ij in jetsIdxGood]
+
+		if not len(jets) > 0: continue
+
+		###########################################################################################veto
 		
 		'''
 		###############################################################################################
@@ -2262,12 +2268,13 @@ for f in options.inputFiles:
 						genmatch = genparticlesformatching[idxgenold]
 
 				if hasGenMatch > 0:
-					
+
+					# was bug (gp instead of genmatch) --> but no impact
 					mm = 0
-					while not gp.statusFlags().isFirstCopy():
-						for idx in range(gp.numberOfMothers()):
-							if gp.pdgId() == gp.mother(idx).pdgId():
-								gp = gp.mother(idx)
+					while not genmatch.statusFlags().isFirstCopy():
+						for idx in range(genmatch.numberOfMothers()):
+							if genmatch.pdgId() == genmatch.mother(idx).pdgId():
+								genmatch = genmatch.mother(idx)
 								break
 						mm += 1
 						if mm > 100: break
