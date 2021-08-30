@@ -242,7 +242,7 @@ if True:
 
     var_names_cleaning = [
         ('electronsCleaned', 'I'), ('muonsCleaned', 'I')
-        ,('invmCleaning', 'F')
+        ,('invmCleaning', 'F'), ('zptCleaning', 'F')
         ,('l1ptCleaning', 'F'), ('l2ptCleaning', 'F')
         ,('l1etaCleaning', 'F'), ('l2etaCleaning', 'F')
         ,('l1phiCleaning', 'F'), ('l2phiCleaning', 'F')
@@ -1269,6 +1269,7 @@ for f in options.inputFiles:
         electronsCleaned = 0
         muonsCleaned = 0
         invm = -1
+        zpt = -1
         l1pt = -1
         l2pt = -1
         l1eta = -999
@@ -1300,6 +1301,7 @@ for f in options.inputFiles:
                         e2Tlv.SetPxPyPzE(e2.px(), e2.py(), e2.pz(), e2.energy())
 
                         invm = (e1Tlv + e2Tlv).M()
+                        zpt = (e1Tlv + e2Tlv).Pt()
 
                         if not invm > 75: continue
                         if not invm < 105: continue
@@ -1330,6 +1332,7 @@ for f in options.inputFiles:
                         m2Tlv.SetPxPyPzE(m2.px(), m2.py(), m2.pz(), m2.energy())
 
                         invm = (m1Tlv + m2Tlv).M()
+                        zpt = (m1Tlv + m2Tlv).Pt()
 
                         if not invm > 75: continue
                         if not invm < 105: continue
@@ -1385,6 +1388,7 @@ for f in options.inputFiles:
         event_level_var_array['electronsCleaned'][0] = electronsCleaned
         event_level_var_array['muonsCleaned'][0] = muonsCleaned
         event_level_var_array['invmCleaning'][0] = invm
+        event_level_var_array['zptCleaning'][0] = zpt
         event_level_var_array['l1ptCleaning'][0] = l1pt
         event_level_var_array['l2ptCleaning'][0] = l2pt
         event_level_var_array['l1etaCleaning'][0] = l1eta
