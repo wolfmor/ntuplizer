@@ -248,6 +248,7 @@ if True:
         ,('l1phiCleaning', 'F'), ('l2phiCleaning', 'F')
         ,('l1absisodbetaCleaning', 'F'), ('l2absisodbetaCleaning', 'F')
         ,('l1relisodbetaCleaning', 'F'), ('l2relisodbetaCleaning', 'F')
+        ,('metptBeforeCleaning', 'F'), ('metphiBeforeCleaning', 'F')
         ]
     event_level_var_names += var_names_cleaning
 
@@ -352,6 +353,7 @@ if True:
         ,('etajet', 'F'), ('phijet', 'F')
         ,('nconstituentsjet', 'I')
         ,('btagjet', 'F')
+        ,('drminleptonjet', 'F'), ('ptclosestleptonjet', 'F'), ('isleptonjet', 'F')
         ]
 
     jet_var_array = {}
@@ -493,6 +495,7 @@ if True:
         ,('pfabsiso', 'F'), ('pfreliso', 'F'), ('pfdrmin', 'F'), ('pfnumneighbours', 'I')
         ,('chpfabsiso', 'F'), ('chpfreliso', 'F'), ('chpfdrmin', 'F'), ('chpfnumneighbours', 'I')
         ,('jetiso', 'F'), ('jetisomulti', 'F'), ('jetdrmin', 'F')
+        ,('jetisotightNoLepton', 'F'), ('jetisomultitightNoLepton', 'F'), ('jetdrmintightNoLepton', 'F')
         ,('jetisotight', 'F'), ('jetisomultitight', 'F'), ('jetdrmintight', 'F')
         ,('jetisomedium', 'F'), ('jetisomultimedium', 'F'), ('jetdrminmedium', 'F')
         ,('jetisoloose', 'F'), ('jetisomultiloose', 'F'), ('jetdrminloose', 'F')
@@ -1260,6 +1263,9 @@ for f in options.inputFiles:
 
         hMetptBeforeLeptonCleaning.Fill(met.pt())
 
+        metptBeforeCleaning = met.pt()
+        metphiBeforeCleaning = met.phi()
+
         electronsCleaned = 0
         muonsCleaned = 0
         invm = -1
@@ -1389,6 +1395,8 @@ for f in options.inputFiles:
         event_level_var_array['l1relisodbetaCleaning'][0] = l1relisodbeta
         event_level_var_array['l2absisodbetaCleaning'][0] = l2absisodbeta
         event_level_var_array['l2relisodbetaCleaning'][0] = l2relisodbeta
+        event_level_var_array['metptBeforeCleaning'][0] = metptBeforeCleaning
+        event_level_var_array['metphiBeforeCleaning'][0] = metphiBeforeCleaning
 
         '''
         ###############################################################################################
@@ -1401,8 +1409,6 @@ for f in options.inputFiles:
         genmetphi = -10
         genht = 0
         genhtmiss = -1
-        nofastsimcorrmetpt = -1
-        nofastsimcorrmetphi = -10
         if 'data' not in options.tag:
 
             allneutrinos = [gp for gp in genparticles if gp.status() == 1
@@ -1425,14 +1431,15 @@ for f in options.inputFiles:
                     genhtmissTlv -= genjetTlv
             genhtmiss = genhtmissTlv.Pt()
 
+        nofastsimcorrmetpt = met.pt()
+        nofastsimcorrmetphi = met.phi()
+
         if 'signal' in options.tag:
 
-            nofastsimcorrmetpt = met.pt()
-            nofastsimcorrmetphi = met.phi()
             met.setP4(ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(0.5 * (genmet.px() + met.px())
-                                                                            , 0.5 * (genmet.py() + met.py())
-                                                                            , 0
-                                                                            , 0.5 * (genmet.energy() + met.energy())))
+                                                                               , 0.5 * (genmet.py() + met.py())
+                                                                               , 0
+                                                                               , 0.5 * (genmet.energy() + met.energy())))
 
         event_level_var_array['pTneutrinosum'][0] = pTneutrinosum
         event_level_var_array['genmetpt'][0] = genmetpt
@@ -1915,6 +1922,7 @@ for f in options.inputFiles:
 
         numpfleptonsiso = 0
         for il, l in enumerate(pfleptons):
+
             pflepton_var_array['chargepflepton'][il] = l.charge()
             pflepton_var_array['pdgidpflepton'][il] = l.pdgId()
             pflepton_var_array['pxpflepton'][il] = l.px()
@@ -1989,6 +1997,7 @@ for f in options.inputFiles:
 
         tracksByPV = {}
         for ipv, pv in enumerate(primaryvertices):
+
             pv_var_array['idxpv'][ipv] = ipv
             pv_var_array['numtrackspv'][ipv] = pv.tracksSize()
             pv_var_array['xpv'][ipv] = pv.position().x()
@@ -1998,8 +2007,9 @@ for f in options.inputFiles:
 
 
         btagvalues = []
+        isleptonjetidxlist = []
         i = 0
-        for jet in jets:
+        for ijet, jet in enumerate(jets):
 
             if abs(jet.eta()) >= 2.4: continue
 
@@ -2023,6 +2033,34 @@ for f in options.inputFiles:
             jet_var_array['btagjet'][i] = thisbtag
             btagvalues.append((thisbtag, jet.pt(), jet.eta()))
             hBtagjets.Fill(thisbtag)
+
+            drminleptonjet = 10.
+            ptclosestleptonjet = 0.
+            isleptonjet = 0.
+
+            ptthreshold_leptonjet = 50
+
+            for e in electrons:
+                if e.pt() < ptthreshold_leptonjet: continue
+                dR_jetlepton = deltaR(e.eta(), jet.eta(), e.phi(), jet.phi())
+                if dR_jetlepton < drminleptonjet:
+                    drminleptonjet = dR_jetlepton
+                    ptclosestleptonjet = e.pt()
+
+            for m in muons:
+                if m.pt() < ptthreshold_leptonjet: continue
+                dR_jetlepton = deltaR(m.eta(), jet.eta(), m.phi(), jet.phi())
+                if dR_jetlepton < drminleptonjet:
+                    drminleptonjet = dR_jetlepton
+                    ptclosestleptonjet = m.pt()
+
+            if drminleptonjet < 0.1 and ptclosestleptonjet / jet.pt() > 0.8:
+                isleptonjet = 1.
+                isleptonjetidxlist.append(ijet)
+
+            jet_var_array['drminleptonjet'][i] = drminleptonjet
+            jet_var_array['ptclosestleptonjet'][i] = ptclosestleptonjet
+            jet_var_array['isleptonjet'][i] = isleptonjet
 
             i += 1
 
@@ -2055,6 +2093,7 @@ for f in options.inputFiles:
         tracksforisotight = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
                                       if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=1.)])
 
+        jetsforisotightNoLepton = [j for ij, j in enumerate(jets) if passesPreselection_iso_jet(j, pt_threshold=30) and ij not in isleptonjetidxlist]
         jetsforisotight = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=30)]
         jetsforisomedium = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=15)]
         jetsforisoloose = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=10)]
@@ -2202,6 +2241,7 @@ for f in options.inputFiles:
             track_level_var_array['jetiso'][i], track_level_var_array['jetisomulti'][i], track_level_var_array['jetdrmin'][i] = calcIso_jet_new(track, jets, isTrack=True)
             track_level_var_array['jetisoloose'][i], track_level_var_array['jetisomultiloose'][i], track_level_var_array['jetdrminloose'][i] = calcIso_jet_new(track, jetsforisoloose, isTrack=True)
             track_level_var_array['jetisomedium'][i], track_level_var_array['jetisomultimedium'][i], track_level_var_array['jetdrminmedium'][i] = calcIso_jet_new(track, jetsforisomedium, isTrack=True)
+            track_level_var_array['jetisotightNoLepton'][i], track_level_var_array['jetisomultitightNoLepton'][i], track_level_var_array['jetdrmintightNoLepton'][i] = calcIso_jet_new(track, jetsforisotightNoLepton, isTrack=True)
             track_level_var_array['jetisotight'][i] = jetisotight
             track_level_var_array['jetisomultitight'][i] = jetisomultitight
             track_level_var_array['jetdrmintight'][i] = jetdrmintight
