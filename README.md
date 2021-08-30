@@ -20,10 +20,13 @@ Tag | Meaning
 `geninfoZ` | save GEN info for DY process
 `geninfoW` | save GEN info for W boson production process
 `cleanleptons` | perform DY cleaning
-`signal` | signal GEN variables and FastSim correction for MET
+`signal` | signal GEN variables and FastSim correction for MET/JEC
 `noleptonveto` | don't veto events with leptons
 `genmatchtracks` | try to find GEN match to every 10. track
 `genmatchalltracks` | try to find GEN match to every track
+`era16_07Aug17` | use corresponding golden json and JECs
+`era16_UL` | ...
+`era16_UL_APV` | ...
 ## Input files
 Can be a single file or list of files (either local or starting with /store/...). Also possible to use with grid-control (see examples and https://grid-control.github.io/index.html):
 ```
