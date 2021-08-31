@@ -21,7 +21,6 @@ geninfoW -> save GEN info for W boson production process
 cleanleptons -> perform DY cleaning
 signal -> signal GEN variables and FastSim correction for MET/JEC
 noleptonveto -> don't veto events with leptons
-nonumjets100veto -> don't veto events with no jet with pT > 100 GeV
 nodphimetjetsveto -> don't veto events with dphi(MET, jets) < 0.5
 genmatchtracks -> try to find GEN match to every 10. track
 genmatchalltracks -> try to find GEN match to every track
@@ -1723,9 +1722,14 @@ for f in options.inputFiles:
 
             if jetpt > jets[idxhighestptjet].pt(): idxhighestptjet = ijet
 
-        event_level_var_array['ptleadingjet'][0] = jets[idxhighestptjet].pt()
-        event_level_var_array['etaleadingjet'][0] = jets[idxhighestptjet].eta()
-        event_level_var_array['phileadingjet'][0] = jets[idxhighestptjet].phi()
+        if len(jets) > 0:
+            event_level_var_array['ptleadingjet'][0] = jets[idxhighestptjet].pt()
+            event_level_var_array['etaleadingjet'][0] = jets[idxhighestptjet].eta()
+            event_level_var_array['phileadingjet'][0] = jets[idxhighestptjet].phi()
+        else:
+            event_level_var_array['ptleadingjet'][0] = -1
+            event_level_var_array['etaleadingjet'][0] = -1
+            event_level_var_array['phileadingjet'][0] = -1
         event_level_var_array['numjets'][0] = numjets
         event_level_var_array['numjets30'][0] = numjets30
         event_level_var_array['numjets50'][0] = numjets50
@@ -1784,8 +1788,7 @@ for f in options.inputFiles:
         hCutflow.Fill(6)
         cutflow = 6
 
-        if 'nonumjets100veto' not in options.tag:
-            if not numjets100 > 0: continue
+        if not numjets100 > 0: continue
 
         ###########################################################################################veto
 
