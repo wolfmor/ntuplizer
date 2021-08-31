@@ -307,9 +307,18 @@ def calcIso_jet_new(one, many, isTrack=False):
 
 
 def converter(func):
+    """Converts physics object "one" to tuple to be used in jit compiled function.
+    Also accounts for case if many is empty (numba would fail).
+    """
 
     def helper(one, many, isMini=False, dontSubtractObject=False):
-        return func(np.array((one.pt(), one.eta(), one.phi())), many, isMini, dontSubtractObject)
+        if len(many) > 0:
+            return func(np.array((one.pt(), one.eta(), one.phi())), many, isMini, dontSubtractObject)
+        else:
+            if dontSubtractObject:
+                return 0, 0, 999, 0
+            else:
+                return -one.pt(), -1, 999, -1
 
     return helper
 
@@ -335,6 +344,7 @@ def calcIso_pf_or_track_new(one, many, isMini=False, dontSubtractObject=False):
         num = 0
 
     dRmin = 999
+
     for i in range(len(many)):
 
         dR = deltaR(one[1], many[i][1], one[2], many[i][2])
