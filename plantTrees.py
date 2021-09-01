@@ -303,6 +303,20 @@ if True:
         tEvent.Branch(tf, event_level_var_array[tf], tf + '/I')
 
 
+    trigger_hlt = [
+        'HLT_PFMET90_PFMHT90_IDTight_v'
+        , 'HLT_PFMET100_PFMHT100_IDTight_BeamHaloCleaned_v'
+        , 'HLT_PFMET100_PFMHT100_IDTight_v'
+        , 'HLT_PFMET110_PFMHT110_IDTight_v'
+        , 'HLT_PFMET120_PFMHT120_IDTight_v'
+        , 'triggerfired'
+        ]
+
+    for t_hlt in trigger_hlt:
+        event_level_var_array[t_hlt] = array('i', [0])
+        tEvent.Branch(t_hlt, event_level_var_array[t_hlt], t_hlt + '/I')
+
+
     var_names_chidaughter = [
         ('motherchidaughter', 'I'), ('pdgIdchidaughter', 'F')
         ,('ptchidaughter', 'F'), ('etachidaughter', 'F'), ('phichidaughter', 'F')
@@ -648,10 +662,15 @@ if True:
 ###############################################################################################
 '''
 
+if 'signal' not in options.tag:
+
+    handle_trigger_hlt = Handle('edm::TriggerResults')
+    label_trigger_hlt = ('TriggerResults', '', 'HLT')
+
 if 'data' in options.tag:
 
-    handle_trigger = Handle('edm::TriggerResults')
-    label_trigger = ('TriggerResults', '', 'RECO')
+    handle_trigger_flags = Handle('edm::TriggerResults')
+    label_trigger_flags = ('TriggerResults', '', 'RECO')
 
 else:
 
@@ -797,6 +816,16 @@ for f in options.inputFiles:
             print 'nMaxEventsPerFile boundary'
             break
 
+        if 'local' not in options.tag:
+            if fin.IsZombie() or not fin.IsOpen():
+                print 'file not usable'
+                sys.exit(1)
+
+        if saveOutputFile and ievent % 100 == 0: fout.Write('', ROOT.TObject.kWriteDelete)
+
+        if ievent % printevery == 0: print 'analyzing event %d of %d' % (ievent, min(nevents, nMaxEventsPerFile))
+
+
         hCutflow.Fill(0)
         cutflow = 0
 
@@ -889,15 +918,6 @@ for f in options.inputFiles:
         chiN2numdaughters = 0
         numchidaughters = 0
 
-        if 'local' not in options.tag:
-            if fin.IsZombie() or not fin.IsOpen():
-                print 'file not usable'
-                sys.exit(1)
-
-        if saveOutputFile and ievent % 100 == 0: fout.Write('', ROOT.TObject.kWriteDelete)
-
-        if ievent % printevery == 0: print 'analyzing event %d of %d' % (ievent, min(nevents, nMaxEventsPerFile))
-
         '''
         ###############################################################################################
         # get products
@@ -926,7 +946,7 @@ for f in options.inputFiles:
 
         '''
         ###############################################################################################
-        # trigger flags
+        # trigger
         ###############################################################################################
         '''
 
@@ -938,8 +958,8 @@ for f in options.inputFiles:
 
         if 'data' in options.tag:
 
-            event.getByLabel(label_trigger, handle_trigger)
-            triggerresults = handle_trigger.product()
+            event.getByLabel(label_trigger_flags, handle_trigger_flags)
+            triggerresults = handle_trigger_flags.product()
 
             triggernames = event.object().triggerNames(triggerresults)
 
@@ -947,7 +967,8 @@ for f in options.inputFiles:
 
                 tn = triggernames.triggerName(i).replace('Flag_', '')
                 if tn in trigger_flags:
-                    if triggerresults.accept(i): trigger_flags_accept[tn] = 1
+                    if triggerresults.accept(i):
+                        trigger_flags_accept[tn] = 1
                     else:
                         trigger_flags_accept[tn] = 0
                         allfine = False
@@ -961,6 +982,39 @@ for f in options.inputFiles:
 
         hCutflow.Fill(3)
         cutflow = 3
+
+        trigger_hlt_accept = {}
+        for t_hlt in trigger_hlt:
+            if t_hlt == 'triggerfired': continue
+            trigger_hlt_accept[t_hlt] = -1
+
+        triggerfired = 0
+
+        if 'signal' not in options.tag:
+
+            event.getByLabel(label_trigger_hlt, handle_trigger_hlt)
+            triggerresults_hlt = handle_trigger_hlt.product()
+
+            triggernames_hlt = event.object().triggerNames(triggerresults_hlt)
+
+            for i in range(triggerresults_hlt.size()):
+
+                tn_hlt = triggernames_hlt.triggerName(i)
+
+                for t_hlt in trigger_hlt:
+
+                    if re.match(r'' + t_hlt + '.*', tn_hlt):
+                        if triggerresults_hlt.accept(i):
+                            trigger_hlt_accept[t_hlt] = 1
+                            triggerfired = 1
+                        else:
+                            trigger_hlt_accept[t_hlt] = 0
+
+        for t_hlt in trigger_hlt:
+            if t_hlt == 'triggerfired': continue
+            event_level_var_array[t_hlt][0] = trigger_hlt_accept[t_hlt]
+        event_level_var_array['triggerfired'][0] = triggerfired
+
 
         if 'data' not in options.tag:
             event.getByLabel(label_genparticles, handle_genparticles)
@@ -2537,7 +2591,7 @@ if saveOutputFile:
         else:
 
             with open(fout.GetName().replace('.root', '.json'), 'w') as fo:
-                fo.write('')
+                fo.write(' ')
 
             print 'just created empty ' + fout.GetName().replace('.root', '.json')
 
