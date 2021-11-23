@@ -116,22 +116,184 @@ def deltaR(eta1, eta2, phi1, phi2):
 
 ###############################################################################################
 
-def passesEleID(e, pv_pos, wp='veto'):
+
+def jetID(tag, eta, nhf, nef, chf, cef, mef, nconstituents, cm, nm, lepveto=True):
+
+    # https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetID13TeVRun2016
+    # TightLepVeto
+    if 'era16' in tag:
+        if abs(eta) <= 2.4:
+
+            if lepveto:
+                return nhf < 0.9 and \
+                       nef < 0.9 and \
+                       nconstituents > 1 and \
+                       mef < 0.8 and \
+                       chf > 0. and \
+                       cm > 0. and \
+                       cef < 0.9
+            else:
+                return nhf < 0.9 and \
+                       nef < 0.9 and \
+                       nconstituents > 1 and \
+                       chf > 0. and \
+                       cm > 0. and \
+                       cef < 0.99
+
+        elif 2.4 < abs(eta) <= 2.7:
+
+            if lepveto:
+                return nhf < 0.9 and \
+                       nef < 0.9 and \
+                       nconstituents > 1 and \
+                       mef < 0.8
+            else:
+                return nhf < 0.9 and \
+                       nef < 0.9 and \
+                       nconstituents > 1
+
+        elif 2.7 < abs(eta) <= 3.:
+
+            return nhf < 0.98 and \
+                   nef > 0.01 and \
+                   nm > 2
+
+        elif abs(eta) > 3.:
+
+            return nef < 0.9 and \
+                   nm > 10
+
+        else:
+
+            raise NotImplementedError('what is with the eta?')
+
+    # https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVRun2017
+    # TightLepVeto
+    elif 'era17' in tag:
+        if abs(eta) <= 2.4:
+
+            if lepveto:
+                return nhf < 0.9 and \
+                       nef < 0.9 and \
+                       nconstituents > 1 and \
+                       mef < 0.8 and \
+                       chf > 0. and \
+                       cm > 0. and \
+                       cef < 0.8
+            else:
+                return nhf < 0.9 and \
+                       nef < 0.9 and \
+                       nconstituents > 1 and \
+                       chf > 0. and \
+                       cm > 0.
+
+        elif 2.4 < abs(eta) <= 2.7:
+
+            if lepveto:
+                return nhf < 0.9 and \
+                       nef < 0.9 and \
+                       nconstituents > 1 and \
+                       mef < 0.8
+            else:
+                return nhf < 0.9 and \
+                       nef < 0.9 and \
+                       nconstituents > 1
+
+        elif 2.7 < abs(eta) <= 3.:
+
+            return 0.02 < nef < 0.99 and \
+                   nm > 2
+
+        elif abs(eta) > 3.:
+
+            return nhf > 0.02 and \
+                   nef < 0.9 and \
+                   nm > 10
+
+        else:
+
+            raise NotImplementedError('what is with the eta?')
+
+    # https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVRun2018
+    # TightLepVeto
+    elif 'era18' in tag:
+        if abs(eta) <= 2.6:
+
+            if lepveto:
+                return nhf < 0.9 and \
+                       nef < 0.9 and \
+                       nconstituents > 1 and \
+                       mef < 0.8 and \
+                       chf > 0. and \
+                       cm > 0. and \
+                       cef < 0.8
+            else:
+                return nhf < 0.9 and \
+                       nef < 0.9 and \
+                       nconstituents > 1 and \
+                       chf > 0. and \
+                       cm > 0.
+
+        elif 2.6 < abs(eta) <= 2.7:
+
+            if lepveto:
+                return nhf < 0.9 and \
+                       nef < 0.99 and \
+                       mef < 0.8 and \
+                       cm > 0. and \
+                       cef < 0.8
+            else:
+                return nhf < 0.9 and \
+                       nef < 0.99 and \
+                       cm > 0.
+
+        elif 2.7 < abs(eta) <= 3.:
+
+            return 0.02 < nef < 0.99 and \
+                   nm > 2
+
+        elif 3. < abs(eta) <= 5.:
+
+            return nhf > 0.2 and \
+                   nef < 0.9 and \
+                   nm > 10
+
+        elif abs(eta) > 5.:
+
+            return False
+
+        else:
+
+            raise NotImplementedError('what is with the eta?')
+
+    else:
+
+        raise NotImplementedError('JetID: era unknown or not specified')
+
+
+def passesEleID(e, pv_pos, rho, wp='veto'):
     """Check if electron passes ID (without isolation requirement)
     https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/Heppy/python/physicsobjects/Electron.py
-    https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2#Working_points_for_2016_data_for
+    https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2#Working_points_for_94X_and_later
+    "94X-V2 ID is the recommended ID for all 3 years of Run 2, ie, 2016 legacy rereco, 2017 rereco & UL and 2018 rereco."
     """
     
     if wp == 'veto':
         
         if abs(e.eta()) < 1.4442:  # barrel
             
-            if e.full5x5_sigmaIetaIeta() >= 0.0115: return False
-            if abs(e.deltaEtaSuperClusterTrackAtVtx()) >= 0.00749: return False
-            if abs(e.deltaPhiSuperClusterTrackAtVtx()) >= 0.228: return False
-            if e.hadronicOverEm() >= 0.356: return False
+            if e.full5x5_sigmaIetaIeta() >= 0.0126: return False
+            if abs(e.deltaEtaSuperClusterTrackAtVtx()) >= 0.00463: return False
+            if abs(e.deltaPhiSuperClusterTrackAtVtx()) >= 0.148: return False
+            if e.superCluster().isNonnull(): energy = e.superCluster().energy()
+            else: energy = 0
+            if energy > 0:
+                if e.hadronicOverEm() >= 0.05 + 1.16/energy + 0.0324*rho/energy: return False
+            else:
+                return False
+            # relIsoWithEA < 0.198+0.506/pT	--> don't know what this is
             if e.ecalEnergy() > 0:
-                if abs(1.0/e.ecalEnergy() - e.eSuperClusterOverP() / e.ecalEnergy()) >= 0.299: return False
+                if abs(1.0 / e.ecalEnergy() - e.eSuperClusterOverP() / e.ecalEnergy()) >= 0.209: return False
             else: 
                 return False
             if e.gsfTrack().hitPattern().numberOfLostHits(ROOT.reco.HitPattern.MISSING_INNER_HITS) > 2: return False
@@ -142,14 +304,20 @@ def passesEleID(e, pv_pos, wp='veto'):
             return True
         
         elif abs(e.eta()) > 1.566:  # endcap
-            
-            if e.full5x5_sigmaIetaIeta() >= 0.037: return False
-            if abs(e.deltaEtaSuperClusterTrackAtVtx()) >= 0.00895: return False
-            if abs(e.deltaPhiSuperClusterTrackAtVtx()) >= 0.213: return False
-            if e.hadronicOverEm() >= 0.211: return False
+
+            if e.full5x5_sigmaIetaIeta() >= 0.0457: return False
+            if abs(e.deltaEtaSuperClusterTrackAtVtx()) >= 0.00814: return False
+            if abs(e.deltaPhiSuperClusterTrackAtVtx()) >= 0.19: return False
+            if e.superCluster().isNonnull(): energy = e.superCluster().energy()
+            else: energy = 0
+            if energy > 0:
+                if e.hadronicOverEm() >= 0.05 + 2.54/energy + 0.183*rho/energy: return False
+            else:
+                return False
+            # relIsoWithEA < 0.203+0.963/pT	--> don't know what this is
             if e.ecalEnergy() > 0:
-                if abs(1.0/e.ecalEnergy() - e.eSuperClusterOverP() / e.ecalEnergy()) >= 0.15: return False
-            else: 
+                if abs(1.0 / e.ecalEnergy() - e.eSuperClusterOverP() / e.ecalEnergy()) >= 0.132: return False
+            else:
                 return False
             if e.gsfTrack().hitPattern().numberOfLostHits(ROOT.reco.HitPattern.MISSING_INNER_HITS) > 3: return False
 # 			if not e.passConversionVeto() >= : return False  # not implemented
@@ -182,7 +350,7 @@ def passesMuonID(m, wp='loose'):
         
     elif wp == 'medium':
         
-        raise NotImplementedError('working point not implemented')  # don't know how to access segment compatibility...
+        raise NotImplementedError('muon working point not implemented')  # don't know how to access segment compatibility...
         
         if not passesMuonID(m, 'loose'): return False
         if m.innerTrack().validFraction() <= 0.8: return False
@@ -204,22 +372,23 @@ def passesMuonID(m, wp='loose'):
 
 def passesPhotID(p, wp='loose'):
     """Check if photon passes ID (without isolation requirement)
-    https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedPhotonIdentificationRun2#Working_points_for_2016_data_for
+    https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedPhotonIdentificationRun2#Working_points_for_94X_and_later
+    "94X-V2 ID is the recommended ID for all 3 years of Run 2, ie, 2016 legacy rereco, 2017 rereco & UL and 2018 rereco."
     """
     
     if wp == 'loose':
         
         if abs(p.eta()) < 1.4442:  # barrel
             
-            if p.hadTowOverEm() >= 0.0597: return False
-            if p.sigmaIetaIeta() >= 0.01031: return False
+            if p.hadTowOverEm() >= 0.04596: return False
+            if p.sigmaIetaIeta() >= 0.0106: return False
                         
             return True
         
         elif abs(p.eta()) > 1.566:  # endcap
             
-            if p.hadTowOverEm() >= 0.0481: return False
-            if p.sigmaIetaIeta() >= 0.03013: return False
+            if p.hadTowOverEm() >= 0.0590: return False
+            if p.sigmaIetaIeta() >= 0.0272: return False
                         
             return True
         
@@ -245,12 +414,13 @@ def calcIso_dBeta(pfIsoVars):
     return pfIsoVars.sumChargedHadronPt + max(0., neutralIsoCorrected)
 
 
-def calcIso_jet_new(one, many, isTrack=False):
+def calcIso_jet_new(one, many, isTrack=False, btagvalues=None):
     """Calculates isolation variables for an object inside jets.
     """
     
     jetiso = 0
     jetisomulti = 0
+    jetisobtag = -2.
     
     dRmin = 999
     closestjet = None
@@ -270,8 +440,13 @@ def calcIso_jet_new(one, many, isTrack=False):
         
         jetiso = (jetTlv - oneTlv).Pt()
         jetisomulti = closestjet.numberOfDaughters()
+        if btagvalues:
+            for (bt, jetpt, jeteta) in btagvalues:
+                if np.allclose([jetpt, jeteta], [closestjet.pt(), closestjet.eta()]):
+                    jetisobtag = bt
+                    break
         
-    return jetiso, jetisomulti, dRmin
+    return jetiso, jetisomulti, dRmin, jetisobtag
 
 
 # def calcIso_pf_or_track_new(one, many, isMini=False, dontSubtractObject=False):
