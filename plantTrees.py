@@ -38,6 +38,7 @@ import sys
 import json
 import re
 import random
+import numpy as np
 from array import array
 
 import ROOT
@@ -274,6 +275,7 @@ if True:
         ,('metpt', 'F'), ('metphi', 'F')
         ,('nofastsimcorrmetpt', 'F'), ('nofastsimcorrmetphi', 'F')
         ,('ht', 'F'), ('ht5', 'F'), ('htmiss', 'F')
+        ,('numgenjets', 'I')
         ,('numbadjets', 'I'), ('minetaabsbadjets', 'F'), ('numbadjetsEventVeto', 'I')
         ,('numbadjetsLepVeto', 'I'), ('minetaabsbadjetsLepVeto', 'F'), ('numbadjetsLepVetoEventVeto', 'I')
         ,('ptleadingjet', 'F'), ('etaleadingjet', 'F'), ('phileadingjet', 'F')
@@ -391,6 +393,17 @@ if True:
         pv_var_array[n[0]] = array('f', 100*[0.])
         tEvent.Branch(nice_string(n[0]), pv_var_array[n[0]], nice_string(n[0]) + '[numpvs]/F')
 
+
+    var_names_genjet = [
+        ('ptgenjet', 'F'), ('etagenjet', 'F'), ('phigenjet', 'F'), ('massgenjet', 'F')
+        ]
+
+    genjet_var_array = {}
+    for n in var_names_genjet:
+        genjet_var_array[n[0]] = array('f', 1000*[0.])
+        tEvent.Branch(nice_string(n[0]), genjet_var_array[n[0]], nice_string(n[0]) + '[numgenjets]/F')
+
+
     var_names_jet = [
         ('pxjet', 'F'), ('pyjet', 'F'), ('pzjet', 'F')
         ,('ptjet', 'F'), ('energyjet', 'F')
@@ -398,6 +411,7 @@ if True:
         ,('nconstituentsjet', 'I')
         ,('btagjet', 'F')
         ,('drminleptonjet', 'F'), ('ptclosestleptonjet', 'F'), ('isleptonjet', 'F')
+        ,('drmingenjetjet', 'F'), ('ptclosestgenjetjet', 'F'), ('isgenjetjet', 'F')
         ]
 
     jet_var_array = {}
@@ -2009,6 +2023,7 @@ for f in options.inputFiles:
         # chpfcandsforiso = [p for p in pfcands if passesPreselection_iso_pfc(p, pv_pos, dz_threshold=0.1)]
         chpfcandsforiso = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_pfc(p, pv_pos, dz_threshold=0.1)])
         pfcandsforiso = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands])
+        jetsforiso = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets])
 
 
         event_level_var_array['numelectrons'][0] = len(electrons)
@@ -2030,7 +2045,7 @@ for f in options.inputFiles:
             electron_var_array['pfabsisominielectron'][ie], _, _, _ = calcIso_pf_or_track_new(e, pfcandsforiso, isMini=True)
             electron_var_array['chpfabsisoelectron'][ie], _, _, _ = calcIso_pf_or_track_new(e, chpfcandsforiso)
             electron_var_array['chpfabsisominielectron'][ie], _, _, _ = calcIso_pf_or_track_new(e, chpfcandsforiso, isMini=True)
-            electron_var_array['jetisoelectron'][ie], electron_var_array['jetisomultielectron'][ie], electron_var_array['jetdrminelectron'][ie], _ = calcIso_jet_new(e, jets)
+            electron_var_array['jetisoelectron'][ie], electron_var_array['jetisomultielectron'][ie], electron_var_array['jetdrminelectron'][ie], _ = calcIso_jet_new(e, jetsforiso, isTrack=False, btagvalues=btagvalues)
             electron_var_array['chhadisoelectron'][ie] = e.pfIsolationVariables().sumChargedHadronPt
             electron_var_array['challisoelectron'][ie] = e.pfIsolationVariables().sumChargedParticlePt
             electron_var_array['neuhadisoelectron'][ie] = e.pfIsolationVariables().sumNeutralHadronEt
@@ -2063,7 +2078,7 @@ for f in options.inputFiles:
             muon_var_array['pfabsisominimuon'][im], _, _, _ = calcIso_pf_or_track_new(m, pfcandsforiso, isMini=True)
             muon_var_array['chpfabsisomuon'][im], _, _, _ = calcIso_pf_or_track_new(m, chpfcandsforiso)
             muon_var_array['chpfabsisominimuon'][im], _, _, _ = calcIso_pf_or_track_new(m, chpfcandsforiso, isMini=True)
-            muon_var_array['jetisomuon'][im], muon_var_array['jetisomultimuon'][im], muon_var_array['jetdrminmuon'][im], _ = calcIso_jet_new(m, jets)
+            muon_var_array['jetisomuon'][im], muon_var_array['jetisomultimuon'][im], muon_var_array['jetdrminmuon'][im], _ = calcIso_jet_new(m, jetsforiso, isTrack=False, btagvalues=btagvalues)
             muon_var_array['chhadisomuon'][im] = m.pfIsolationR03().sumChargedHadronPt
             muon_var_array['challisomuon'][im] = m.pfIsolationR03().sumChargedParticlePt
             muon_var_array['neuhadisomuon'][im] = m.pfIsolationR03().sumNeutralHadronEt
@@ -2090,6 +2105,20 @@ for f in options.inputFiles:
         cutflow = 9
 
 
+        event_level_var_array['numgenjets'][0] = 0
+
+        if 'data' not in options.tag:
+
+            event_level_var_array['numgenjets'][0] = len(genjets)
+
+            for igj, gj in enumerate(genjets):
+
+                genjet_var_array['ptgenjet'][igj] = gj.pt()
+                genjet_var_array['etagenjet'][igj] = gj.eta()
+                genjet_var_array['phigenjet'][igj] = gj.phi()
+                genjet_var_array['massgenjet'][igj] = gj.mass()
+
+
         event_level_var_array['numphotons'][0] = len(photons)
 
         numphotonsiso = 0
@@ -2106,7 +2135,7 @@ for f in options.inputFiles:
             photon_var_array['pfabsisominiphoton'][ip], _, _, _ = calcIso_pf_or_track_new(p, pfcandsforiso, isMini=True, dontSubtractObject=True)
             photon_var_array['chpfabsisophoton'][ip], _, _, _ = calcIso_pf_or_track_new(p, chpfcandsforiso, dontSubtractObject=True)
             photon_var_array['chpfabsisominiphoton'][ip], _, _, _ = calcIso_pf_or_track_new(p, chpfcandsforiso, isMini=True, dontSubtractObject=True)
-            photon_var_array['jetisophoton'][ip], photon_var_array['jetisomultiphoton'][ip], photon_var_array['jetdrminphoton'][ip], _ = calcIso_jet_new(p, jets)
+            photon_var_array['jetisophoton'][ip], photon_var_array['jetisomultiphoton'][ip], photon_var_array['jetdrminphoton'][ip], _ = calcIso_jet_new(p, jetsforiso, isTrack=False, btagvalues=btagvalues)
             photon_var_array['chhadisophoton'][ip] = p.chargedHadronIso()
             photon_var_array['neuhadisophoton'][ip] = p.neutralHadronIso()
             photon_var_array['photisophoton'][ip] = p.photonIso()
@@ -2152,7 +2181,7 @@ for f in options.inputFiles:
             _, pflepton_var_array['pfrelisominipflepton'][il], _, _ = calcIso_pf_or_track_new(l, pfcandsforiso, isMini=True)
             _, pflepton_var_array['chpfrelisopflepton'][il], _, _ = calcIso_pf_or_track_new(l, chpfcandsforiso)
             _, pflepton_var_array['chpfrelisominipflepton'][il], _, _ = calcIso_pf_or_track_new(l, chpfcandsforiso, isMini=True)
-            pflepton_var_array['jetisopflepton'][il], pflepton_var_array['jetisomultipflepton'][il], pflepton_var_array['jetdrminpflepton'][il], _ = calcIso_jet_new(l, jets)
+            pflepton_var_array['jetisopflepton'][il], pflepton_var_array['jetisomultipflepton'][il], pflepton_var_array['jetdrminpflepton'][il], _ = calcIso_jet_new(l, jetsforiso, isTrack=False, btagvalues=btagvalues)
 
             if pfrelisopflepton < 0.2: numpfleptonsiso += 1
 
@@ -2298,6 +2327,22 @@ for f in options.inputFiles:
             jet_var_array['ptclosestleptonjet'][ijet] = ptclosestleptonjet
             jet_var_array['isleptonjet'][ijet] = isleptonjet
 
+            drmingenjetjet = 10.
+            ptclosestgenjetjet = 0.
+            isgenjetjet = 0.
+
+            if 'data' not in options.tag:
+
+                idx_genjet, drmingenjetjet = findMatch_gen_old_easy(jet, genjets)
+
+                if drmingenjetjet < 0.2:
+                    ptclosestgenjetjet = genjets[idx_genjet].pt()
+                    isgenjetjet = 1.
+
+            jet_var_array['drmingenjetjet'][ijet] = drmingenjetjet
+            jet_var_array['ptclosestgenjetjet'][ijet] = ptclosestgenjetjet
+            jet_var_array['isgenjetjet'][ijet] = isgenjetjet
+
         if 'era16' in options.tag:
             # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco
             loosewp = 0.5426
@@ -2351,11 +2396,22 @@ for f in options.inputFiles:
         tracksforisotight = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
                                       if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=1.)])
 
-        jetsforisotightNoLepton = [j for ij, j in enumerate(jets) if passesPreselection_iso_jet(j, pt_threshold=30) and ij not in isleptonjetidxlist]
-        jetsforisotight = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=30)]
-        jetsforisomeditight = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=20)]
-        jetsforisomedium = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=15)]
-        jetsforisoloose = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=10)]
+        # jetsforisotightNoLepton = [j for ij, j in enumerate(jets) if passesPreselection_iso_jet(j, pt_threshold=30) and ij not in isleptonjetidxlist]
+        # jetsforisotight = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=30)]
+        # jetsforisomeditight = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=20)]
+        # jetsforisomedium = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=15)]
+        # jetsforisoloose = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=10)]
+
+        jetsforisotightNoLepton = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
+                                            if passesPreselection_iso_jet(j, pt_threshold=30) and ij not in isleptonjetidxlist])
+        jetsforisotight = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
+                                    if passesPreselection_iso_jet(j, pt_threshold=30)])
+        jetsforisomeditight = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
+                                        if passesPreselection_iso_jet(j, pt_threshold=20)])
+        jetsforisomedium = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
+                                     if passesPreselection_iso_jet(j, pt_threshold=15)])
+        jetsforisoloose = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
+                                    if passesPreselection_iso_jet(j, pt_threshold=10)])
 
         neutralhadrons = [p for p in pfcands if p.particleId() == 5]
 
@@ -2499,7 +2555,7 @@ for f in options.inputFiles:
             track_level_var_array['pfabsiso'][i], track_level_var_array['pfreliso'][i], track_level_var_array['pfdrmin'][i], track_level_var_array['pfnumneighbours'][i] = calcIso_pf_or_track_new(track, pfcandsforiso)
             track_level_var_array['chpfabsiso'][i], track_level_var_array['chpfreliso'][i], track_level_var_array['chpfdrmin'][i], track_level_var_array['chpfnumneighbours'][i] = calcIso_pf_or_track_new(track, chpfcandsforiso, dontSubtractObject=dontSubtractTrackPt)
 
-            track_level_var_array['jetiso'][i], track_level_var_array['jetisomulti'][i], track_level_var_array['jetdrmin'][i], track_level_var_array['jetisobtag'][i] = calcIso_jet_new(track, jets, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['jetiso'][i], track_level_var_array['jetisomulti'][i], track_level_var_array['jetdrmin'][i], track_level_var_array['jetisobtag'][i] = calcIso_jet_new(track, jetsforiso, isTrack=True, btagvalues=btagvalues)
             track_level_var_array['jetisoloose'][i], track_level_var_array['jetisomultiloose'][i], track_level_var_array['jetdrminloose'][i], track_level_var_array['jetisobtagloose'][i] = calcIso_jet_new(track, jetsforisoloose, isTrack=True, btagvalues=btagvalues)
             track_level_var_array['jetisomeditight'][i], track_level_var_array['jetisomultimeditight'][i], track_level_var_array['jetdrminmeditight'][i], track_level_var_array['jetisobtagmeditight'][i] = calcIso_jet_new(track, jetsforisomeditight, isTrack=True, btagvalues=btagvalues)
             track_level_var_array['jetisomedium'][i], track_level_var_array['jetisomultimedium'][i], track_level_var_array['jetdrminmedium'][i], track_level_var_array['jetisobtagmedium'][i] = calcIso_jet_new(track, jetsforisomedium, isTrack=True, btagvalues=btagvalues)

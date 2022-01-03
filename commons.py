@@ -414,38 +414,137 @@ def calcIso_dBeta(pfIsoVars):
     return pfIsoVars.sumChargedHadronPt + max(0., neutralIsoCorrected)
 
 
+# def calcIso_jet_new(one, many, isTrack=False, btagvalues=None):
+#     """Calculates isolation variables for an object inside jets.
+#     """
+#
+#     jetiso = 0
+#     jetisomulti = 0
+#     jetisobtag = -2.
+#
+#     dRmin = 999
+#     closestjet = None
+#     for m in many:
+#
+#         dR = deltaR(one.eta(), m.eta(), one.phi(), m.phi())
+#
+#         if dR < dRmin:
+#             dRmin = dR
+#             closestjet = m
+#
+#     if dRmin < 0.4:
+#
+#         if isTrack: oneTlv = ROOT.TLorentzVector(one.px(), one.py(), one.pz(), one.pt()*ROOT.TMath.CosH(one.eta()))
+#         else: oneTlv = ROOT.TLorentzVector(one.px(), one.py(), one.pz(), one.energy())
+#         jetTlv = ROOT.TLorentzVector(closestjet.px(), closestjet.py(), closestjet.pz(), closestjet.energy())
+#
+#         jetiso = (jetTlv - oneTlv).Pt()
+#         jetisomulti = closestjet.numberOfDaughters()
+#         if btagvalues:
+#             for (bt, jetpt, jeteta) in btagvalues:
+#                 if np.allclose([jetpt, jeteta], [closestjet.pt(), closestjet.eta()]):
+#                     jetisobtag = bt
+#                     break
+#
+#     return jetiso, jetisomulti, dRmin, jetisobtag
+
+
+# @jitclass({
+#     '_px': float32,
+#     '_py': float32,
+#     '_pz': float32,
+#     '_energy': float32,
+# })
+# class MyTLorentzVector:
+#
+#     def __init__(self, x, y, z, e, isPtEtaPhiE=False):
+#         if isPtEtaPhiE:
+#             self._px = x * np.cos(z)
+#             self._py = x * np.sin(z)
+#             self._pz = x * np.sinh(y)
+#         else:
+#             self._px = x
+#             self._py = y
+#             self._pz = z
+#         self._energy = e
+#
+#     def px(self):
+#         return self._px
+#
+#     def py(self):
+#         return self._py
+#
+#     def pz(self):
+#         return self._pz
+#
+#     def energy(self):
+#         return self._energy
+#
+#     def __sub__(self, other):
+#         return MyTLorentzVector(self.px() - other.px(),
+#                                 self.py() - other.py(),
+#                                 self.pz() - other.pz(),
+#                                 self.energy() - other.energy())
+
+
+def converter_jet(func):
+    """Converts physics object "one" to tuple to be used in jit compiled function.
+    Also accounts for case if many is empty (numba would fail).
+    """
+
+    def helper(one, many, isTrack=False, btagvalues=None):
+        if len(many) > 0:
+            if isTrack:
+                return func(np.array((one.pt(), one.eta(), one.phi(), one.pt()*np.cosh(one.eta()))), many, isTrack, btagvalues)
+            else:
+                return func(np.array((one.pt(), one.eta(), one.phi(), one.energy())), many, isTrack, btagvalues)
+        else:
+            return 0, 0, 999, -2.
+
+    return helper
+
+
+@converter_jet
+@jit(nopython=True)
 def calcIso_jet_new(one, many, isTrack=False, btagvalues=None):
     """Calculates isolation variables for an object inside jets.
     """
-    
+
     jetiso = 0
     jetisomulti = 0
     jetisobtag = -2.
-    
+
     dRmin = 999
     closestjet = None
-    for m in many:
-        
-        dR = deltaR(one.eta(), m.eta(), one.phi(), m.phi())
-        
+    for i in range(len(many)):
+
+        dR = deltaR(one[1], many[i][1], one[2], many[i][2])
+
         if dR < dRmin:
             dRmin = dR
-            closestjet = m
-            
+            closestjet = many[i]
+
     if dRmin < 0.4:
-        
-        if isTrack: oneTlv = ROOT.TLorentzVector(one.px(), one.py(), one.pz(), one.pt()*ROOT.TMath.CosH(one.eta()))
-        else: oneTlv = ROOT.TLorentzVector(one.px(), one.py(), one.pz(), one.energy())
-        jetTlv = ROOT.TLorentzVector(closestjet.px(), closestjet.py(), closestjet.pz(), closestjet.energy())
-        
-        jetiso = (jetTlv - oneTlv).Pt()
-        jetisomulti = closestjet.numberOfDaughters()
+
+        # oneTlv = MyTLorentzVector(one[0], one[1], one[2], one[3], isPtEtaPhiE=True)
+        # jetTlv = MyTLorentzVector(closestjet[0], closestjet[1], closestjet[2], closestjet[3], isPtEtaPhiE=True)
+        #
+        # subTlv = jetTlv - oneTlv
+        # jetiso = np.sqrt(subTlv.px()**2 + subTlv.py()**2)  # pT
+
+        # pT of jet with track subtracted = sqrt(pX^2 + pY^2)
+        jetiso = np.sqrt((closestjet[0] * np.cos(closestjet[2]) - one[0] * np.cos(one[2]))**2 +
+                         (closestjet[0] * np.sin(closestjet[2]) - one[0] * np.sin(one[2]))**2)
+
+        jetisomulti = closestjet[4]
         if btagvalues:
             for (bt, jetpt, jeteta) in btagvalues:
-                if np.allclose([jetpt, jeteta], [closestjet.pt(), closestjet.eta()]):
+                # if np.allclose([jetpt, jeteta], [closestjet[0], closestjet[1]]):
+                # handmade implementation because not in numba:
+                if abs(jetpt - closestjet[0]) <= (1.e-8 + 1.e-5 * abs(closestjet[0])) and abs(jeteta - closestjet[1]) <= (1.e-8 + 1.e-5 * abs(closestjet[1])):
                     jetisobtag = bt
                     break
-        
+
     return jetiso, jetisomulti, dRmin, jetisobtag
 
 
@@ -524,7 +623,7 @@ def calcIso_pf_or_track_new(one, many, isMini=False, dontSubtractObject=False):
 
         dR = deltaR(one[1], many[i][1], one[2], many[i][2])
 
-        if dR < dRmin and dR > 0.001:
+        if dRmin > dR > 0.001:
             dRmin = dR
 
         if dR < conesize:
