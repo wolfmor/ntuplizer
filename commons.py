@@ -1606,3 +1606,72 @@ class IPcalculator:
     def getIPsignificance(self):
         if self.IPerror == 0: return 0.
         return self.getIP() / self.IPerror
+
+
+'''event weight correcting FastSim bug (from Sam)
+'''
+
+weightfile = ROOT.TFile('/nfs/dust/cms/user/beinsam/pMSSM13TeV/Scan2/FixWeights/rootfiles/fastsim_decay_bug_weights.root')
+weighthist_map = {}
+for iflav in range(1,4):
+    weighthist_map[iflav] = weightfile.Get('hRatio_GenJetHadronPtGenJetHadronFlavorLt4')
+weighthist_map[4] = weightfile.Get('hRatio_GenJetHadronPtGenJetHadronFlavorEqEq4')
+weighthist_map[5] = weightfile.Get('hRatio_GenJetHadronPtGenJetHadronFlavorEqEq5')
+weightHistAxis = weighthist_map[5].GetXaxis()
+rangesOfHadFlav = {}
+rangesOfHadFlav[1] = (100,400)
+rangesOfHadFlav[2] = (100,400)
+rangesOfHadFlav[3] = (100,400)
+rangesOfHadFlav[4] = (400,500)
+rangesOfHadFlav[5] = (400,600)
+
+
+def computeFastSimBugWeight(genjets, genparticles):
+    event_weight = 1.0
+    for ig, gjet in enumerate(genjets):
+        gjettlv = ROOT.TLorentzVector(gjet.px(),gjet.py(),gjet.pz(),gjet.energy())
+        if not gjet.pt()>30: continue
+        jetHasOffendingGp = False
+
+        #this is an alternative to miniAOD version which takes flavor from reco jet
+        leadingHadronFlavor = 1
+        leadHadronPt = 0
+
+        for igp, gp in enumerate(genparticles):
+            if not gp.pt()>15: continue
+            gptlv = ROOT.TLorentzVector(gp.px(),gp.py(),gp.pz(),gp.energy())
+            if not gptlv.DeltaR(gjettlv)<0.4: continue
+            pdgid = abs(gp.pdgId())
+            if not (pdgid>100 and pdgid<600): continue
+            if not (gp.pt()>leadHadronPt): continue
+            leadHadronPt = gp.pt()
+            leadingHadronFlavor = int(pdgid)/100
+        #this is an alternative to miniAOD version which takes flavor from reco jet
+
+        hadronPt = 1
+        genJetHadronFlavor = leadingHadronFlavor
+
+        for igp, gp in enumerate(genparticles):
+            if not gp.pt()>15: continue
+            gptlv = ROOT.TLorentzVector(gp.px(),gp.py(),gp.pz(),gp.energy())
+            if not gptlv.DeltaR(gjettlv)<0.4: continue
+            pdg = abs(gp.pdgId())
+            if not (abs(gp.pdgId())>100 and abs(gp.pdgId())<600): continue
+            if pdg>rangesOfHadFlav[genJetHadronFlavor][0] and pdg<rangesOfHadFlav[genJetHadronFlavor][1]:
+                if gp.pt()>hadronPt:
+                    hadronPt = gp.pt()
+            if not gp.numberOfDaughters()>1: continue
+            originxy = ROOT.TMath.Sqrt(gp.vx()**2 + gp.vy()**2)
+            if not originxy<2.16: continue
+            decayxy = ROOT.TMath.Sqrt(gp.daughter(0).vx()**2 + gp.daughter(0).vy()**2)
+            if (decayxy>2.17 and decayxy<2000):
+                jetHasOffendingGp = True
+                break
+
+        if jetHasOffendingGp:
+            event_weight*=0
+        else:
+            thept = weightHistAxis.GetBinLowEdge(weightHistAxis.FindBin(min(hadronPt, 498)))
+            genjetweight = weighthist_map[genJetHadronFlavor].Interpolate(thept)
+            event_weight*=genjetweight
+    return event_weight

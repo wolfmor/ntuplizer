@@ -15,12 +15,14 @@ tags:
 local -> don't open file via xrootd
 redirinfn -> use infn redirector for xrootd
 redirfnal -> use fnal redirector for xrootd
+fastsim -> FastSim correction for MET/JEC
 data -> check trigger flags and runnum/lumisec, save json file
 geninfoZ -> save GEN info for DY process
 geninfoW -> save GEN info for W boson production process
 cleanleptons -> perform DY cleaning
-signal -> signal GEN variables and FastSim correction for MET/JEC
+signal -> signal GEN variables
 pmssm -> save pMSSM IDs
+nonumjets100veto -> don't veto events with no jet with pT > 100 GeV
 noleptonveto -> don't veto events with leptons
 nodphimetjetsveto -> don't veto events with dphi(MET, jets) < 0.5
 genmatchtracks -> try to find GEN match to every 10. track
@@ -271,6 +273,7 @@ if True:
 
     var_names_event = [
         ('cutflow', 'I'), ('randomevent', 'I')
+        ,('eventweight', 'F')
         ,('numpvs', 'I'), ('rho', 'F')
         ,('metpt', 'F'), ('metphi', 'F')
         ,('nofastsimcorrmetpt', 'F'), ('nofastsimcorrmetphi', 'F')
@@ -291,6 +294,7 @@ if True:
         ,('nummuons', 'I'), ('nummuonsiso', 'I')
         ,('numleptons', 'I'), ('numleptonsiso', 'I')
         ,('numtaus', 'I'), ('numtausvloose', 'I'), ('numtausloose', 'I'), ('numtausmedium', 'I'), ('numtaustight', 'I'), ('numtausvtight', 'I'), ('numtausvvtight', 'I')
+        ,('numtausPt20', 'I'), ('numtausvloosePt20', 'I'), ('numtausloosePt20', 'I'), ('numtausmediumPt20', 'I'), ('numtaustightPt20', 'I'), ('numtausvtightPt20', 'I'), ('numtausvvtightPt20', 'I')
         ,('numtrackstotal', 'I'), ('numtracksbasicpreselection', 'I'), ('numtracksfinalpreselection', 'I')
         ]
     event_level_var_names += var_names_event
@@ -376,6 +380,7 @@ if True:
     var_names_wdaughter = [
         ('pdgIdWdaughter', 'F')
         ,('ptWdaughter', 'F'), ('etaWdaughter', 'F'), ('phiWdaughter', 'F')
+        ,('visptWdaughter', 'F'), ('visetaWdaughter', 'F'), ('visphiWdaughter', 'F')
         ]
 
     wdaughter_var_array = {}
@@ -390,7 +395,7 @@ if True:
 
     pv_var_array = {}
     for n in var_names_pv:
-        pv_var_array[n[0]] = array('f', 100*[0.])
+        pv_var_array[n[0]] = array('f', 500*[0.])
         tEvent.Branch(nice_string(n[0]), pv_var_array[n[0]], nice_string(n[0]) + '[numpvs]/F')
 
 
@@ -482,14 +487,17 @@ if True:
     var_names_tau = [
         ('chargetau', 'I')
         ,('pxtau', 'F'), ('pytau', 'F'), ('pztau', 'F')
-        ,('pttau', 'F'), ('energytau', 'F')
+        ,('pttau', 'F'), ('energytau', 'F'), ('masstau', 'F')
+        ,('scaledpttau', 'F'), ('scaledenergytau', 'F'), ('scaledmasstau', 'F')
         ,('etatau', 'F'), ('phitau', 'F')
         ,('dztau', 'F'), ('dxytau', 'F')
         ,('chhadisotau', 'F'), ('photisotau', 'F')
         ,('decaymodetau', 'F'), ('decaymodefindingtau', 'F'), ('mvadiscrtau', 'F')
         ,('isvloosetau', 'I'), ('isloosetau', 'I'), ('ismediumtau', 'I'), ('istighttau', 'I'), ('isvtighttau', 'I'), ('isvvtighttau', 'I')
+        ,('elrejtau', 'F'), ('murejtau', 'F')
         ,('tauleadpfchhadcandpt', 'F'), ('tauleadpfchhadcandeta', 'F'), ('tauleadpfchhadcandphi', 'F')
-        ,('genmatchpdgidtau', 'F'), ('genmatchdrtau', 'F')
+        ,('genmatchtau', 'F'), ('genmatchpdgidtau', 'F'), ('genmatchdrtau', 'F')
+        ,('sanitytauDM', 'F'), ('sanitytauRaw', 'F'), ('sanitytauVloose', 'F')
         ]
 
     tau_var_array = {}
@@ -564,8 +572,12 @@ if True:
 
         ,('drminneutralhadron', 'F'), ('invmclosestneutralhadrontrack', 'F')
         ,('drminphoton', 'F'), ('drminelectron', 'F'), ('drminmuon', 'F')
+
         ,('istauleadpfchhadcand', 'I'), ('drmintau', 'F'), ('closesttaumvadiscr', 'F'), ('closesttaudecaymode', 'F')
         ,('taudr3wp', 'I'), ('taudr4wp', 'I'), ('taudr5wp', 'I')
+
+        ,('istauleadpfchhadcandPt20', 'I'), ('drmintauPt20', 'F'), ('closesttaumvadiscrPt20', 'F'), ('closesttaudecaymodePt20', 'F')
+        ,('taudr3wpPt20', 'I'), ('taudr4wpPt20', 'I'), ('taudr5wpPt20', 'I')
 
         ,('detahighestptjet', 'F'), ('dphihighestptjet', 'F')
         ,('dphimet', 'F'), ('dphimetpca', 'F')
@@ -581,6 +593,8 @@ if True:
         ,('genmatchisprompt', 'F'), ('genmatchisdirecthadrondecayproduct', 'F'), ('genmatchisdirecttaudecayproduct', 'F')
         ,('genmatchmotherpdgid', 'F'), ('genmatchmotherpt', 'F'), ('genmatchmotherstatus', 'F'), ('genmatchmotherishardprocess', 'F')
         ,('genmatchmotheristhetau', 'I'), ('genmatchmothertaudecay', 'F')
+
+        ,('gentaujetmatchdrmin', 'F'), ('gentaujetmatchpt', 'F')
         ]
 
     track_level_var_array = {}
@@ -654,6 +668,14 @@ if True:
 
     jettype = 'AK4PFchs'
 
+    # this discriminator (MVArun2v1DBnewDM) seems to be the one referred to as "MVA2017v2"???
+    # see https://cms-nanoaod-integration.web.cern.ch/integration/master/mc102X_doc.html#Tau
+    # better use oldDM, see: https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauIDRecommendationForRun2
+    tauIDdecaymode = 'OldDMs'
+    tauIDalgo = 'MVArun2v1DBoldDMwLT'
+    # tauIDdecaymode = 'NewDMs'
+    # tauIDalgo = 'MVArun2v1DBnewDMwLT'
+
     if 'era16_07Aug17' in options.tag:
 
         # https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
@@ -667,12 +689,21 @@ if True:
                 [276831, 278801, 'Summer16_07Aug2017EF_V11_DATA'],
                 [278802, float('inf'), 'Summer16_07Aug2017GH_V11_DATA']]
             DataJECs = DataJEC(jet_energy_corrections, jettype)
-        elif 'signal' in options.tag:  # FastSim
+        elif 'fastsim' in options.tag:
             jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
         else:  # FullSim
             jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+
+        # tau energy scale (TES)
+        # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
+        if tauIDalgo == 'MVArun2v1DBoldDMwLT':
+            tesfile = ROOT.TFile('/nfs/dust/cms/user/wolfmor/TES/TauES_dm_MVAoldDM2017v2_2016Legacy.root')
+            teshist = tesfile.Get('tes')
+        else:
+            raise NotImplementedError('tauIDalgo unknown or not specified')
+
 
     elif 'era16_UL' in options.tag:
 
@@ -688,7 +719,7 @@ if True:
                 [276831, 278807, 'Summer19UL16APV_RunEF_V7_DATA'],
                 [278769, float('inf'), 'Summer19UL16_RunFGH_V7_DATA']]
             DataJECs = DataJEC(jet_energy_corrections, jettype)
-        elif 'signal' in options.tag:  # FastSim
+        elif 'fastsim' in options.tag:
             raise NotImplementedError('no JECs for UL FastSim')
         else:  # FullSim
             if 'era16_UL_APV' in options.tag:
@@ -697,6 +728,14 @@ if True:
             else:
                 jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC',
                                    ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+
+        # tau energy scale (TES)
+        # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
+        if tauIDalgo == 'MVArun2v1DBoldDMwLT':
+            tesfile = ROOT.TFile('/nfs/dust/cms/user/wolfmor/TES/TauES_dm_MVAoldDM2017v2_2016Legacy.root')  # TODO: this is not UL but...
+            teshist = tesfile.Get('tes')
+        else:
+            raise NotImplementedError('tauIDalgo unknown or not specified')
 
     elif 'era17_17Nov2017' in options.tag:
 
@@ -710,12 +749,20 @@ if True:
             # TODO: implement JECs for 2017 data
             # jet_energy_corrections = []
             # DataJECs = DataJEC(jet_energy_corrections, jettype)
-        elif 'signal' in options.tag:  # FastSim
+        elif 'fastsim' in options.tag:
             jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Fall17_FastSimV1_MC/Fall17_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
         else:  # FullSim
             jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Fall17_17Nov2017_V32_MC/Fall17_17Nov2017_V32_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+
+        # tau energy scale (TES)
+        # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
+        if tauIDalgo == 'MVArun2v1DBoldDMwLT':
+            tesfile = ROOT.TFile('/nfs/dust/cms/user/wolfmor/TES/TauES_dm_MVAoldDM2017v2_2017ReReco.root')
+            teshist = tesfile.Get('tes')
+        else:
+            raise NotImplementedError('tauIDalgo unknown or not specified')
 
     elif 'era18_17Sep2018' in options.tag:
 
@@ -729,16 +776,24 @@ if True:
             # TODO: implement JECs for 2018 data
             # jet_energy_corrections = []
             # DataJECs = DataJEC(jet_energy_corrections, jettype)
-        elif 'signal' in options.tag:  # FastSim
+        elif 'fastsim' in options.tag:
             jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Autumn18_FastSimV1_MC/Autumn18_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
         else:  # FullSim
             jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Autumn18_V19_MC/Autumn18_V19_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 
+        # tau energy scale (TES)
+        # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
+        if tauIDalgo == 'MVArun2v1DBoldDMwLT':
+            tesfile = ROOT.TFile('/nfs/dust/cms/user/wolfmor/TES/TauES_dm_MVAoldDM2017v2_2018ReReco.root')
+            teshist = tesfile.Get('tes')
+        else:
+            raise NotImplementedError('tauIDalgo unknown or not specified')
+
     else:
 
-        raise NotImplementedError('JECs: era unknown or not specified')
+        raise NotImplementedError('era unknown or not specified')
 
 
 '''
@@ -750,7 +805,7 @@ if True:
 if 'pmssm' in options.tag:
     handle_lumis = Handle('GenLumiInfoHeader')
 
-if 'signal' not in options.tag and 'pmssm' not in options.tag:
+if 'fastsim' not in options.tag:
 
     handle_trigger_hlt = Handle('edm::TriggerResults')
     label_trigger_hlt = ('TriggerResults', '', 'HLT')
@@ -790,31 +845,28 @@ handle_taus = Handle('std::vector<reco::PFTau>')
 label_taus = ('hpsPFTauProducer')
 
 handle_taudiscriminatorDM = Handle('reco::PFTauDiscriminator')
-label_taudiscriminatorDM = ('hpsPFTauDiscriminationByDecayModeFindingNewDMs')
-
-# this discriminator (MVArun2v1DBnewDM) seems to be the one referred to as "MVA2017v2"???
-# see https://cms-nanoaod-integration.web.cern.ch/integration/master/mc102X_doc.html#Tau
+label_taudiscriminatorDM = ('hpsPFTauDiscriminationByDecayModeFinding' + tauIDdecaymode)
 
 handle_taudiscriminatorMVA_VLoose = Handle('reco::PFTauDiscriminator')
-label_taudiscriminatorMVA_VLoose = ('hpsPFTauDiscriminationByVLooseIsolationMVArun2v1DBnewDMwLT')
+label_taudiscriminatorMVA_VLoose = ('hpsPFTauDiscriminationByVLooseIsolation' + tauIDalgo)
 
 handle_taudiscriminatorMVA_Loose = Handle('reco::PFTauDiscriminator')
-label_taudiscriminatorMVA_Loose = ('hpsPFTauDiscriminationByLooseIsolationMVArun2v1DBnewDMwLT')
+label_taudiscriminatorMVA_Loose = ('hpsPFTauDiscriminationByLooseIsolation' + tauIDalgo)
 
 handle_taudiscriminatorMVA_Medium = Handle('reco::PFTauDiscriminator')
-label_taudiscriminatorMVA_Medium = ('hpsPFTauDiscriminationByMediumIsolationMVArun2v1DBnewDMwLT')
+label_taudiscriminatorMVA_Medium = ('hpsPFTauDiscriminationByMediumIsolation' + tauIDalgo)
 
 handle_taudiscriminatorMVA_Tight = Handle('reco::PFTauDiscriminator')
-label_taudiscriminatorMVA_Tight = ('hpsPFTauDiscriminationByTightIsolationMVArun2v1DBnewDMwLT')
+label_taudiscriminatorMVA_Tight = ('hpsPFTauDiscriminationByTightIsolation' + tauIDalgo)
 
 handle_taudiscriminatorMVA_VTight = Handle('reco::PFTauDiscriminator')
-label_taudiscriminatorMVA_VTight = ('hpsPFTauDiscriminationByVTightIsolationMVArun2v1DBnewDMwLT')
+label_taudiscriminatorMVA_VTight = ('hpsPFTauDiscriminationByVTightIsolation' + tauIDalgo)
 
 handle_taudiscriminatorMVA_VVTight = Handle('reco::PFTauDiscriminator')
-label_taudiscriminatorMVA_VVTight = ('hpsPFTauDiscriminationByVVTightIsolationMVArun2v1DBnewDMwLT')
+label_taudiscriminatorMVA_VVTight = ('hpsPFTauDiscriminationByVVTightIsolation' + tauIDalgo)
 
 handle_taudiscriminatorMVAraw = Handle('reco::PFTauDiscriminator')
-label_taudiscriminatorMVAraw = ('hpsPFTauDiscriminationByIsolationMVArun2v1DBnewDMwLTraw')
+label_taudiscriminatorMVAraw = ('hpsPFTauDiscriminationByIsolation' + tauIDalgo + 'raw')
 
 handle_taudiscriminatorElectronRej = Handle('reco::PFTauDiscriminator')
 label_taudiscriminatorElectronRej = ('hpsPFTauDiscriminationByMVA6VLooseElectronRejection')
@@ -1110,7 +1162,7 @@ for f in options.inputFiles:
 
         triggerfired = 0
 
-        if 'signal' not in options.tag and 'pmssm' not in options.tag:
+        if 'fastsim' not in options.tag:
 
             event.getByLabel(label_trigger_hlt, handle_trigger_hlt)
             triggerresults_hlt = handle_trigger_hlt.product()
@@ -1202,9 +1254,15 @@ for f in options.inputFiles:
                 , taudiscriminatorMVA_VTight.value(itau)
                 , taudiscriminatorMVA_VVTight.value(itau)
                 , taudiscriminatorElectronRej.value(itau)
-                , taudiscriminatorMuonRej.value(itau))
+                , taudiscriminatorMuonRej.value(itau)
+                , taudiscriminatorDM.key(itau).get().pt()
+                , taudiscriminatorMVAraw.key(itau).get().pt()
+                , taudiscriminatorMVA_VLoose.key(itau).get().pt())
             for itau, tau in enumerate(taus)
         ]
+
+        # first dummy entry needed for jitted jet iso calculation function
+        btagvalues = [(-2., 0., 0.)]
 
 
         '''
@@ -1229,10 +1287,11 @@ for f in options.inputFiles:
                  and abs(m.eta()) < 2.4]
 
         tauswithdiscriminators = [t for t in tauswithdiscriminators
-                                  if t[3] > 0.5  # vloose working point
+                                  if t[1] > 0.5  # decaymodefinding
+                                  and t[3] > 0.5  # vloose working point
                                   and t[9] > 0.5  # electron rejection
                                   and t[10] > 0.5  # muon rejection
-                                  and t[0].pt() > 20
+                                  # and t[0].pt() > 20
                                   and abs(t[0].eta()) < 2.3]
 
         '''
@@ -1333,10 +1392,21 @@ for f in options.inputFiles:
 
                     if daughter is None: continue
 
+                    viswdaughter = ROOT.TLorentzVector()
+                    for igranddaughter in range(daughter.numberOfDaughters()):
+                        if abs(daughter.daughter(igranddaughter).pdgId()) in [11, 12, 13, 14, 15, 16]: continue
+                        viswdaughterTlv = ROOT.TLorentzVector(daughter.daughter(igranddaughter).px(), daughter.daughter(igranddaughter).py(), daughter.daughter(igranddaughter).pz(), daughter.daughter(igranddaughter).energy())
+                        viswdaughter += viswdaughterTlv
+
                     wdaughter_var_array['pdgIdWdaughter'][i] = daughter.pdgId()
+
                     wdaughter_var_array['ptWdaughter'][i] = daughter.pt()
                     wdaughter_var_array['etaWdaughter'][i] = daughter.eta()
                     wdaughter_var_array['phiWdaughter'][i] = daughter.phi()
+
+                    wdaughter_var_array['visptWdaughter'][i] = viswdaughter.Pt()
+                    wdaughter_var_array['visetaWdaughter'][i] = viswdaughter.Eta()
+                    wdaughter_var_array['visphiWdaughter'][i] = viswdaughter.Phi()
 
                     if abs(daughter.pdgId()) == 15:
 
@@ -1349,6 +1419,7 @@ for f in options.inputFiles:
 
                             taudaughterpdgid = abs(daughter.daughter(k).pdgId())
 
+                            # see: https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauIDRecommendationForRun2#Decay_Mode_Reconstruction
                             if taudaughterpdgid in [12, 14, 16]:  # skip the neutrinos
                                 continue
                             elif taudaughterpdgid in [11, 13]:  # charged lepton
@@ -1651,7 +1722,7 @@ for f in options.inputFiles:
         nofastsimcorrmetpt = met.pt()
         nofastsimcorrmetphi = met.phi()
 
-        if 'signal' in options.tag:
+        if 'fastsim' in options.tag:
 
             met.setP4(ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(0.5 * (genmet.px() + met.px())
                                                                                , 0.5 * (genmet.py() + met.py())
@@ -2001,7 +2072,8 @@ for f in options.inputFiles:
         hCutflow.Fill(6)
         cutflow = 6
 
-        if not numjets100 > 0: continue
+        if 'nonumjets100veto' not in options.tag:
+            if not numjets100 > 0: continue
 
         ###########################################################################################veto
 
@@ -2105,6 +2177,14 @@ for f in options.inputFiles:
         cutflow = 9
 
 
+        eventWeight = 1.
+
+        if 'fastsim' in options.tag:
+            eventWeight = computeFastSimBugWeight(genjets, genparticles)
+
+        event_level_var_array['eventweight'][0] = eventWeight
+
+
         event_level_var_array['numgenjets'][0] = 0
 
         if 'data' not in options.tag:
@@ -2190,8 +2270,44 @@ for f in options.inputFiles:
 
         event_level_var_array['numtaus'][0] = len(tauswithdiscriminators)
 
-        if len(tauswithdiscriminators) > 0:
-            genparticlesfortaumatching = [gp for gp in genparticles if gp.status() == 1 and abs(gp.pdgId()) in [11, 13, 15]]
+        # for info on MC matching and categories see
+        # https://twiki.cern.ch/twiki/bin/viewauth/CMS/HiggsToTauTauWorking2016#MC_Matching
+        # https://github.com/cms-tau-pog/TauIDSFs
+        if len(tauswithdiscriminators) > 0 or 'genmatchtracks' in options.tag or 'genmatchalltracks' in options.tag:
+
+            # key = category ID
+            genparticlesfortaumatching = {}
+
+            # prompt electrons
+            genparticlesfortaumatching[1] = [gp for gp in genparticles if abs(gp.pdgId()) == 11
+                                             and gp.pt() > 8 and gp.statusFlags().isPrompt()]
+
+            # prompt muons
+            genparticlesfortaumatching[2] = [gp for gp in genparticles if abs(gp.pdgId()) == 13
+                                             and gp.pt() > 8 and gp.statusFlags().isPrompt()]
+
+            # electrons from tau decay
+            genparticlesfortaumatching[3] = [gp for gp in genparticles if abs(gp.pdgId()) == 11
+                                             and gp.pt() > 8 and gp.statusFlags().isDirectPromptTauDecayProduct()]
+
+            # muons from tau decay
+            genparticlesfortaumatching[4] = [gp for gp in genparticles if abs(gp.pdgId()) == 13
+                                             and gp.pt() > 8 and gp.statusFlags().isDirectPromptTauDecayProduct()]
+
+            # real taus (visibile gen jet)
+            genparticlesfortaumatching[5] = []
+            gentaujets = []
+            for gp in genparticles:
+                if abs(gp.pdgId()) == 15 and gp.statusFlags().isPrompt():
+                    gentaujet = ROOT.TLorentzVector()
+                    for itaudaughter in range(gp.numberOfDaughters()):
+                        if abs(gp.daughter(itaudaughter).pdgId()) in [11, 12, 13, 14, 15, 16]: continue
+                        taudaughterTlv = ROOT.TLorentzVector(gp.daughter(itaudaughter).px(), gp.daughter(itaudaughter).py(), gp.daughter(itaudaughter).pz(), gp.daughter(itaudaughter).energy())
+                        gentaujet += taudaughterTlv
+                    if gentaujet.Pt() > 0:
+                        gentaujets.append(Dummy(gentaujet))
+                    if gentaujet.Pt() > 15:
+                        genparticlesfortaumatching[5].append(Dummy(gentaujet))
 
         numtausvloose = 0
         numtausloose = 0
@@ -2199,7 +2315,32 @@ for f in options.inputFiles:
         numtaustight = 0
         numtausvtight = 0
         numtausvvtight = 0
+        numtausvloosePt20 = 0
+        numtausloosePt20 = 0
+        numtausmediumPt20 = 0
+        numtaustightPt20 = 0
+        numtausvtightPt20 = 0
+        numtausvvtightPt20 = 0
         for it, t in enumerate(tauswithdiscriminators):
+
+            genmatchtau = 6
+            genmatchpdgidtau = -1.
+            for taumatchcategory in [1, 2, 3, 4, 5]:
+                idxtaumatch, drmintaumatch = findMatch_gen_old_easy(t[0], genparticlesfortaumatching[taumatchcategory])
+                tau_var_array['genmatchdrtau'][it] = drmintaumatch
+                if drmintaumatch < 0.2:
+                    genmatchtau = taumatchcategory
+                    genmatchpdgidtau = 15 if taumatchcategory == 5 else genparticlesfortaumatching[taumatchcategory][idxtaumatch].pdgId()
+            tau_var_array['genmatchtau'][it] = genmatchtau
+            tau_var_array['genmatchpdgidtau'][it] = genmatchpdgidtau
+
+            tes = 1.
+            if genmatchtau == 5:
+                tes = teshist.GetBinContent(teshist.GetXaxis().FindBin(t[0].decayMode()))
+
+            tau_var_array['sanitytauDM'][it] = t[11] - t[0].pt()
+            tau_var_array['sanitytauRaw'][it] = t[12] - t[0].pt()
+            tau_var_array['sanitytauVloose'][it] = t[13] - t[0].pt()
 
             tau_var_array['chargetau'][it] = t[0].charge()
             tau_var_array['pxtau'][it] = t[0].px()
@@ -2207,16 +2348,27 @@ for f in options.inputFiles:
             tau_var_array['pztau'][it] = t[0].pz()
             tau_var_array['pttau'][it] = t[0].pt()
             tau_var_array['energytau'][it] = t[0].energy()
+            tau_var_array['masstau'][it] = t[0].mass()
+            tau_var_array['scaledpttau'][it] = t[0].pt() * tes
+            tau_var_array['scaledenergytau'][it] = t[0].energy() * tes
+            tau_var_array['scaledmasstau'][it] = t[0].mass() * tes
             tau_var_array['etatau'][it] = t[0].eta()
             tau_var_array['phitau'][it] = t[0].phi()
-            if t[0].leadPFChargedHadrCand().trackRef().get() and t[0].leadPFChargedHadrCand().trackRef().isNonnull():
-                leadpfchhadcand = t[0].leadPFChargedHadrCand().trackRef().get()
-                tau_var_array['dztau'][it] = leadpfchhadcand.dz(pv_pos)
-                tau_var_array['dxytau'][it] = leadpfchhadcand.dxy(pv_pos)
-                tau_var_array['tauleadpfchhadcandpt'][it] = leadpfchhadcand.pt()
-                tau_var_array['tauleadpfchhadcandeta'][it] = leadpfchhadcand.eta()
-                tau_var_array['tauleadpfchhadcandphi'][it] = leadpfchhadcand.phi()
-            else:
+            try:
+                if t[0].leadPFChargedHadrCand().trackRef().isNonnull() and t[0].leadPFChargedHadrCand().trackRef().get():
+                    leadpfchhadcand = t[0].leadPFChargedHadrCand().trackRef().get()
+                    tau_var_array['dztau'][it] = leadpfchhadcand.dz(pv_pos)
+                    tau_var_array['dxytau'][it] = leadpfchhadcand.dxy(pv_pos)
+                    tau_var_array['tauleadpfchhadcandpt'][it] = leadpfchhadcand.pt()
+                    tau_var_array['tauleadpfchhadcandeta'][it] = leadpfchhadcand.eta()
+                    tau_var_array['tauleadpfchhadcandphi'][it] = leadpfchhadcand.phi()
+                else:
+                    tau_var_array['dztau'][it] = -1
+                    tau_var_array['dxytau'][it] = -1
+                    tau_var_array['tauleadpfchhadcandpt'][it] = 0.
+                    tau_var_array['tauleadpfchhadcandeta'][it] = 0.
+                    tau_var_array['tauleadpfchhadcandphi'][it] = 0.
+            except :
                 tau_var_array['dztau'][it] = -1
                 tau_var_array['dxytau'][it] = -1
                 tau_var_array['tauleadpfchhadcandpt'][it] = 0.
@@ -2224,43 +2376,53 @@ for f in options.inputFiles:
                 tau_var_array['tauleadpfchhadcandphi'][it] = 0.
             tau_var_array['chhadisotau'][it] = t[0].isolationPFChargedHadrCandsPtSum()
             tau_var_array['photisotau'][it] = t[0].isolationPFGammaCandsEtSum()
+
             tau_var_array['decaymodetau'][it] = t[0].decayMode()
             tau_var_array['decaymodefindingtau'][it] = t[1]
             tau_var_array['mvadiscrtau'][it] = t[2]
 
+            tau_var_array['isvloosetau'][it] = t[3]
+            tau_var_array['isloosetau'][it] = t[4]
+            tau_var_array['ismediumtau'][it] = t[5]
+            tau_var_array['istighttau'][it] = t[6]
+            tau_var_array['isvtighttau'][it] = t[7]
+            tau_var_array['isvvtighttau'][it] = t[8]
+
             if t[3] > 0.5:
-                tau_var_array['isvloosetau'][it] = t[3]
                 numtausvloose += 1
+                if t[0].pt() > 20: numtausvloosePt20 += 1
             if t[4] > 0.5:
-                tau_var_array['isloosetau'][it] = t[4]
                 numtausloose += 1
+                if t[0].pt() > 20: numtausloosePt20 += 1
             if t[5] > 0.5:
-                tau_var_array['ismediumtau'][it] = t[5]
                 numtausmedium += 1
+                if t[0].pt() > 20: numtausmediumPt20 += 1
             if t[6] > 0.5:
-                tau_var_array['istighttau'][it] = t[6]
                 numtaustight += 1
+                if t[0].pt() > 20: numtaustightPt20 += 1
             if t[7] > 0.5:
-                tau_var_array['isvtighttau'][it] = t[7]
                 numtausvtight += 1
+                if t[0].pt() > 20: numtausvtightPt20 += 1
             if t[8] > 0.5:
-                tau_var_array['isvvtighttau'][it] = t[8]
                 numtausvvtight += 1
+                if t[0].pt() > 20: numtausvvtightPt20 += 1
 
-            idxtaumatch, drmintaumatch = findMatch_gen_old_easy(t[0], genparticlesfortaumatching)
-            tau_var_array['genmatchdrtau'][it] = drmintaumatch
-            if drmintaumatch < 0.5:
-                tau_var_array['genmatchpdgidtau'][it] = genparticlesfortaumatching[idxtaumatch].pdgId()
-            else:
-                tau_var_array['genmatchpdgidtau'][it] = -1.
+            tau_var_array['elrejtau'][it] = t[9]
+            tau_var_array['murejtau'][it] = t[10]
 
-        hNumtaus.Fill(numtausvloose)
+        hNumtaus.Fill(len(tauswithdiscriminators))
         event_level_var_array['numtausvloose'][0] = numtausvloose
         event_level_var_array['numtausloose'][0] = numtausloose
         event_level_var_array['numtausmedium'][0] = numtausmedium
         event_level_var_array['numtaustight'][0] = numtaustight
         event_level_var_array['numtausvtight'][0] = numtausvtight
         event_level_var_array['numtausvvtight'][0] = numtausvvtight
+        event_level_var_array['numtausvloosePt20'][0] = numtausvloosePt20
+        event_level_var_array['numtausloosePt20'][0] = numtausloosePt20
+        event_level_var_array['numtausmediumPt20'][0] = numtausmediumPt20
+        event_level_var_array['numtaustightPt20'][0] = numtaustightPt20
+        event_level_var_array['numtausvtightPt20'][0] = numtausvtightPt20
+        event_level_var_array['numtausvvtightPt20'][0] = numtausvvtightPt20
 
 
         tracksByPV = {}
@@ -2274,7 +2436,6 @@ for f in options.inputFiles:
             tracksByPV[ipv] = [pv.trackRefAt(i).get() for i in range(pv.tracksSize())]
 
 
-        btagvalues = []
         isleptonjetidxlist = []
         for ijet, jet in enumerate(jets):
 
@@ -2602,48 +2763,57 @@ for f in options.inputFiles:
                     drminmuon = dr
             track_level_var_array['drminmuon'][i] = drminmuon
 
-            istauleadpfchhadcand = 0
-            drmintau = 10
-            closesttaumvadiscr = -1
-            closesttaudecaymode = -1
-            taudr3wp = 0
-            taudr4wp = 0
-            taudr5wp = 0
-            for t in tauswithdiscriminators:
+            for itaucolleciton, taucollection in enumerate([tauswithdiscriminators, [t for t in tauswithdiscriminators if t[0].pt() > 20]]):
 
-                leadpfchhadcand = t[0].leadPFChargedHadrCand().trackRef().get()
-                if leadpfchhadcand:
-                    if deltaR(leadpfchhadcand.eta(), track.eta(), leadpfchhadcand.phi(), track.phi()) < 0.001:
-                        istauleadpfchhadcand = 1
+                istauleadpfchhadcand = 0
+                drmintau = 10
+                closesttaumvadiscr = -1
+                closesttaudecaymode = -1
+                taudr3wp = 0
+                taudr4wp = 0
+                taudr5wp = 0
+                for t in taucollection:
 
-                dr = deltaR(track.eta(), t[0].eta(), track.phi(), t[0].phi())
-                if dr < drmintau:
-                    drmintau = dr
-                    closesttaumvadiscr = t[2]
-                    closesttaudecaymode = t[0].decayMode()
-                if dr < 0.5:
-                    itauwp = 1
-                    while itauwp < 7 and t[2+itauwp] > 0.5:
-                        if taudr5wp < itauwp: taudr5wp = itauwp
-                        itauwp += 1
-                    if dr < 0.4:
+                    try:
+                        leadpfchhadcand = t[0].leadPFChargedHadrCand().trackRef().get()
+                    except:
+                        leadpfchhadcand = None
+
+                    if leadpfchhadcand:
+                        if deltaR(leadpfchhadcand.eta(), track.eta(), leadpfchhadcand.phi(), track.phi()) < 0.001:
+                            istauleadpfchhadcand = 1
+
+                    dr = deltaR(track.eta(), t[0].eta(), track.phi(), t[0].phi())
+                    if dr < drmintau:
+                        drmintau = dr
+                        closesttaumvadiscr = t[2]
+                        closesttaudecaymode = t[0].decayMode()
+                    if dr < 0.5:
                         itauwp = 1
                         while itauwp < 7 and t[2+itauwp] > 0.5:
-                            if taudr4wp < itauwp: taudr4wp = itauwp
+                            if taudr5wp < itauwp: taudr5wp = itauwp
                             itauwp += 1
-                        if dr < 0.3:
+                        if dr < 0.4:
                             itauwp = 1
                             while itauwp < 7 and t[2+itauwp] > 0.5:
-                                if taudr3wp < itauwp: taudr3wp = itauwp
+                                if taudr4wp < itauwp: taudr4wp = itauwp
                                 itauwp += 1
+                            if dr < 0.3:
+                                itauwp = 1
+                                while itauwp < 7 and t[2+itauwp] > 0.5:
+                                    if taudr3wp < itauwp: taudr3wp = itauwp
+                                    itauwp += 1
 
-            track_level_var_array['istauleadpfchhadcand'][i] = istauleadpfchhadcand
-            track_level_var_array['drmintau'][i] = drmintau
-            track_level_var_array['closesttaumvadiscr'][i] = closesttaumvadiscr
-            track_level_var_array['closesttaudecaymode'][i] = closesttaudecaymode
-            track_level_var_array['taudr3wp'][i] = taudr3wp
-            track_level_var_array['taudr4wp'][i] = taudr4wp
-            track_level_var_array['taudr5wp'][i] = taudr5wp
+                suffix = ''
+                if itaucolleciton == 1: suffix = 'Pt20'
+
+                track_level_var_array['istauleadpfchhadcand' + suffix][i] = istauleadpfchhadcand
+                track_level_var_array['drmintau' + suffix][i] = drmintau
+                track_level_var_array['closesttaumvadiscr' + suffix][i] = closesttaumvadiscr
+                track_level_var_array['closesttaudecaymode' + suffix][i] = closesttaudecaymode
+                track_level_var_array['taudr3wp' + suffix][i] = taudr3wp
+                track_level_var_array['taudr4wp' + suffix][i] = taudr4wp
+                track_level_var_array['taudr5wp' + suffix][i] = taudr5wp
 
             track_level_var_array['detahighestptjet'][i] = abs(track.eta() - jets[idxhighestptjet].eta())
             track_level_var_array['dphihighestptjet'][i] = deltaPhi(track.phi(), jets[idxhighestptjet].phi())
@@ -2679,15 +2849,22 @@ for f in options.inputFiles:
             genmatchisdirecttaudecayproduct = -1
             genmatchmotheristhetau = 0
 
+            gentaujetmatchdrmin = 10
+            gentaujetmatchpt = -1
+
             dothegenmatch = False
 
             if 'genmatchtracks' in options.tag:
-                if ievent % 10 == 0 and met.pt() > 250: dothegenmatch = True
+                if ievent % 10 == 0 and met.pt() > metthresholdtrackgenmatch: dothegenmatch = True
 
             if 'genmatchalltracks' in options.tag:
                 if met.pt() > metthresholdtrackgenmatch: dothegenmatch = True
 
             if dothegenmatch:
+
+                idxgentaujet, gentaujetmatchdrmin = findMatch_gen_old_easy(track, gentaujets)
+                if gentaujetmatchdrmin < 10:
+                    gentaujetmatchpt = gentaujets[idxgentaujet].pt()
 
                 idxgen, dxyzmingen, tmingen, drmingen = findMatch_gen_new(track, genparticlesformatching)
 
@@ -2763,6 +2940,9 @@ for f in options.inputFiles:
             track_level_var_array['genmatchisdirecttaudecayproduct'][i] = genmatchisdirecttaudecayproduct
             track_level_var_array['genmatchmotheristhetau'][i] = genmatchmotheristhetau
             track_level_var_array['genmatchmothertaudecay'][i] = decayWtau
+
+            track_level_var_array['gentaujetmatchdrmin'][i] = gentaujetmatchdrmin
+            track_level_var_array['gentaujetmatchpt'][i] = gentaujetmatchpt
 
             issignaltrack = 0
             if itrack == matchedTrackIdxCharginoPion1 or itrack == matchedTrackIdxCharginoPion2: issignaltrack = 1
