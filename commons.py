@@ -499,7 +499,7 @@ def converter_jet(func):
             else:
                 return func(np.array((one.pt(), one.eta(), one.phi(), one.energy())), many, isTrack, btagvalues)
         else:
-            return 0, 0, 999, -2.
+            return 0, 0, 9., -2.
 
     return helper
 
@@ -514,7 +514,7 @@ def calcIso_jet_new(one, many, isTrack=False, btagvalues=None):
     jetisomulti = 0
     jetisobtag = -2.
 
-    dRmin = 999
+    dRmin = 9.
     closestjet = None
     for i in range(len(many)):
 
@@ -585,21 +585,22 @@ def converter(func):
     Also accounts for case if many is empty (numba would fail).
     """
 
-    def helper(one, many, isMini=False, dontSubtractObject=False):
+    def helper(one, many, isMini=False, subtractObject=True):
         if len(many) > 0:
-            return func(np.array((one.pt(), one.eta(), one.phi())), many, isMini, dontSubtractObject)
+            return func(np.array((one.pt(), one.eta(), one.phi())), many, isMini, subtractObject)
         else:
-            if dontSubtractObject:
-                return 0, 0, 999, 0
+            if subtractObject:
+                return -one.pt(), -1, 9, -1
             else:
-                return -one.pt(), -1, 999, -1
+                return 0, 0, 9, 0
+
 
     return helper
 
 
 @converter
 @jit(nopython=True)
-def calcIso_pf_or_track_new(one, many, isMini=False, dontSubtractObject=False):
+def calcIso_pf_or_track_new(one, many, isMini=False, subtractObject=True):
     """Calculates isolation variables for an object inside PFs or tracks.
     Expects (list of) tuples of the form (pT, eta, phi).
     """
@@ -611,13 +612,14 @@ def calcIso_pf_or_track_new(one, many, isMini=False, dontSubtractObject=False):
         elif one[0] <= 200: conesize = 10.0/one[0]
         else: conesize = 0.05
 
-    ptsum = -one[0]
-    num = -1
-    if dontSubtractObject:
+    if subtractObject:
+        ptsum = -one[0]
+        num = -1
+    else:
         ptsum = 0
         num = 0
 
-    dRmin = 999
+    dRmin = 9
 
     for i in range(len(many)):
 
@@ -801,7 +803,7 @@ def passesPreselection_basic_pfc(pfc):
     return True
 
 
-def passesPreselection_iso_pfc(pfc, pv_pos, dz_threshold):
+def passesPreselection_iso_chpf(pfc, pv_pos, dz_threshold, dxy_threshold, pt_threshold):
     """Defines preselection used for calculation of isolation-variables for PFs.
     """
     
@@ -816,19 +818,32 @@ def passesPreselection_iso_pfc(pfc, pv_pos, dz_threshold):
     if pfc.trackRef().get().charge() == 0: return False
     
     if abs(pfc.trackRef().get().dz(pv_pos)) >= dz_threshold: return False
+
+    if abs(pfc.trackRef().get().dxy(pv_pos)) >= dxy_threshold: return False
+
+    if pfc.pt() <= pt_threshold: return False
     
     return True
 
 
-def passesPreselection_final_pfc(pfc, pv_pos):
-    """Defines preselection used for BDT for PFs.
+def passesPreselection_iso_pf(pfc, pt_threshold):
+    """Defines preselection used for calculation of isolation-variables for PFs.
     """
 
-    if not passesPreselection_basic_pfc(pfc): return False
-    
-    if pfc.pt() <= 0.7: return False
-    
+    if pfc.pt() <= pt_threshold: return False
+
     return True
+
+
+# def passesPreselection_final_pfc(pfc, pv_pos):
+#     """Defines preselection used for BDT for PFs.
+#     """
+#
+#     if not passesPreselection_basic_pfc(pfc): return False
+#
+#     if pfc.pt() <= 0.7: return False
+#
+#     return True
 
 
 def passesPreselection_basic_track(track):
@@ -857,6 +872,7 @@ def passesPreselection_iso_track(track, pv_pos, dz_threshold, dxy_threshold, pt_
     if track.charge() == 0: return False
     
     if abs(track.dz(pv_pos)) >= dz_threshold: return False
+
     if abs(track.dxy(pv_pos)) >= dxy_threshold: return False
 
     if track.pt() <= pt_threshold: return False
@@ -864,13 +880,13 @@ def passesPreselection_iso_track(track, pv_pos, dz_threshold, dxy_threshold, pt_
     return True
 
 
-def passesPreselection_final_track(track, pv_pos):
-    """Defines preselection used for BDT for tracks.
-    """
-    
-    if not passesPreselection_basic_track(track): return False
-    
-    return True
+# def passesPreselection_final_track(track, pv_pos):
+#     """Defines preselection used for BDT for tracks.
+#     """
+#
+#     if not passesPreselection_basic_track(track): return False
+#
+#     return True
 
 
 def passesPreselection_iso_jet(jet, pt_threshold):
@@ -892,8 +908,8 @@ def vertexFinder(track1, track2, pv_pos):
     mindist, tmin1, tmin2, p1, p2 = minDistanceTrackTrack(track1, track2)
     
     vertex = np.array([0, 0, 0])
-    angletoorigin = -10
-    angletopv = -10
+    angletoorigin = -1
+    angletopv = -1
     disttopv3D = -1
     disttopvXY = -1
     disttopvZ = -1
@@ -1100,9 +1116,9 @@ def findMatch_track_new(lepton, tracks):
     """Finds matching track for lepton/pion/... via dxyz.
     """
 
-    dxyzmin = 10
-    tmin = 10
-    drmin = 10
+    dxyzmin = 9
+    tmin = 9
+    drmin = 9
     idx = -1
 
     if lepton.pt() > 0:
@@ -1144,9 +1160,9 @@ def findMatch_track_new_random(lepton, tracks):
     """Finds matching track for lepton via dxyz, random with opposite charge.
     """
 
-    dxyzmin = 10
-    tmin = 10
-    drmin = 10
+    dxyzmin = 9
+    tmin = 9
+    drmin = 9
     idx = -1
 
     if lepton.pt() > 0:
@@ -1188,9 +1204,9 @@ def findMatch_pfc_new(lepton, pfcands):
     """Finds matching pfc for lepton via dxyz.
     """
 
-    dxyzmin = 10
-    tmin = 10
-    drmin = 10
+    dxyzmin = 9
+    tmin = 9
+    drmin = 9
     idx = -1
 
     if lepton.pt() > 0:
@@ -1234,7 +1250,7 @@ def findMatch_track_old(lepton, tracks):
     """Finds matching track for lepton via dR.
     """
     
-    drmin = 10
+    drmin = 9
     idx = -1
     
     if lepton.pt() > 0:
@@ -1271,7 +1287,7 @@ def findMatch_track_old_random(lepton, tracks):
     """Finds matching track for lepton via dR, random with opposite charge.
     """
     
-    drmin = 10
+    drmin = 9
     idx = -1
     
     if lepton.pt() > 0:
@@ -1308,7 +1324,7 @@ def findMatch_pfc_old(lepton, pfcands):
     """Finds matching pfc for lepton via deltaR.
     """
     
-    drmin = 10
+    drmin = 9
     idx = -1
     
     if lepton.pt() > 0:
@@ -1346,7 +1362,7 @@ def findMatch_jet_old(lepton, jets):
     """Finds matching jet for lepton via deltaR.
     """
     
-    drmin = 10
+    drmin = 9
     idx = -1
         
     for ijet, jet in enumerate(jets):
@@ -1365,9 +1381,9 @@ def findMatch_gen_new(track, genparticles):
     """Finds matching gp for track via dxyz.
     """
 
-    dxyzmin = 10
-    tmin = 10
-    drmin = 10
+    dxyzmin = 9
+    tmin = 9
+    drmin = 9
     idx = -1
 
     if track.pt() > 0:
@@ -1407,7 +1423,7 @@ def findMatch_gen_old(track, genparticles):
     """Finds matching gp for track via dR.
     """
     
-    drmin = 10
+    drmin = 9
     idx = -1
     
     if track.pt() > 0:
@@ -1436,7 +1452,7 @@ def findMatch_gen_old_easy(track, genparticles):
     """Finds matching gp for track via dR.
     """
     
-    drmin = 10
+    drmin = 9
     idx = -1
     
     for igp, gp in enumerate(genparticles):

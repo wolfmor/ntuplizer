@@ -15,18 +15,23 @@ tags:
 local -> don't open file via xrootd
 redirinfn -> use infn redirector for xrootd
 redirfnal -> use fnal redirector for xrootd
+
 fastsim -> FastSim correction for MET/JEC
 data -> check trigger flags and runnum/lumisec, save json file
 geninfoZ -> save GEN info for DY process
 geninfoW -> save GEN info for W boson production process
 cleanleptons -> perform DY cleaning
-signal -> signal GEN variables
 pmssm -> save pMSSM IDs
-nonumjets100veto -> don't veto events with no jet with pT > 100 GeV
-noleptonveto -> don't veto events with leptons
-nodphimetjetsveto -> don't veto events with dphi(MET, jets) < 0.5
-genmatchtracks -> try to find GEN match to every 10. track
+
+DATASETNAME -> save GEN info accordingly (e.g. Signal...)
+
+veto_jet100 -> veto events with no jet with pT > 100 GeV
+veto_dphimetjets -> veto events with dphi(MET, jets) < 0.5
+veto_isolepton -> veto events with isolated leptons
+
+genmatchtracks -> try to find GEN match to every 10th track
 genmatchalltracks -> try to find GEN match to every track
+
 era16_07Aug17 -> use corresponding golden json, JECs, jetID, working points,...
 era16_UL -> ...
 era16_UL_APV -> ...
@@ -166,13 +171,12 @@ class DataJEC:
         return JECMap['jecAK4']
 
 
-nMaxEventsPerFile = 100000
 nMaxTracksPerEvent = 10000
 
 # TODO: check if saveoutputfile and if test
 saveOutputFile = True
 isTest = False
-neventsTest = 10  # number of events to run over in case of test
+nEventsTest = 10  # number of events to run over in case of test
 printevery = 100  # print event number for every Xth event
 
 # TODO: check thresholds for "new" matching
@@ -203,11 +207,14 @@ options.parseArguments()
 if True:
 
     if saveOutputFile:
-        nameout = 'output'
+        nameout = 'NTuple'
+        if len(options.inputFiles) == 1: nameout = options.inputFiles[0].split('/')[-1].strip().replace('.root', '') + '_' + nameout
         if isTest: nameout += '_test'
         fout = ROOT.TFile(nameout + '.root', 'recreate')
 
         fout.cd()
+
+    tCounter = ROOT.TTree('tCounter', 'tCounter')
 
     tEvent = ROOT.TTree('tEvent', 'tEvent')
 
@@ -218,89 +225,100 @@ if True:
         event_level_var_names += [('pMSSMid1', 'F'), ('pMSSMid2', 'F')]
 
     var_names_gen_signal = [
-        ('deltamFILE', 'F'), ('chipmmFILE', 'F')
-        ,('numC1', 'I'), ('numN2', 'I'), ('numN1', 'I')
-        ,('hasChargino', 'I'), ('hasPion', 'I'), ('hasMatchedTrack', 'I')
+        ('deltamFile', 'F'), ('mchipmFile', 'F'), ('mstopFile', 'F')
 
-        ,('deltamGEN', 'F'), ('chipmmGEN', 'F')
-        ,('chipmptGEN', 'F'), ('chipmetaGEN', 'F'), ('chipmphiGEN', 'F')
-        ,('chidecaylengthXY', 'F'), ('chidecaylengthZ', 'F'),('chidecaylength3D', 'F')
-        ,('log10(chidecaylengthXY)', 'F'), ('log10(chidecaylengthZ)', 'F'), ('log10(chidecaylength3D)', 'F')
-        ,('chipmnumdaughters', 'I')
+        , ('chiC1_deltamN1', 'F'), ('chiC1_m', 'F')
+        , ('chiN2_deltamN1', 'F'), ('chiN2_m', 'F')
 
-        ,('deltamN2GEN', 'F'), ('chiN2mGEN', 'F')
-        ,('chiN2ptGEN', 'F'), ('chiN2etaGEN', 'F'), ('chiN2phiGEN', 'F')
-        ,('chidecaylengthXYN2', 'F'), ('chidecaylengthZN2', 'F'), ('chidecaylength3DN2', 'F')
-        ,('log10(chidecaylengthXYN2)', 'F'), ('log10(chidecaylengthZN2)', 'F'), ('log10(chidecaylength3DN2)', 'F')
-        ,('chiN2numdaughters', 'I')
+        , ('n_chiC1', 'I'), ('n_chiN2', 'I'), ('n_chiN1', 'I')
+        , ('n_chiC1Daughter', 'I'), ('n_chiN2Daughter', 'I')
+        , ('n_chiDaughter', 'I')
 
-        ,('pionptGEN', 'F'), ('pionetaGEN', 'F'), ('pionphiGEN', 'F'), ('pionchargeGEN', 'F')
-        ,('tminmatching', 'F'), ('dxyzmin', 'F'), ('drmin', 'F')
-        ,('dxyzminrandom', 'F'), ('drminrandom', 'F')
-        ,('drminold', 'F'), ('drminoldrandom', 'F')
-        ,('matchedTrackIdxCharginoPion1', 'F'), ('matchedTrackIdxCharginoPion2', 'F')
-
-        ,('numchidaughters', 'I')
+        , ('stop_mass', 'F'), ('antistop_mass', 'F')
+        , ('stop_pt', 'F'), ('antistop_pt', 'F')
+        , ('stop_eta', 'F'), ('antistop_eta', 'F')
+        , ('stop_phi', 'F'), ('antistop_phi', 'F')
+        , ('stop_decay', 'F'), ('antistop_decay', 'F')
         ]
     event_level_var_names += var_names_gen_signal
 
     var_names_gen_background = [
-        ('genmetpt', 'F'), ('genmetphi', 'F')
-        ,('genht', 'F'), ('genhtmiss', 'F')
-        ,('pTneutrinosum', 'F')
+        ('gen_met_pt', 'F'), ('gen_met_phi', 'F')
+        , ('gen_ht', 'F'), ('gen_ht5', 'F'), ('gen_htMiss', 'F')
+        , ('gen_neutrinoSumPt', 'F')
 
-        ,('numW', 'I')
-        ,('ptW', 'F'), ('etaW', 'F'), ('phiW', 'F')
-        ,('numWDaughters', 'I'), ('ptWneutrino', 'F'), ('decayWtau', 'F')
+        , ('n_zGamma', 'I'), ('zGamma_pdgId', 'F')
+        , ('zGamma_pt', 'F'), ('zGamma_eta', 'F'), ('zGamma_phi', 'F')
+        , ('zGamma_neutrinoSumPt', 'F')
+        , ('n_zDaughter', 'I')
 
-        ,('numZgamma', 'I')
-        ,('ptZgamma', 'F'), ('etaZgamma', 'F'), ('phiZgamma', 'F')
-        ,('numZgammaDaughters', 'I'), ('ptsumZgammaNeutrinos', 'F')
+        , ('n_wBoson', 'I'), ('wBoson_pdgId', 'F')
+        , ('wBoson_pt', 'F'), ('wBoson_eta', 'F'), ('wBoson_phi', 'F')
+        , ('wBoson_neutrinoPt', 'F'), ('wBoson_tauDecayMode', 'F')
+        , ('n_wDaughter', 'I')
+
+        , ('n_genParticle', 'I')
         ]
     event_level_var_names += var_names_gen_background
 
     var_names_cleaning = [
-        ('electronsCleaned', 'I'), ('muonsCleaned', 'I')
-        ,('invmCleaning', 'F'), ('zptCleaning', 'F')
-        ,('l1ptCleaning', 'F'), ('l2ptCleaning', 'F')
-        ,('l1etaCleaning', 'F'), ('l2etaCleaning', 'F')
-        ,('l1phiCleaning', 'F'), ('l2phiCleaning', 'F')
-        ,('l1absisodbetaCleaning', 'F'), ('l2absisodbetaCleaning', 'F')
-        ,('l1relisodbetaCleaning', 'F'), ('l2relisodbetaCleaning', 'F')
-        ,('metptBeforeCleaning', 'F'), ('metphiBeforeCleaning', 'F')
+        ('cleaning_electronsCleaned', 'I'), ('cleaning_muonsCleaned', 'I')
+        , ('cleaning_invm', 'F'), ('cleaning_zPt', 'F')
+        , ('cleaning_l1Pt', 'F'), ('cleaning_l2Pt', 'F')
+        , ('cleaning_l1Eta', 'F'), ('cleaning_l2Eta', 'F')
+        , ('cleaning_l1Phi', 'F'), ('cleaning_l2Phi', 'F')
+        , ('cleaning_l1dBetaAbsIso', 'F'), ('cleaning_l2dBetaAbsIso', 'F')
+        , ('cleaning_l1dBetaRelIso', 'F'), ('cleaning_l2dBetaRelIso', 'F')
+        , ('cleaning_metPtBeforeCleaning', 'F'), ('cleaning_metPhiBeforeCleaning', 'F')
         ]
     event_level_var_names += var_names_cleaning
 
     var_names_event = [
-        ('cutflow', 'I'), ('randomevent', 'I')
-        ,('eventweight', 'F')
-        ,('numpvs', 'I'), ('rho', 'F')
-        ,('metpt', 'F'), ('metphi', 'F')
-        ,('nofastsimcorrmetpt', 'F'), ('nofastsimcorrmetphi', 'F')
-        ,('ht', 'F'), ('ht5', 'F'), ('htmiss', 'F')
-        ,('numgenjets', 'I')
-        ,('numbadjets', 'I'), ('minetaabsbadjets', 'F'), ('numbadjetsEventVeto', 'I')
-        ,('numbadjetsLepVeto', 'I'), ('minetaabsbadjetsLepVeto', 'F'), ('numbadjetsLepVetoEventVeto', 'I')
-        ,('ptleadingjet', 'F'), ('etaleadingjet', 'F'), ('phileadingjet', 'F')
-        ,('numjets', 'I'), ('numjets30', 'I'), ('numjets50','I'), ('numjets100', 'I'), ('numjets200', 'I')
-        ,('njetsbtagloose', 'I'), ('njetsbtaglooseTIGHT', 'I')
-        ,('njetsbtagmedium', 'I'), ('njetsbtagmediumTIGHT', 'I')
-        ,('njetsbtagtight', 'I'), ('njetsbtagtightTIGHT', 'I')
-        ,('mtmetleadingjet', 'F')
-        ,('mindphimetjets', 'F')
-        ,('numphotons', 'I'), ('numphotonsiso', 'I')
-        ,('numpfleptons', 'I'), ('numpfleptonsiso', 'I')
-        ,('numelectrons', 'I'), ('numelectronsiso', 'I')
-        ,('nummuons', 'I'), ('nummuonsiso', 'I')
-        ,('numleptons', 'I'), ('numleptonsiso', 'I')
-        ,('numtaus', 'I'), ('numtausvloose', 'I'), ('numtausloose', 'I'), ('numtausmedium', 'I'), ('numtaustight', 'I'), ('numtausvtight', 'I'), ('numtausvvtight', 'I')
-        ,('numtausPt20', 'I'), ('numtausvloosePt20', 'I'), ('numtausloosePt20', 'I'), ('numtausmediumPt20', 'I'), ('numtaustightPt20', 'I'), ('numtausvtightPt20', 'I'), ('numtausvvtightPt20', 'I')
-        ,('numtrackstotal', 'I'), ('numtracksbasicpreselection', 'I'), ('numtracksfinalpreselection', 'I')
+        ('cutflow', 'I'), ('random', 'I')
+
+        , ('crossSection', 'F'), ('numSimEvents', 'F')
+
+        , ('weight_fastSimBug', 'F')
+        , ('weight_PU_FastFull', 'F'), ('weight_PU_FastFull_rebin', 'F')
+        , ('weight_PU_SigBkg', 'F'), ('weight_PU_SigBkg_rebin', 'F')
+
+        , ('n_pv', 'I'), ('rho', 'F')
+
+        , ('met_pt', 'F'), ('met_phi', 'F')
+        , ('met_ptNoFastSimCorr', 'F'), ('met_phiNoFastSimCorr', 'F')
+        
+        , ('ht', 'F'), ('ht5', 'F'), ('htMiss', 'F')
+        
+        , ('n_genJet', 'I')
+
+        , ('badJets_n', 'I'), ('badJets_minEta', 'F'), ('badJets_nForEventVeto', 'I')
+        , ('badJets_lepVeto_n', 'I'), ('badJets_lepVeto_minEta', 'F'), ('badJets_lepVeto_nForEventVeto', 'I')
+        
+        , ('leadingJet_pt', 'F'), ('leadingJet_eta', 'F'), ('leadingJet_phi', 'F')
+        
+        , ('n_jet', 'I')
+        , ('n_jet_15', 'I'), ('n_jet_30', 'I'), ('n_jet_50', 'I'), ('n_jet_100', 'I'), ('n_jet_200', 'I')
+
+        , ('n_jet_30_btagloose', 'I'), ('n_jet_15_btagloose', 'I')
+        , ('n_jet_30_btagmedium', 'I'), ('n_jet_15_btagmedium', 'I')
+        , ('n_jet_30_btagtight', 'I'), ('n_jet_15_btagtight', 'I')
+        
+        , ('mtMetLeadingJet', 'F')
+        , ('dphiminMetJets', 'F')
+        
+        , ('n_photon', 'I'), ('n_photon_iso', 'I')
+        , ('n_pfLepton', 'I'), ('n_pfLepton_iso', 'I')
+        , ('n_electron', 'I'), ('n_electron_iso', 'I')
+        , ('n_muon', 'I'), ('n_muon_iso', 'I')
+        , ('n_lepton', 'I'), ('n_lepton_iso', 'I')
+        , ('n_tau', 'I'), ('n_tau_vloose', 'I'), ('n_tau_loose', 'I'), ('n_tau_medium', 'I'), ('n_tau_tight', 'I'), ('n_tau_vtight', 'I'), ('n_tau_vvtight', 'I')
+        , ('n_tau_20', 'I'), ('n_tau_20_vloose', 'I'), ('n_tau_20_loose', 'I'), ('n_tau_20_medium', 'I'), ('n_tau_20_tight', 'I'), ('n_tau_20_vtight', 'I'), ('n_tau_20_vvtight', 'I')
+        , ('n_track_total', 'I'), ('n_track_basic', 'I'), ('n_track', 'I')
         ]
     event_level_var_names += var_names_event
 
     var_names_data = [
-        ('runnum', 'F'), ('lumisec', 'F'), ('eventnum', 'F')
+        ('runNum', 'F'), ('lumiSec', 'F'), ('eventNum', 'F')
         ]
     event_level_var_names += var_names_data
 
@@ -323,16 +341,16 @@ if True:
 
     trigger_flags = [
         'globalSuperTightHalo2016Filter'
-        ,'HBHENoiseFilter'
-        ,'HBHEIsoNoiseFilter'
-        ,'eeBadScFilter'
-        ,'EcalDeadCellTriggerPrimitiveFilter'
-        ,'ecalBadCalibFilter'
-        ,'BadChargedHadronFilter'
-        ,'BadPFMuonFilter'
-        ,'globalTightHalo2016Filter'
-        ,'PrimaryVertexFilter'
-        ,'CSCTightHaloFilter'
+        , 'HBHENoiseFilter'
+        , 'HBHEIsoNoiseFilter'
+        , 'eeBadScFilter'
+        , 'EcalDeadCellTriggerPrimitiveFilter'
+        , 'ecalBadCalibFilter'
+        , 'BadChargedHadronFilter'
+        , 'BadPFMuonFilter'
+        , 'globalTightHalo2016Filter'
+        , 'PrimaryVertexFilter'
+        , 'CSCTightHaloFilter'
         ]
 
     for tf in trigger_flags:
@@ -354,253 +372,321 @@ if True:
         tEvent.Branch(t_hlt, event_level_var_array[t_hlt], t_hlt + '/I')
 
 
+    var_names_chiC1 = [
+        ('chiC1_pt', 'F'), ('chiC1_eta', 'F'), ('chiC1_phi', 'F')
+        , ('chiC1_decaylengthXYZ', 'F'), ('chiC1_decaylengthXY', 'F'), ('chiC1_chidecaylengthZ', 'F')
+        , ('chiC1_log10(decaylengthXYZ)', 'F'), ('chiC1_log10(decaylengthXY)', 'F'), ('chiC1_log10(chidecaylengthZ)', 'F')
+
+        , ('chiC1_hasPion', 'I'), ('chiC1_hasMatchedTrackPion', 'I')
+
+        , ('chiC1_pionPt', 'F'), ('chiC1_pionEta', 'F'), ('chiC1_pionPhi', 'F'), ('chiC1_pionCharge', 'F')
+        , ('chiC1_pionMatching_tmin', 'F'), ('chiC1_pionMatching_dxyzmin', 'F'), ('chiC1_pionMatching_drmin', 'F')
+        , ('chiC1_pionMatching_dxyzminrandom', 'F'), ('chiC1_pionMatching_drminrandom', 'F')
+        , ('chiC1_pionMatching_drminold', 'F'), ('chiC1_pionMatching_drminoldrandom', 'F')
+        ]
+    
+    chiC1_var_array = {}
+    for n in var_names_chiC1:
+        chiC1_var_array[n[0]] = array('f', 10*[0.])
+        tEvent.Branch(nice_string(n[0]), chiC1_var_array[n[0]], nice_string(n[0]) + '[n_chiC1]/F')
+
+
+    var_names_chiN2 = [
+        ('chiN2_pt', 'F'), ('chiN2_eta', 'F'), ('chiN2_phi', 'F')
+        , ('chiN2_decaylengthXYZ', 'F'), ('chiN2_decaylengthXY', 'F'), ('chiN2_chidecaylengthZ', 'F')
+        , ('chiN2_log10(decaylengthXYZ)', 'F'), ('chiN2_log10(decaylengthXY)', 'F'), ('chiN2_log10(chidecaylengthZ)', 'F')
+        ]
+    
+    chiN2_var_array = {}
+    for n in var_names_chiN2:
+        chiN2_var_array[n[0]] = array('f', 10*[0.])
+        tEvent.Branch(nice_string(n[0]), chiN2_var_array[n[0]], nice_string(n[0]) + '[n_chiN2]/F')
+        
+        
+    var_names_chiN1 = [
+        ('chiN1_pt', 'F'), ('chiN1_eta', 'F'), ('chiN1_phi', 'F')
+        ]
+    
+    chiN1_var_array = {}
+    for n in var_names_chiN1:
+        chiN1_var_array[n[0]] = array('f', 10*[0.])
+        tEvent.Branch(nice_string(n[0]), chiN1_var_array[n[0]], nice_string(n[0]) + '[n_chiN1]/F')
+
+
     var_names_chidaughter = [
-        ('motherchidaughter', 'I'), ('pdgIdchidaughter', 'F')
-        ,('ptchidaughter', 'F'), ('etachidaughter', 'F'), ('phichidaughter', 'F')
-        ,('hasmatchedtrackchidaughter', 'I')
+        ('chiDaughter_pdgIdMother', 'I'), ('chiDaughter_pdgId', 'F')
+        , ('chiDaughter_pt', 'F'), ('chiDaughter_eta', 'F'), ('chiDaughter_phi', 'F')
+        , ('chiDaughter_hasMatchedTrack', 'I')
         ]
 
     chidaughter_var_array = {}
     for n in var_names_chidaughter:
         chidaughter_var_array[n[0]] = array('f', 100*[0.])
-        tEvent.Branch(nice_string(n[0]), chidaughter_var_array[n[0]], nice_string(n[0]) + '[numchidaughters]/F')
+        tEvent.Branch(nice_string(n[0]), chidaughter_var_array[n[0]], nice_string(n[0]) + '[n_chiDaughter]/F')
 
 
     var_names_zdaughter = [
-        ('pdgIdZdaughter', 'F')
-        ,('ptZdaughter', 'F'), ('etaZdaughter', 'F'), ('phiZdaughter', 'F')
+        ('zDaughter_pdgId', 'F')
+        , ('zDaughter_pt', 'F'), ('zDaughter_eta', 'F'), ('zDaughter_phi', 'F')
         ]
 
     zdaughter_var_array = {}
     for n in var_names_zdaughter:
         zdaughter_var_array[n[0]] = array('f', 100*[0.])
-        tEvent.Branch(nice_string(n[0]), zdaughter_var_array[n[0]], nice_string(n[0]) + '[numZgammaDaughters]/F')
+        tEvent.Branch(nice_string(n[0]), zdaughter_var_array[n[0]], nice_string(n[0]) + '[n_zDaughter]/F')
 
 
     var_names_wdaughter = [
-        ('pdgIdWdaughter', 'F')
-        ,('ptWdaughter', 'F'), ('etaWdaughter', 'F'), ('phiWdaughter', 'F')
-        ,('visptWdaughter', 'F'), ('visetaWdaughter', 'F'), ('visphiWdaughter', 'F')
+        ('wDaughter_pdgId', 'F')
+        , ('wDaughter_pt', 'F'), ('wDaughter_eta', 'F'), ('wDaughter_phi', 'F')
+        , ('wDaughter_ptVis', 'F'), ('wDaughter_etaVis', 'F'), ('wDaughter_phiVis', 'F')
         ]
 
     wdaughter_var_array = {}
     for n in var_names_wdaughter:
         wdaughter_var_array[n[0]] = array('f', 100*[0.])
-        tEvent.Branch(nice_string(n[0]), wdaughter_var_array[n[0]], nice_string(n[0]) + '[numWDaughters]/F')
+        tEvent.Branch(nice_string(n[0]), wdaughter_var_array[n[0]], nice_string(n[0]) + '[n_wDaughter]/F')
+        
+    
+    var_names_genparticle = [
+        ('genParticle_pdgId', 'F'), ('genParticle_motherPdgId', 'F'), ('genParticle_status', 'F')
+        , ('genParticle_mass', 'F'), ('genParticle_energy', 'F')
+        , ('genParticle_pt', 'F'), ('genParticle_eta', 'F'), ('genParticle_phi', 'F')
+        ]
+
+    genparticle_var_array = {}
+    for n in var_names_genparticle:
+        genparticle_var_array[n[0]] = array('f', 100*[0.])
+        tEvent.Branch(nice_string(n[0]), genparticle_var_array[n[0]], nice_string(n[0]) + '[n_genParticle]/F')
+        
 
     var_names_pv = [
-        ('idxpv', 'I'), ('numtrackspv', 'F')
-        ,('xpv', 'F'), ('ypv', 'F'), ('zpv', 'F')
+        ('pv_idx', 'I'), ('pv_numTracks', 'F')
+        , ('pv_x', 'F'), ('pv_y', 'F'), ('pv_z', 'F')
         ]
 
     pv_var_array = {}
     for n in var_names_pv:
         pv_var_array[n[0]] = array('f', 500*[0.])
-        tEvent.Branch(nice_string(n[0]), pv_var_array[n[0]], nice_string(n[0]) + '[numpvs]/F')
+        tEvent.Branch(nice_string(n[0]), pv_var_array[n[0]], nice_string(n[0]) + '[n_pv]/F')
 
 
     var_names_genjet = [
-        ('ptgenjet', 'F'), ('etagenjet', 'F'), ('phigenjet', 'F'), ('massgenjet', 'F')
+        ('genJet_pt', 'F'), ('genJet_eta', 'F'), ('genJet_phi', 'F'), ('genJet_mass', 'F')
         ]
 
     genjet_var_array = {}
     for n in var_names_genjet:
         genjet_var_array[n[0]] = array('f', 1000*[0.])
-        tEvent.Branch(nice_string(n[0]), genjet_var_array[n[0]], nice_string(n[0]) + '[numgenjets]/F')
+        tEvent.Branch(nice_string(n[0]), genjet_var_array[n[0]], nice_string(n[0]) + '[n_genJet]/F')
 
 
     var_names_jet = [
-        ('pxjet', 'F'), ('pyjet', 'F'), ('pzjet', 'F')
-        ,('ptjet', 'F'), ('energyjet', 'F')
-        ,('etajet', 'F'), ('phijet', 'F')
-        ,('nconstituentsjet', 'I')
-        ,('btagjet', 'F')
-        ,('drminleptonjet', 'F'), ('ptclosestleptonjet', 'F'), ('isleptonjet', 'F')
-        ,('drmingenjetjet', 'F'), ('ptclosestgenjetjet', 'F'), ('isgenjetjet', 'F')
+        ('jet_px', 'F'), ('jet_py', 'F'), ('jet_pz', 'F')
+        , ('jet_pt', 'F'), ('jet_energy', 'F')
+        , ('jet_eta', 'F'), ('jet_phi', 'F')
+        , ('jet_numConstituents', 'I')
+        , ('jet_btag', 'F')
+        , ('jet_drminLepton', 'F'), ('jet_ptClosestLepton', 'F'), ('jet_isLepton', 'F')
+        , ('jet_drminGenJet', 'F'), ('jet_ptClosestGenJet', 'F'), ('jet_isGenJet', 'F')
         ]
 
     jet_var_array = {}
     for n in var_names_jet:
         jet_var_array[n[0]] = array('f', 1000*[0.])
-        tEvent.Branch(nice_string(n[0]), jet_var_array[n[0]], nice_string(n[0]) + '[numjets]/F')
+        tEvent.Branch(nice_string(n[0]), jet_var_array[n[0]], nice_string(n[0]) + '[n_jet]/F')
 
 
     var_names_photon = [
-        ('pxphoton', 'F'), ('pyphoton', 'F'), ('pzphoton', 'F')
-        ,('ptphoton', 'F'), ('energyphoton', 'F')
-        ,('etaphoton', 'F'), ('phiphoton', 'F')
-        ,('pfabsisophoton', 'F'), ('pfabsisominiphoton', 'F')
-        ,('chpfabsisophoton', 'F'), ('chpfabsisominiphoton', 'F')
-        ,('jetisophoton', 'F'), ('jetisomultiphoton', 'F'), ('jetdrminphoton', 'F')
-        ,('chhadisophoton', 'F'), ('neuhadisophoton', 'F'), ('photisophoton', 'F')
-        ,('absisophoton', 'F'), ('relisophoton', 'F')
+        ('photon_px', 'F'), ('photon_py', 'F'), ('photon_pz', 'F')
+        , ('photon_pt', 'F'), ('photon_energy', 'F')
+        , ('photon_eta', 'F'), ('photon_phi', 'F')
+        , ('photon_pfAbsIso', 'F'), ('photon_pfAbsIsoMini', 'F')
+        , ('photon_chPfAbsIso', 'F'), ('photon_chPfAbsIsoMini', 'F')
+        , ('photon_jetIso', 'F'), ('photon_jetIsoMulti', 'F'), ('photon_drminJet', 'F')
+        , ('photon_chHadIso', 'F'), ('photon_neHadIso', 'F'), ('photon_photIso', 'F')
+        , ('photon_absIso', 'F'), ('photon_relIso', 'F')
         ]
 
     photon_var_array = {}
     for n in var_names_photon:
         photon_var_array[n[0]] = array('f', 100*[0.])
-        tEvent.Branch(nice_string(n[0]), photon_var_array[n[0]], nice_string(n[0]) + '[numphotons]/F')
+        tEvent.Branch(nice_string(n[0]), photon_var_array[n[0]], nice_string(n[0]) + '[n_photon]/F')
 
 
     var_names_electron = [
-        ('chargeelectron', 'I')
-        ,('pxelectron', 'F'), ('pyelectron', 'F'), ('pzelectron', 'F')
-        ,('ptelectron', 'F'), ('energyelectron', 'F')
-        ,('etaelectron', 'F'), ('phielectron', 'F')
-        ,('dzelectron', 'F'), ('dxyelectron', 'F')
-        ,('pfabsisoelectron', 'F'), ('pfabsisominielectron', 'F')
-        ,('chpfabsisoelectron', 'F'), ('chpfabsisominielectron', 'F')
-        ,('jetisoelectron', 'F'), ('jetisomultielectron', 'F'), ('jetdrminelectron', 'F')
-        ,('chhadisoelectron', 'F'), ('challisoelectron', 'F')
-        ,('neuhadisoelectron', 'F'), ('photisoelectron', 'F')
-        ,('puchhadisoelectron', 'F')
-        ,('absisodbetaelectron', 'F'), ('relisodbetaelectron', 'F')
+        ('electron_charge', 'I')
+        , ('electron_px', 'F'), ('electron_py', 'F'), ('electron_pz', 'F')
+        , ('electron_pt', 'F'), ('electron_energy', 'F')
+        , ('electron_eta', 'F'), ('electron_phi', 'F')
+        , ('electron_dz', 'F'), ('electron_dxy', 'F')
+        , ('electron_pfAbsIso', 'F'), ('electron_pfAbsIsoMini', 'F')
+        , ('electron_chPfAbsIso', 'F'), ('electron_chPfAbsIsoMini', 'F')
+        , ('electron_jetIso', 'F'), ('electron_jetIsoMulti', 'F'), ('electron_drminJet', 'F')
+        , ('electron_chHadIso', 'F'), ('electron_chAllIso', 'F')
+        , ('electron_neHadIso', 'F'), ('electron_photIso', 'F')
+        , ('electron_puChHadIso', 'F')
+        , ('electron_dBetaAbsIso', 'F'), ('electron_dBetaRelIso', 'F')
         ]
 
     electron_var_array = {}
     for n in var_names_electron:
         electron_var_array[n[0]] = array('f', 100*[0.])
-        tEvent.Branch(nice_string(n[0]), electron_var_array[n[0]], nice_string(n[0]) + '[numelectrons]/F')
+        tEvent.Branch(nice_string(n[0]), electron_var_array[n[0]], nice_string(n[0]) + '[n_electron]/F')
 
 
     var_names_muon = [
-        ('chargemuon', 'I')
-        ,('pxmuon', 'F'), ('pymuon', 'F'), ('pzmuon', 'F')
-        ,('ptmuon', 'F'), ('energymuon', 'F')
-        ,('etamuon', 'F'), ('phimuon', 'F')
-        ,('dzmuon', 'F'), ('dxymuon', 'F')
-        ,('pfabsisomuon', 'F'), ('pfabsisominimuon', 'F')
-        ,('chpfabsisomuon', 'F'), ('chpfabsisominimuon', 'F')
-        ,('jetisomuon', 'F'), ('jetisomultimuon', 'F'), ('jetdrminmuon', 'F')
-        ,('chhadisomuon', 'F'), ('challisomuon', 'F')
-        ,('neuhadisomuon', 'F'), ('photisomuon', 'F')
-        ,('puchhadisomuon', 'F')
-        ,('absisodbetamuon', 'F'), ('relisodbetamuon', 'F')
+        ('muon_charge', 'I')
+        , ('muon_px', 'F'), ('muon_py', 'F'), ('muon_pz', 'F')
+        , ('muon_pt', 'F'), ('muon_energy', 'F')
+        , ('muon_eta', 'F'), ('muon_phi', 'F')
+        , ('muon_dz', 'F'), ('muon_dxy', 'F')
+        , ('muon_pfAbsIso', 'F'), ('muon_pfAbsIsoMini', 'F')
+        , ('muon_chPfAbsIso', 'F'), ('muon_chPfAbsIsoMini', 'F')
+        , ('muon_jetIso', 'F'), ('muon_jetIsoMulti', 'F'), ('muon_drminJet', 'F')
+        , ('muon_chHadIso', 'F'), ('muon_chAllIso', 'F')
+        , ('muon_neHadIso', 'F'), ('muon_photIso', 'F')
+        , ('muon_puChHadIso', 'F')
+        , ('muon_dBetaAbsIso', 'F'), ('muon_dBetaRelIso', 'F')
         ]
 
     muon_var_array = {}
     for n in var_names_muon:
         muon_var_array[n[0]] = array('f', 100*[0.])
-        tEvent.Branch(nice_string(n[0]), muon_var_array[n[0]], nice_string(n[0]) + '[nummuons]/F')
+        tEvent.Branch(nice_string(n[0]), muon_var_array[n[0]], nice_string(n[0]) + '[n_muon]/F')
 
 
     var_names_tau = [
-        ('chargetau', 'I')
-        ,('pxtau', 'F'), ('pytau', 'F'), ('pztau', 'F')
-        ,('pttau', 'F'), ('energytau', 'F'), ('masstau', 'F')
-        ,('scaledpttau', 'F'), ('scaledenergytau', 'F'), ('scaledmasstau', 'F')
-        ,('etatau', 'F'), ('phitau', 'F')
-        ,('dztau', 'F'), ('dxytau', 'F')
-        ,('chhadisotau', 'F'), ('photisotau', 'F')
-        ,('decaymodetau', 'F'), ('decaymodefindingtau', 'F'), ('mvadiscrtau', 'F')
-        ,('isvloosetau', 'I'), ('isloosetau', 'I'), ('ismediumtau', 'I'), ('istighttau', 'I'), ('isvtighttau', 'I'), ('isvvtighttau', 'I')
-        ,('elrejtau', 'F'), ('murejtau', 'F')
-        ,('tauleadpfchhadcandpt', 'F'), ('tauleadpfchhadcandeta', 'F'), ('tauleadpfchhadcandphi', 'F')
-        ,('genmatchtau', 'F'), ('genmatchpdgidtau', 'F'), ('genmatchdrtau', 'F')
-        ,('sanitytauDM', 'F'), ('sanitytauRaw', 'F'), ('sanitytauVloose', 'F')
+        ('tau_charge', 'I')
+        , ('tau_px', 'F'), ('tau_py', 'F'), ('tau_pz', 'F')
+        , ('tau_pt', 'F'), ('tau_energy', 'F'), ('tau_mass', 'F')
+        , ('tau_ptScaled', 'F'), ('tau_energyScaled', 'F'), ('tau_massScaled', 'F')
+        , ('tau_eta', 'F'), ('tau_phi', 'F')
+        , ('tau_dz', 'F'), ('tau_dxy', 'F')
+        , ('tau_chHadIso', 'F'), ('tau_photIso', 'F')
+        , ('tau_decayMode', 'F'), ('tau_decayModeFinding', 'F'), ('tau_mvaDiscr', 'F')
+        , ('tau_isvloose', 'I'), ('tau_isloose', 'I'), ('tau_ismedium', 'I'), ('tau_istight', 'I'), ('tau_isvtight', 'I'), ('tau_isvvtight', 'I')
+        , ('tau_elRejection', 'F'), ('tau_muRejection', 'F')
+        , ('tau_leadPfChHadCandPt', 'F'), ('tau_leadPfChHadCandEta', 'F'), ('tau_leadPfChHadCandPhi', 'F')
+        , ('tau_genMatch', 'F'), ('tau_genMatchPdgId', 'F'), ('tau_genMatchDr', 'F')
+        , ('tau_sanityDm', 'F'), ('tau_sanityRaw', 'F'), ('tau_sanityVloose', 'F')
         ]
 
     tau_var_array = {}
     for n in var_names_tau:
         tau_var_array[n[0]] = array('f', 100*[0.])
-        tEvent.Branch(nice_string(n[0]), tau_var_array[n[0]], nice_string(n[0]) + '[numtaus]/F')
+        tEvent.Branch(nice_string(n[0]), tau_var_array[n[0]], nice_string(n[0]) + '[n_tau]/F')
 
 
     var_names_pflepton = [
-        ('chargepflepton', 'I')
-        ,('pxpflepton', 'F'), ('pypflepton', 'F'), ('pzpflepton', 'F')
-        ,('ptpflepton', 'F'), ('energypflepton', 'F')
-        ,('etapflepton', 'F'), ('phipflepton', 'F')
-        ,('dzpflepton', 'F'), ('dxypflepton', 'F')
-        ,('pfrelisopflepton', 'F'), ('pfrelisominipflepton', 'F')
-        ,('chpfrelisopflepton', 'F'), ('chpfrelisominipflepton', 'F')
-        ,('jetisopflepton', 'F'), ('jetisomultipflepton', 'F'), ('jetdrminpflepton', 'F')
-        ,('pdgidpflepton', 'F')
+        ('pfLepton_charge', 'I')
+        , ('pfLepton_pdgId', 'F')
+        , ('pfLepton_px', 'F'), ('pfLepton_py', 'F'), ('pfLepton_pz', 'F')
+        , ('pfLepton_pt', 'F'), ('pfLepton_energy', 'F')
+        , ('pfLepton_eta', 'F'), ('pfLepton_phi', 'F')
+        , ('pfLepton_dz', 'F'), ('pfLepton_dxy', 'F')
+        , ('pfLepton_pfRelIso', 'F'), ('pfLepton_pfRelIsoMini', 'F')
+        , ('pfLepton_chPfRelIso', 'F'), ('pfLepton_chPfRelIsoMini', 'F')
+        , ('pfLepton_jetIso', 'F'), ('pfLepton_jetIsoMulti', 'F'), ('pfLepton_drminJet', 'F')
         ]
 
     pflepton_var_array = {}
     for n in var_names_pflepton:
         pflepton_var_array[n[0]] = array('f', 100*[0.])
-        tEvent.Branch(nice_string(n[0]), pflepton_var_array[n[0]], nice_string(n[0]) + '[numpfleptons]/F')
+        tEvent.Branch(nice_string(n[0]), pflepton_var_array[n[0]], nice_string(n[0]) + '[n_pfLepton]/F')
 
 
     track_level_var_names = [
-        ('randomtrack', 'I')
+        ('track_random', 'I')
 
-        ,('charge', 'F')
-        ,('pxtrack', 'F'), ('pytrack', 'F'), ('pztrack', 'F')
-        ,('pttrack', 'F')
-        ,('pttrackerror', 'F'), ('log10(pttrackerror)', 'F')
-        ,('pttrackerror/pttrack', 'F'), ('log10(pttrackerror/pttrack)', 'F')
-        ,('eta', 'F'), ('phi', 'F')
-        ,('etaerror', 'F'), ('phierror', 'F')
+        , ('track_charge', 'F')
+        , ('track_px', 'F'), ('track_py', 'F'), ('track_pz', 'F')
+        , ('track_pt', 'F')
+        , ('track_ptError', 'F'), ('track_log10(ptError)', 'F')
+        , ('track_ptError/pt', 'F'), ('track_log10(ptError/pt)', 'F')
+        , ('track_eta', 'F'), ('track_phi', 'F')
+        , ('track_etaError', 'F'), ('track_phiError', 'F')
 
-        ,('associatedpv', 'I')
+        , ('track_isPfCand', 'I')
+        , ('track_pfCandPt', 'I'), ('track_pfCandEta', 'I'), ('track_pfCandPhi', 'I'), ('track_pfCandPdgId', 'I')
+        , ('track_pfCandEnergy', 'I'), ('track_pfCandEcalEnergy', 'I'), ('track_pfCandHcalEnergy', 'I')
 
-        ,('idxpvPU', 'I')
+        , ('track_associatedPV', 'I')
+        , ('track_associatedPU', 'I')
 
-        ,('IPsignificance', 'F'), ('IPxyz', 'F'), ('IPxy', 'F'), ('IPz', 'F')
-        ,('log10(IPsignificance)', 'F'), ('log10(IPxyz)', 'F'), ('log10(IPxy)', 'F'), ('log10(IPz)', 'F')
+        , ('track_IPsig', 'F'), ('track_IPxyz', 'F'), ('track_IPxy', 'F'), ('track_IPz', 'F')
+        , ('track_log10(IPsig)', 'F'), ('track_log10(IPxyz)', 'F'), ('track_log10(IPxy)', 'F'), ('track_log10(IPz)', 'F')
 
-        ,('IPsignificancePU', 'F'), ('IPxyzPU', 'F'), ('IPxyPU', 'F'), ('IPzPU', 'F')
-        ,('log10(IPsignificancePU)', 'F'), ('log10(IPxyzPU)', 'F'), ('log10(IPxyPU)', 'F'), ('log10(IPzPU)', 'F')
+        , ('track_IPsigPU', 'F'), ('track_IPxyzPU', 'F'), ('track_IPxyPU', 'F'), ('track_IPzPU', 'F')
+        , ('track_log10(IPsigPU)', 'F'), ('track_log10(IPxyzPU)', 'F'), ('track_log10(IPxyPU)', 'F'), ('track_log10(IPzPU)', 'F')
 
-        ,('dxy0', 'F'), ('dz0', 'F')
-        ,('log10(dxy0)', 'F'), ('log10(dz0)', 'F')
+        , ('track_dxy0', 'F'), ('track_dz0', 'F')
+        , ('track_log10(dxy0)', 'F'), ('track_log10(dz0)', 'F')
 
-        ,('dxynoabs', 'F')
-        ,('dznoabs', 'F')
+        , ('track_dxyNoAbs', 'F'), ('track_dzNoAbs', 'F')
+        , ('track_dxySign', 'F'), ('track_dzSign', 'F')
 
-        ,('dxy', 'F'), ('dxyhandmade', 'F'), ('dxyclosestpv', 'F'), ('dxyclosestpvPU', 'F')
-        ,('dz', 'F'), ('dzhandmade', 'F'), ('dzclosestpv', 'F'), ('dzclosestpvPU', 'F')
-        ,('log10(dxy)', 'F'), ('log10(dxyhandmade)', 'F'), ('log10(dxyclosestpv)', 'F'), ('log10(dxyclosestpvPU)', 'F')
-        ,('log10(dz)', 'F'), ('log10(dzhandmade)', 'F'), ('log10(dzclosestpv)', 'F'), ('log10(dzclosestpvPU)', 'F')
+        , ('track_dxy', 'F'), ('track_dxyHandmade', 'F'), ('track_dxyPU', 'F')
+        , ('track_dz', 'F'), ('track_dzHandmade', 'F'), ('track_dzPU', 'F')
+        , ('track_log10(dxy)', 'F'), ('track_log10(dxyHandmade)', 'F'), ('track_log10(dxyPU)', 'F')
+        , ('track_log10(dz)', 'F'), ('track_log10(dzHandmade)', 'F'), ('track_log10(dzPU)', 'F')
 
-        ,('dxyerror', 'F'), ('dzerror', 'F')
-        ,('log10(dxyerror)', 'F'), ('log10(dzerror)', 'F')
+        , ('track_dxyError', 'F'), ('track_dzError', 'F')
+        , ('track_log10(dxyError)', 'F'), ('track_log10(dzError)', 'F')
 
-        ,('trackabsiso', 'F'), ('trackreliso', 'F'), ('trackdrmin', 'F'), ('tracknumneighbours', 'I')
-        ,('trackabsisotight', 'F'), ('trackrelisotight', 'F'), ('trackdrmintight', 'F'), ('tracknumneighbourstight', 'I')
-        ,('pfabsiso', 'F'), ('pfreliso', 'F'), ('pfdrmin', 'F'), ('pfnumneighbours', 'I')
-        ,('chpfabsiso', 'F'), ('chpfreliso', 'F'), ('chpfdrmin', 'F'), ('chpfnumneighbours', 'I')
-        ,('jetiso', 'F'), ('jetisomulti', 'F'), ('jetdrmin', 'F'), ('jetisobtag', 'F')
-        ,('jetisotightNoLepton', 'F'), ('jetisomultitightNoLepton', 'F'), ('jetdrmintightNoLepton', 'F'), ('jetisobtagtightNoLepton', 'F')
-        ,('jetisotight', 'F'), ('jetisomultitight', 'F'), ('jetdrmintight', 'F'), ('jetisobtagtight', 'F')
-        ,('jetisomeditight', 'F'), ('jetisomultimeditight', 'F'), ('jetdrminmeditight', 'F'), ('jetisobtagmeditight', 'F')
-        ,('jetisomedium', 'F'), ('jetisomultimedium', 'F'), ('jetdrminmedium', 'F'), ('jetisobtagmedium', 'F')
-        ,('jetisoloose', 'F'), ('jetisomultiloose', 'F'), ('jetdrminloose', 'F'), ('jetisobtagloose', 'F')
+        , ('track_pfAbsIso', 'F'), ('track_pfRelIso', 'F'), ('track_drminPf', 'F'), ('track_numneighboursPf', 'I')
+        , ('track_chPfAbsIso', 'F'), ('track_chPfRelIso', 'F'), ('track_drminChPf', 'F'), ('track_numneighboursChPf', 'I')
+        
+        , ('track_tkAbsIso0', 'F'), ('track_tkRelIso0', 'F'), ('track_drminTrack0', 'F'), ('track_numneighboursTrack0', 'I')
+        , ('track_tkAbsIso1', 'F'), ('track_tkRelIso1', 'F'), ('track_drminTrack1', 'F'), ('track_numneighboursTrack1', 'I')
+        , ('track_tkAbsIso10', 'F'), ('track_tkRelIso10', 'F'), ('track_drminTrack10', 'F'), ('track_numneighboursTrack10', 'I')
+        
+        , ('track_jetIso0', 'F'), ('track_jetIsoMulti0', 'F'), ('track_drminJet0', 'F'), ('track_btagJet0', 'F')
+        , ('track_jetIso10', 'F'), ('track_jetIsoMulti10', 'F'), ('track_drminJet10', 'F'), ('track_btagJet10', 'F')
+        , ('track_jetIso15', 'F'), ('track_jetIsoMulti15', 'F'), ('track_drminJet15', 'F'), ('track_btagJet15', 'F')
+        , ('track_jetIso20', 'F'), ('track_jetIsoMulti20', 'F'), ('track_drminJet20', 'F'), ('track_btagJet20', 'F')
+        , ('track_jetIso30', 'F'), ('track_jetIsoMulti30', 'F'), ('track_drminJet30', 'F'), ('track_btagJet30', 'F')
+        
+        , ('track_jetIsoNoLepton15', 'F'), ('track_jetIsoMultiNoLepton15', 'F'), ('track_drminJetNoLepton15', 'F'), ('track_btagJetNoLepton15', 'F')
 
-        ,('drminneutralhadron', 'F'), ('invmclosestneutralhadrontrack', 'F')
-        ,('drminphoton', 'F'), ('drminelectron', 'F'), ('drminmuon', 'F')
+        , ('track_neHadAbsIso0', 'F'), ('track_drminNeHad0', 'F'), ('track_invmNeHad0', 'F')
+        , ('track_neHadAbsIso1', 'F'), ('track_drminNeHad1', 'F'), ('track_invmNeHad1', 'F')
+        , ('track_neHadAbsIso10', 'F'), ('track_drminNeHad10', 'F'), ('track_invmNeHad10', 'F')
+        
+        , ('track_drminPhoton', 'F'), ('track_drminElectron', 'F'), ('track_drminMuon', 'F')
 
-        ,('istauleadpfchhadcand', 'I'), ('drmintau', 'F'), ('closesttaumvadiscr', 'F'), ('closesttaudecaymode', 'F')
-        ,('taudr3wp', 'I'), ('taudr4wp', 'I'), ('taudr5wp', 'I')
+        , ('track_isTauLeadPfChHadCand0', 'I'), ('track_drminTau0', 'F')
+        , ('track_mvaDiscrTau0', 'F'), ('track_decayModeTau0', 'F')
+        , ('track_dr3highestWpTau0', 'I'), ('track_dr4highestWpTau0', 'I'), ('track_dr5highestWpTau0', 'I')
+        
+        , ('track_isTauLeadPfChHadCand20', 'I'), ('track_drminTau20', 'F')
+        , ('track_mvaDiscrTau20', 'F'), ('track_decayModeTau20', 'F')
+        , ('track_dr3highestWpTau20', 'I'), ('track_dr4highestWpTau20', 'I'), ('track_dr5highestWpTau20', 'I')
 
-        ,('istauleadpfchhadcandPt20', 'I'), ('drmintauPt20', 'F'), ('closesttaumvadiscrPt20', 'F'), ('closesttaudecaymodePt20', 'F')
-        ,('taudr3wpPt20', 'I'), ('taudr4wpPt20', 'I'), ('taudr5wpPt20', 'I')
+        , ('track_detaLeadingJet', 'F'), ('track_dphiLeadingJet', 'F')
+        , ('track_dphiMet', 'F'), ('track_dphiMetPca', 'F')
 
-        ,('detahighestptjet', 'F'), ('dphihighestptjet', 'F')
-        ,('dphimet', 'F'), ('dphimetpca', 'F')
+        , ('track_chi2', 'F')
+        , ('track_quality', 'I')
+        , ('track_numValidHits', 'I'), ('track_numLostHits', 'I')
 
-        ,('chi2', 'F')
-        ,('quality', 'I')
-        ,('nvalidhits', 'I'), ('nlosthits', 'I')
+        , ('track_isSignalTrack', 'I'), ('track_isSusyTrack', 'I'), ('track_susyTrackPdgIdMother', 'I'), ('track_susyTrackPdgId', 'I')
 
-        ,('issignaltrack', 'I'), ('issusytrack', 'I'), ('susytrackmother', 'I'), ('susytrackpdgid', 'I')
+        , ('track_hasGenMatch', 'I'), ('track_genMatchTmin', 'F')
+        , ('track_genMatchPdgId', 'F'), ('track_genMatchPt', 'F'), ('track_genMatchStatus', 'F')
+        , ('track_genMatchIsHardProcess', 'F'), ('track_genMatchIsFromHardProcess', 'F')
+        , ('track_genMatchIsPrompt', 'F'), ('track_genMatchIsDirectHadronDecayProduct', 'F'), ('track_genMatchIsDirectTauDecayProduct', 'F')
+        , ('track_genMatchMotherPdgId', 'F'), ('track_genMatchMotherPt', 'F'), ('track_genMatchMotherStatus', 'F')
+        , ('track_genMatchMotherIsHardProcess', 'F')
+        , ('track_genMatchMotherIsTheTau', 'I'), ('track_genMatchMotherTauDecay', 'F')
 
-        ,('hasGenMatch', 'I'), ('genmatchtmin', 'F')
-        ,('genmatchpdgid', 'F'), ('genmatchpt', 'F'), ('genmatchstatus', 'F'), ('genmatchishardprocess', 'F'), ('genmatchisfromhardprocess', 'F')
-        ,('genmatchisprompt', 'F'), ('genmatchisdirecthadrondecayproduct', 'F'), ('genmatchisdirecttaudecayproduct', 'F')
-        ,('genmatchmotherpdgid', 'F'), ('genmatchmotherpt', 'F'), ('genmatchmotherstatus', 'F'), ('genmatchmotherishardprocess', 'F')
-        ,('genmatchmotheristhetau', 'I'), ('genmatchmothertaudecay', 'F')
-
-        ,('gentaujetmatchdrmin', 'F'), ('gentaujetmatchpt', 'F')
+        , ('track_drminGenTauJet', 'F'), ('track_genTauJetPt', 'F')
         ]
 
     track_level_var_array = {}
     for n in track_level_var_names:
         track_level_var_array[n[0]] = array('f', nMaxTracksPerEvent*[0.])
-        tEvent.Branch(nice_string(n[0]), track_level_var_array[n[0]], nice_string(n[0]) + '[numtracksfinalpreselection]/F')
+        tEvent.Branch(nice_string(n[0]), track_level_var_array[n[0]], nice_string(n[0]) + '[n_track]/F')
 
 
     # cutflow histos
@@ -732,7 +818,7 @@ if True:
         # tau energy scale (TES)
         # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
         if tauIDalgo == 'MVArun2v1DBoldDMwLT':
-            tesfile = ROOT.TFile('/nfs/dust/cms/user/wolfmor/TES/TauES_dm_MVAoldDM2017v2_2016Legacy.root')  # TODO: this is not UL but...
+            tesfile = ROOT.TFile('/nfs/dust/cms/user/wolfmor/TES/TauES_dm_MVAoldDM2017v2_2016Legacy.root')  # TODO: this is not UL but ok...
             teshist = tesfile.Get('tes')
         else:
             raise NotImplementedError('tauIDalgo unknown or not specified')
@@ -945,8 +1031,6 @@ for f in options.inputFiles:
 
     if saveOutputFile: fout.cd()
 
-    if isTest: nevents = neventsTest
-
     nEventsPerFile = 0
 
     phifirsttrack = 0
@@ -966,11 +1050,8 @@ for f in options.inputFiles:
 
     for ievent, event in enumerate(events):
 
-        if ievent >= nevents:
-            print 'nevents boundary'
-            break
-        if nEventsPerFile >= nMaxEventsPerFile:
-            print 'nMaxEventsPerFile boundary'
+        if isTest and nEventsPerFile >= nEventsTest:
+            print 'nEventsTest boundary'
             break
 
         if 'local' not in options.tag:
@@ -980,14 +1061,15 @@ for f in options.inputFiles:
 
         if saveOutputFile and ievent % 100 == 0: fout.Write('', ROOT.TObject.kWriteDelete)
 
-        if ievent % printevery == 0: print 'analyzing event %d of %d' % (ievent, min(nevents, nMaxEventsPerFile))
+        if ievent % printevery == 0: print 'analyzing event %d of %d' % (ievent, nEventsTest if isTest else nevents)
 
+        tCounter.Fill()
 
-        hCutflow.Fill(0)
         cutflow = 0
+        hCutflow.Fill(cutflow)
 
         random.seed()
-        event_level_var_array['randomevent'][0] = random.randrange(10)
+        event_level_var_array['random'][0] = random.randrange(10)
 
         '''
         ###############################################################################################
@@ -1028,7 +1110,7 @@ for f in options.inputFiles:
                 lastrun = runnum
                 lastlumi = lumisec
                 continue
-        ###########################################################################################veto
+        # ########################################################################################### veto
 
             if runnum != lastrun:
                 lastrun = runnum
@@ -1041,50 +1123,26 @@ for f in options.inputFiles:
                 if lumisec not in runs[runnum]:
                     runs[runnum].append(lumisec)
 
-        hCutflow.Fill(1)
         cutflow = 1
+        hCutflow.Fill(cutflow)
 
-        event_level_var_array['runnum'][0] = runnum
-        event_level_var_array['lumisec'][0] = lumisec
-        event_level_var_array['eventnum'][0] = eventnum
+        event_level_var_array['runNum'][0] = runnum
+        event_level_var_array['lumiSec'][0] = lumisec
+        event_level_var_array['eventNum'][0] = eventnum
 
-        numC1 = -1
-        numN2 = -1
-        numN1 = -1
+        numC1 = 0
+        numN2 = 0
+        numN1 = 0
 
         chipmmFILE = -1
         deltamFILE = -1
+        mstopFILE = -1
 
         chipmmGEN = -1
         deltamGEN = -1
 
-        chipmptGEN = -1
-        chipmetaGEN = -999
-        chipmphiGEN = -999
-
         chiN2mGEN = -1
         deltamN2GEN = -1
-
-        chiN2ptGEN = -1
-        chiN2etaGEN = -999
-        chiN2phiGEN = -999
-
-        pionptGEN = -1
-        pionetaGEN = -999
-        pionphiGEN = -999
-        pionchargeGEN = -999
-
-        hasChargino = 0
-        hasPion = 0
-        hasMatchedTrack = 0
-
-        decaylength3D = -1
-        decaylengthXY = -1
-        decaylengthZ = -1
-
-        decaylength3DN2 = -1
-        decaylengthXYN2 = -1
-        decaylengthZN2 = -1
 
         chipmnumdaughters = 0
         chiN2numdaughters = 0
@@ -1104,17 +1162,18 @@ for f in options.inputFiles:
         event.getByLabel(label_pv, handle_pv)
         primaryvertices = handle_pv.product()
         primaryvertices = [pv for pv in primaryvertices if pv.isValid()]
-        if not len(primaryvertices) > 0: continue
+        n_pv = len(primaryvertices)
+        if not n_pv > 0: continue
         pv_pos = primaryvertices[0].position()
 
         event.getByLabel(label_tracks, handle_tracks)
         tracks = handle_tracks.product()
         if not len(tracks) > 0: continue
 
-        ###########################################################################################veto
+        # ########################################################################################### veto
 
-        hCutflow.Fill(2)
         cutflow = 2
+        hCutflow.Fill(cutflow)
 
         '''
         ###############################################################################################
@@ -1150,10 +1209,10 @@ for f in options.inputFiles:
 
         if not allfine: continue
 
-        ###########################################################################################veto
+        # ########################################################################################### veto
 
-        hCutflow.Fill(3)
         cutflow = 3
+        hCutflow.Fill(cutflow)
 
         trigger_hlt_accept = {}
         for t_hlt in trigger_hlt:
@@ -1296,156 +1355,6 @@ for f in options.inputFiles:
 
         '''
         ###############################################################################################
-        # GEN info
-        ###############################################################################################
-        '''
-
-        numZgamma = 0
-        ptZgamma = -1
-        etaZgamma = -999
-        phiZgamma = -999
-        numZgammaDaughters = 0
-        ptsumZgammaNeutrinos = -1
-        if 'geninfoZ' in options.tag:
-
-            Zgammas = [gp for gp in genparticles if gp.isLastCopy() and gp.statusFlags().fromHardProcess()
-                       and (abs(gp.pdgId()) == 22 or abs(gp.pdgId()) == 23)]
-
-            numZgamma = len(Zgammas)
-
-            if numZgamma == 1:  # else there's something funny going on...
-
-                Zgamma = Zgammas[0]
-
-                ptZgamma = Zgamma.pt()
-                etaZgamma = Zgamma.eta()
-                phiZgamma = Zgamma.phi()
-
-                numZgammaDaughters = Zgamma.numberOfDaughters()
-
-                ZgammaNeutrinos = ROOT.TLorentzVector()
-
-                for i in range(numZgammaDaughters):
-
-                    daughter = Zgamma.daughter(i)
-                    if not abs(daughter.pdgId()) == 15:
-                        daughter = getLastCopyStatusOne(daughter)
-                    else:
-                        daughter = getLastCopy(daughter)
-
-                    if daughter is None: continue
-
-                    zdaughter_var_array['pdgIdZdaughter'][i] = daughter.pdgId()
-                    zdaughter_var_array['ptZdaughter'][i] = daughter.pt()
-                    zdaughter_var_array['etaZdaughter'][i] = daughter.eta()
-                    zdaughter_var_array['phiZdaughter'][i] = daughter.phi()
-
-                    if abs(daughter.pdgId()) == 12 or abs(daughter.pdgId()) == 14 or abs(daughter.pdgId()) == 16:
-                        nTlv = ROOT.TLorentzVector(daughter.px(), daughter.py(), daughter.pz(), daughter.energy())
-                        ZgammaNeutrinos += nTlv
-
-                ptsumZgammaNeutrinos = ZgammaNeutrinos.Pt()
-
-        event_level_var_array['numZgamma'][0] = numZgamma
-        event_level_var_array['ptZgamma'][0] = ptZgamma
-        event_level_var_array['etaZgamma'][0] = etaZgamma
-        event_level_var_array['phiZgamma'][0] = phiZgamma
-        event_level_var_array['numZgammaDaughters'][0] = numZgammaDaughters
-        event_level_var_array['ptsumZgammaNeutrinos'][0] = ptsumZgammaNeutrinos
-
-
-        numW = 0
-        ptW = -1
-        etaW = -999
-        phiW = -999
-        numWDaughters = 0
-        ptWneutrino = -1
-        decayWtau = -1
-        thetau = None
-        if 'geninfoW' in options.tag:
-
-            Ws = [gp for gp in genparticles if gp.isLastCopy() and gp.statusFlags().fromHardProcess()
-                  and abs(gp.pdgId()) == 24]
-
-            numW = len(Ws)
-
-            if numW == 1:  # else there's something funny going on...
-
-                W = Ws[0]
-
-                ptW = W.pt()
-                etaW = W.eta()
-                phiW = W.phi()
-
-                numWDaughters = W.numberOfDaughters()
-
-                ptWneutrino = -1
-                decayWtau = -1
-
-                for i in range(numWDaughters):
-
-                    daughter = W.daughter(i)
-                    if not abs(daughter.pdgId()) == 15:
-                        daughter = getLastCopyStatusOne(daughter)
-                    else:
-                        daughter = getLastCopy(daughter)
-
-                    if daughter is None: continue
-
-                    viswdaughter = ROOT.TLorentzVector()
-                    for igranddaughter in range(daughter.numberOfDaughters()):
-                        if abs(daughter.daughter(igranddaughter).pdgId()) in [11, 12, 13, 14, 15, 16]: continue
-                        viswdaughterTlv = ROOT.TLorentzVector(daughter.daughter(igranddaughter).px(), daughter.daughter(igranddaughter).py(), daughter.daughter(igranddaughter).pz(), daughter.daughter(igranddaughter).energy())
-                        viswdaughter += viswdaughterTlv
-
-                    wdaughter_var_array['pdgIdWdaughter'][i] = daughter.pdgId()
-
-                    wdaughter_var_array['ptWdaughter'][i] = daughter.pt()
-                    wdaughter_var_array['etaWdaughter'][i] = daughter.eta()
-                    wdaughter_var_array['phiWdaughter'][i] = daughter.phi()
-
-                    wdaughter_var_array['visptWdaughter'][i] = viswdaughter.Pt()
-                    wdaughter_var_array['visetaWdaughter'][i] = viswdaughter.Eta()
-                    wdaughter_var_array['visphiWdaughter'][i] = viswdaughter.Phi()
-
-                    if abs(daughter.pdgId()) == 15:
-
-                        thetau = daughter
-
-                        nprongs = 0
-                        nneutral = 0
-
-                        for k in range(daughter.numberOfDaughters()):
-
-                            taudaughterpdgid = abs(daughter.daughter(k).pdgId())
-
-                            # see: https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauIDRecommendationForRun2#Decay_Mode_Reconstruction
-                            if taudaughterpdgid in [12, 14, 16]:  # skip the neutrinos
-                                continue
-                            elif taudaughterpdgid in [11, 13]:  # charged lepton
-                                decayWtau = 10 + taudaughterpdgid
-                            elif taudaughterpdgid == 111:  # neutral pion
-                                nneutral += 1
-                            else:  # has to be a charged hadron
-                                nprongs += 1
-
-                        if decayWtau not in [21, 23]:
-                            decayWtau = 5 * (nprongs - 1) + nneutral
-
-                    if abs(daughter.pdgId()) == 12 or abs(daughter.pdgId()) == 14 or abs(daughter.pdgId()) == 16:
-                        ptWneutrino = daughter.pt()
-
-        event_level_var_array['numW'][0] = numW
-        event_level_var_array['ptW'][0] = ptW
-        event_level_var_array['etaW'][0] = etaW
-        event_level_var_array['phiW'][0] = phiW
-        event_level_var_array['numWDaughters'][0] = numWDaughters
-        event_level_var_array['ptWneutrino'][0] = ptWneutrino
-        event_level_var_array['decayWtau'][0] = decayWtau
-
-
-        '''
-        ###############################################################################################
         # jetID and JECs
         ###############################################################################################
         '''
@@ -1454,10 +1363,10 @@ for f in options.inputFiles:
         jetsP4Corr = []
         jetsIdxGood = []
         numBadJets = 0
-        minetaabsbadjets = 10
+        minetaabsbadjets = 9
         numBadJetsEventVeto = 0
         numBadJetsLepVeto = 0
-        minetaabsbadjetsLepVeto = 10
+        minetaabsbadjetsLepVeto = 9
         numBadJetsLepVetoEventVeto = 0
         for ijet, jet in enumerate(jets):
 
@@ -1465,9 +1374,9 @@ for f in options.inputFiles:
             jetsP4Raw.append(jetP4Raw)
 
             if 'data' in options.tag:
-                correction = getJEC(DataJECs.jecAK4(runnum), jetP4Raw, jet.jetArea(), rho, len(primaryvertices))
+                correction = getJEC(DataJECs.jecAK4(runnum), jetP4Raw, jet.jetArea(), rho, n_pv)
             else:
-                correction = getJEC(jecAK4, jetP4Raw, jet.jetArea(), rho, len(primaryvertices))
+                correction = getJEC(jecAK4, jetP4Raw, jet.jetArea(), rho, n_pv)
 
             jetP4Corr = jetP4Raw * correction
             jetsP4Corr.append(jetP4Corr)
@@ -1486,8 +1395,8 @@ for f in options.inputFiles:
 
             if jet.pt() > 30 and abs(jet.eta()) < 5.0:
                 for v in jetIDvars:
-                    jetIDhistos[v[0] + 'all'].Fill(globals()[v[0].replace('jet','')])
-                    if goodJet: jetIDhistos[v[0] + 'pass'].Fill(globals()[v[0].replace('jet','')])
+                    jetIDhistos[v[0] + 'all'].Fill(globals()[v[0].replace('jet', '')])
+                    if goodJet: jetIDhistos[v[0] + 'pass'].Fill(globals()[v[0].replace('jet', '')])
 
             if goodJetLepVeto:
                 jetsIdxGood.append(ijet)
@@ -1506,24 +1415,24 @@ for f in options.inputFiles:
 
         if numBadJetsEventVeto > 0: continue
 
-        ###########################################################################################veto
+        # ########################################################################################### veto
 
-        hCutflow.Fill(4)
         cutflow = 4
+        hCutflow.Fill(cutflow)
 
-        event_level_var_array['numbadjets'][0] = numBadJets
-        event_level_var_array['minetaabsbadjets'][0] = minetaabsbadjets
-        event_level_var_array['numbadjetsEventVeto'][0] = numBadJetsEventVeto
+        event_level_var_array['badJets_n'][0] = numBadJets
+        event_level_var_array['badJets_minEta'][0] = minetaabsbadjets
+        event_level_var_array['badJets_nForEventVeto'][0] = numBadJetsEventVeto
 
-        event_level_var_array['numbadjetsLepVeto'][0] = numBadJetsLepVeto
-        event_level_var_array['minetaabsbadjetsLepVeto'][0] = minetaabsbadjetsLepVeto
-        event_level_var_array['numbadjetsLepVetoEventVeto'][0] = numBadJetsLepVetoEventVeto
+        event_level_var_array['badJets_lepVeto_n'][0] = numBadJetsLepVeto
+        event_level_var_array['badJets_lepVeto_minEta'][0] = minetaabsbadjetsLepVeto
+        event_level_var_array['badJets_lepVeto_nForEventVeto'][0] = numBadJetsLepVetoEventVeto
 
         jets = [j for ij, j in enumerate(jets) if ij in jetsIdxGood and abs(j.eta()) < 5.]
 
         if not len(jets) > 0: continue
 
-        ###########################################################################################veto
+        # ########################################################################################### veto
 
         '''
         ###############################################################################################
@@ -1556,10 +1465,10 @@ for f in options.inputFiles:
         zpt = -1
         l1pt = -1
         l2pt = -1
-        l1eta = -999
-        l2eta = -999
-        l1phi = -999
-        l2phi = -999
+        l1eta = -1
+        l2eta = -1
+        l1phi = -1
+        l2phi = -1
         l1absisodbeta, l1relisodbeta = -1, -1
         l2absisodbeta, l2relisodbeta = -1, -1
 
@@ -1664,27 +1573,27 @@ for f in options.inputFiles:
             if electronsCleaned: electrons = collection
             else: muons = collection
 
-        ###########################################################################################veto
+        # ########################################################################################### veto
 
-        hCutflow.Fill(5)
         cutflow = 5
+        hCutflow.Fill(cutflow)
 
-        event_level_var_array['electronsCleaned'][0] = electronsCleaned
-        event_level_var_array['muonsCleaned'][0] = muonsCleaned
-        event_level_var_array['invmCleaning'][0] = invm
-        event_level_var_array['zptCleaning'][0] = zpt
-        event_level_var_array['l1ptCleaning'][0] = l1pt
-        event_level_var_array['l2ptCleaning'][0] = l2pt
-        event_level_var_array['l1etaCleaning'][0] = l1eta
-        event_level_var_array['l2etaCleaning'][0] = l2eta
-        event_level_var_array['l1phiCleaning'][0] = l1phi
-        event_level_var_array['l2phiCleaning'][0] = l2phi
-        event_level_var_array['l1absisodbetaCleaning'][0] = l1absisodbeta
-        event_level_var_array['l1relisodbetaCleaning'][0] = l1relisodbeta
-        event_level_var_array['l2absisodbetaCleaning'][0] = l2absisodbeta
-        event_level_var_array['l2relisodbetaCleaning'][0] = l2relisodbeta
-        event_level_var_array['metptBeforeCleaning'][0] = metptBeforeCleaning
-        event_level_var_array['metphiBeforeCleaning'][0] = metphiBeforeCleaning
+        event_level_var_array['cleaning_electronsCleaned'][0] = electronsCleaned
+        event_level_var_array['cleaning_muonsCleaned'][0] = muonsCleaned
+        event_level_var_array['cleaning_invm'][0] = invm
+        event_level_var_array['cleaning_zPt'][0] = zpt
+        event_level_var_array['cleaning_l1Pt'][0] = l1pt
+        event_level_var_array['cleaning_l2Pt'][0] = l2pt
+        event_level_var_array['cleaning_l1Eta'][0] = l1eta
+        event_level_var_array['cleaning_l2Eta'][0] = l2eta
+        event_level_var_array['cleaning_l1Phi'][0] = l1phi
+        event_level_var_array['cleaning_l2Phi'][0] = l2phi
+        event_level_var_array['cleaning_l1dBetaAbsIso'][0] = l1absisodbeta
+        event_level_var_array['cleaning_l1dBetaRelIso'][0] = l1relisodbeta
+        event_level_var_array['cleaning_l2dBetaAbsIso'][0] = l2absisodbeta
+        event_level_var_array['cleaning_l2dBetaRelIso'][0] = l2relisodbeta
+        event_level_var_array['cleaning_metPtBeforeCleaning'][0] = metptBeforeCleaning
+        event_level_var_array['cleaning_metPhiBeforeCleaning'][0] = metphiBeforeCleaning
 
         '''
         ###############################################################################################
@@ -1692,12 +1601,16 @@ for f in options.inputFiles:
         ###############################################################################################
         '''
 
-        pTneutrinosum = 0
+        pTneutrinosum = -1
         genmetpt = -1
-        genmetphi = -10
-        genht = 0
+        genmetphi = -1
+        genht = -1
+        genht5 = -1
         genhtmiss = -1
         if 'data' not in options.tag:
+
+            genht = 0
+            genht5 = 0
 
             allneutrinos = [gp for gp in genparticles if gp.status() == 1
                             and (abs(gp.pdgId()) == 12 or abs(gp.pdgId()) == 14 or abs(gp.pdgId()) == 16)]
@@ -1713,8 +1626,10 @@ for f in options.inputFiles:
             genmetphi = genmet.phi()
             genhtmissTlv = ROOT.TLorentzVector()
             for genjet in genjets:
-                if abs(genjet.eta()) < 2.4 and genjet.pt() > 30: genht += genjet.pt()
+                if abs(genjet.eta()) < 2.4 and genjet.pt() > 30:
+                    genht += genjet.pt()
                 if abs(genjet.eta()) < 5 and genjet.pt() > 30:
+                    genht5 += genjet.pt()
                     genjetTlv = ROOT.TLorentzVector(genjet.px(), genjet.py(), genjet.pz(), genjet.energy())
                     genhtmissTlv -= genjetTlv
             genhtmiss = genhtmissTlv.Pt()
@@ -1729,245 +1644,18 @@ for f in options.inputFiles:
                                                                                , 0
                                                                                , 0.5 * (genmet.energy() + met.energy())))
 
-        event_level_var_array['pTneutrinosum'][0] = pTneutrinosum
-        event_level_var_array['genmetpt'][0] = genmetpt
-        event_level_var_array['genmetphi'][0] = genmetphi
-        event_level_var_array['genht'][0] = genht
-        event_level_var_array['genhtmiss'][0] = genhtmiss
-        event_level_var_array['nofastsimcorrmetpt'][0] = nofastsimcorrmetpt
-        event_level_var_array['nofastsimcorrmetphi'][0] = nofastsimcorrmetphi
-        event_level_var_array['metphi'][0] = met.phi()
-        event_level_var_array['metpt'][0] = met.pt()
+        event_level_var_array['gen_neutrinoSumPt'][0] = pTneutrinosum
+        event_level_var_array['gen_met_pt'][0] = genmetpt
+        event_level_var_array['gen_met_phi'][0] = genmetphi
+        event_level_var_array['gen_ht'][0] = genht
+        event_level_var_array['gen_ht5'][0] = genht5
+        event_level_var_array['gen_htMiss'][0] = genhtmiss
+        event_level_var_array['met_ptNoFastSimCorr'][0] = nofastsimcorrmetpt
+        event_level_var_array['met_phiNoFastSimCorr'][0] = nofastsimcorrmetphi
+        event_level_var_array['met_phi'][0] = met.phi()
+        event_level_var_array['met_pt'][0] = met.pt()
 
         hMetpt.Fill(met.pt())
-
-        '''
-        ###############################################################################################
-        # get GEN info for signal and match tracks
-        ###############################################################################################
-        '''
-
-        matchedTrackIdxCharginoPion1 = -1
-        matchedTrackIdxCharginoPion2 = -1
-
-        tminmatching = -1
-        dxyzmin = -1
-        drmin = -1
-        dxyzminrandom = -1
-        drminrandom = -1
-
-        drminold = -1
-        drminoldrandom = -1
-
-        susytracks = {}
-
-        if 'signal' in options.tag:
-
-            chipmmFILE = float(re.search(r'mChipm(.*?)GeV', f).group(1))
-            deltamFILE = float(re.search(r'dm(.*?)GeV', f).group(1).replace('p','.'))
-
-            C1s = [gp for gp in genparticles if gp.isLastCopy() and abs(gp.pdgId()) == 1000024]
-            N2s = [gp for gp in genparticles if gp.isLastCopy() and abs(gp.pdgId()) == 1000023]
-            N1s = [gp for gp in genparticles if gp.isLastCopy() and abs(gp.pdgId()) == 1000022]
-
-            numC1 = len(C1s)
-            numN2 = len(N2s)
-            numN1 = len(N1s)
-
-            c1daughters = []
-            n2daughters = []
-
-            for gp in C1s:
-
-                decaylength3D = ROOT.TMath.Sqrt(pow(gp.vx() - gp.daughter(0).vx(), 2)
-                                                + pow(gp.vy() - gp.daughter(0).vy(), 2)
-                                                + pow(gp.vz() - gp.daughter(0).vz(), 2))
-
-                if not decaylength3D > 0: continue
-
-                hasChargino += 1
-
-                chipmmGEN = round(gp.mass(), 2)
-
-                deltamGEN = round((gp.mass() - gp.daughter(0).mass()), 2)
-
-                chipmptGEN = gp.pt()
-                chipmetaGEN = gp.eta()
-                chipmphiGEN = gp.phi()
-
-                decaylengthXY = ROOT.TMath.Sqrt(pow(gp.vx() - gp.daughter(0).vx(), 2)
-                                                + pow(gp.vy() - gp.daughter(0).vy(), 2))
-
-                decaylengthZ = abs(gp.vz() - gp.daughter(0).vz())
-
-                c1daughters += findDaughters(gp)
-
-            for c1d in c1daughters:
-
-                if abs(c1d.pdgId()) == 211:
-
-                    pion = c1d
-
-                    hasPion += 1
-
-                    chidaughterpdgid = pion.pdgId()
-
-                    pionptGEN = pion.pt()
-                    pionetaGEN = pion.eta()
-                    pionphiGEN = pion.phi()
-                    pionchargeGEN = pion.charge()
-
-                    idxold, drminold = findMatch_track_old(pion, tracks)
-                    _, drminoldrandom = findMatch_track_old_random(pion, tracks)
-
-                    idx, dxyzmin, tminmatching, drmin = findMatch_track_new(pion, tracks)
-                    _, dxyzminrandom, _, drminrandom = findMatch_track_new_random(pion, tracks)
-
-                    if not idx == -1:
-                        if drmin < matchingDrThreshold and dxyzmin < matchingDxyzThreshold:
-                            if not hasMatchedTrack: matchedTrackIdxCharginoPion1 = idx
-                            else: matchedTrackIdxCharginoPion2 = idx
-                            hasMatchedTrack += 1
-
-            for gp in N2s:
-
-                decaylength3DN2 = ROOT.TMath.Sqrt(pow(gp.vx() - gp.daughter(0).vx(), 2)
-                                                  + pow(gp.vy() - gp.daughter(0).vy(), 2)
-                                                  + pow(gp.vz() - gp.daughter(0).vz(), 2))
-
-                if not decaylength3DN2 > 0: continue
-
-                chiN2mGEN = round(gp.mass(), 2)
-
-                deltamN2GEN = round((gp.mass() - gp.daughter(0).mass()), 2)
-
-                chiN2ptGEN = gp.pt()
-                chiN2etaGEN = gp.eta()
-                chiN2phiGEN = gp.phi()
-
-                decaylengthXYN2 = ROOT.TMath.Sqrt(pow(gp.vx() - gp.daughter(0).vx(), 2)
-                                                  + pow(gp.vy() - gp.daughter(0).vy(), 2))
-
-                decaylengthZN2 = abs(gp.vz() - gp.daughter(0).vz())
-
-                n2daughters += findDaughters(gp)
-
-            chipmnumdaughters = len(c1daughters)
-            chiN2numdaughters = len(n2daughters)
-            numchidaughters = chipmnumdaughters + chiN2numdaughters
-
-            i = 0
-
-            for c1d in c1daughters:
-
-                chidaughter_var_array['motherchidaughter'][i] = 1
-                chidaughter_var_array['pdgIdchidaughter'][i] = c1d.pdgId()
-                chidaughter_var_array['ptchidaughter'][i] = c1d.pt()
-                chidaughter_var_array['etachidaughter'][i] = c1d.eta()
-                chidaughter_var_array['phichidaughter'][i] = c1d.phi()
-
-                chidaughter_var_array['hasmatchedtrackchidaughter'][i] = -1
-
-                if c1d.charge() != 0:
-
-                    idxC1, dxyzminC1, _, drminC1 = findMatch_track_new(c1d, tracks)
-
-                    if not idxC1 == -1:
-                        if drminC1 < matchingDrThreshold and dxyzminC1 < matchingDxyzThreshold:
-                            susytracks[idxC1] = (1, c1d.pdgId())
-                            chidaughter_var_array['hasmatchedtrackchidaughter'][i] = idxC1
-
-                i += 1
-
-            for n2d in n2daughters:
-
-                chidaughter_var_array['motherchidaughter'][i] = 2
-                chidaughter_var_array['pdgIdchidaughter'][i] = n2d.pdgId()
-                chidaughter_var_array['ptchidaughter'][i] = n2d.pt()
-                chidaughter_var_array['etachidaughter'][i] = n2d.eta()
-                chidaughter_var_array['phichidaughter'][i] = n2d.phi()
-
-                chidaughter_var_array['hasmatchedtrackchidaughter'][i] = -1
-
-                if n2d.charge() != 0:
-
-                    idxN2, dxyzminN2, _, drminN2 = findMatch_track_new(n2d, tracks)
-
-                    if not idxN2 == -1:
-                        if drminN2 < matchingDrThreshold and dxyzminN2 < matchingDxyzThreshold:
-                            susytracks[idxN2] = (2, n2d.pdgId())
-                            chidaughter_var_array['hasmatchedtrackchidaughter'][i] = idxN2
-
-                i += 1
-
-        event_level_var_array['chipmmFILE'][0] = chipmmFILE
-        event_level_var_array['deltamFILE'][0] = deltamFILE
-
-        event_level_var_array['numC1'][0] = numC1
-        event_level_var_array['numN2'][0] = numN2
-        event_level_var_array['numN1'][0] = numN1
-
-        event_level_var_array['chipmmGEN'][0] = chipmmGEN
-        event_level_var_array['deltamGEN'][0] = deltamGEN
-
-        event_level_var_array['chiN2mGEN'][0] = chiN2mGEN
-        event_level_var_array['deltamN2GEN'][0] = deltamN2GEN
-
-        event_level_var_array['chipmptGEN'][0] = chipmptGEN
-        event_level_var_array['chipmetaGEN'][0] = chipmetaGEN
-        event_level_var_array['chipmphiGEN'][0] = chipmphiGEN
-
-        event_level_var_array['chiN2ptGEN'][0] = chiN2ptGEN
-        event_level_var_array['chiN2etaGEN'][0] = chiN2etaGEN
-        event_level_var_array['chiN2phiGEN'][0] = chiN2phiGEN
-
-        event_level_var_array['pionptGEN'][0] = pionptGEN
-        event_level_var_array['pionetaGEN'][0] = pionetaGEN
-        event_level_var_array['pionphiGEN'][0] = pionphiGEN
-        event_level_var_array['pionchargeGEN'][0] = pionchargeGEN
-
-        event_level_var_array['hasChargino'][0] = hasChargino
-        event_level_var_array['hasPion'][0] = hasPion
-        event_level_var_array['hasMatchedTrack'][0] = hasMatchedTrack
-
-        event_level_var_array['tminmatching'][0] = tminmatching
-        event_level_var_array['dxyzmin'][0] = dxyzmin
-        event_level_var_array['drmin'][0] = drmin
-        event_level_var_array['dxyzminrandom'][0] = dxyzminrandom
-        event_level_var_array['drminrandom'][0] = drminrandom
-        event_level_var_array['drminold'][0] = drminold
-        event_level_var_array['drminoldrandom'][0] = drminoldrandom
-
-        event_level_var_array['matchedTrackIdxCharginoPion1'][0] = matchedTrackIdxCharginoPion1
-        event_level_var_array['matchedTrackIdxCharginoPion2'][0] = matchedTrackIdxCharginoPion2
-
-        event_level_var_array['chidecaylength3D'][0] = decaylength3D
-        event_level_var_array['chidecaylengthXY'][0] = decaylengthXY
-        event_level_var_array['chidecaylengthZ'][0] = decaylengthZ
-        if decaylength3D > 0:
-            event_level_var_array['log10(chidecaylength3D)'][0] = ROOT.TMath.Log10(decaylength3D)
-            event_level_var_array['log10(chidecaylengthXY)'][0] = ROOT.TMath.Log10(decaylengthXY)
-            event_level_var_array['log10(chidecaylengthZ)'][0] = ROOT.TMath.Log10(decaylengthZ)
-        else:
-            event_level_var_array['log10(chidecaylength3D)'][0] = -1
-            event_level_var_array['log10(chidecaylengthXY)'][0] = -1
-            event_level_var_array['log10(chidecaylengthZ)'][0] = -1
-
-        event_level_var_array['chidecaylength3DN2'][0] = decaylength3DN2
-        event_level_var_array['chidecaylengthXYN2'][0] = decaylengthXYN2
-        event_level_var_array['chidecaylengthZN2'][0] = decaylengthZN2
-        if decaylength3DN2 > 0:
-            event_level_var_array['log10(chidecaylength3DN2)'][0] = ROOT.TMath.Log10(decaylength3DN2)
-            event_level_var_array['log10(chidecaylengthXYN2)'][0] = ROOT.TMath.Log10(decaylengthXYN2)
-            event_level_var_array['log10(chidecaylengthZN2)'][0] = ROOT.TMath.Log10(decaylengthZN2)
-        else:
-            event_level_var_array['log10(chidecaylength3DN2)'][0] = -1
-            event_level_var_array['log10(chidecaylengthXYN2)'][0] = -1
-            event_level_var_array['log10(chidecaylengthZN2)'][0] = -1
-
-        event_level_var_array['chipmnumdaughters'][0] = chipmnumdaughters
-        event_level_var_array['chiN2numdaughters'][0] = chiN2numdaughters
-        event_level_var_array['numchidaughters'][0] = numchidaughters
 
 
         '''
@@ -1976,11 +1664,12 @@ for f in options.inputFiles:
         ###############################################################################################
         '''
 
-        event_level_var_array['numpvs'][0] = len(primaryvertices)
+        event_level_var_array['n_pv'][0] = n_pv
         event_level_var_array['rho'][0] = rho
 
 
         numjets = len(jets)
+        numjets15 = 0
         numjets30 = 0
         numjets50 = 0
         numjets100 = 0
@@ -1998,6 +1687,7 @@ for f in options.inputFiles:
                 htmissTlv -= jetTlv
 
             jetpt = jet.pt()
+            if jetpt > 15: numjets15 += 1
             if jetpt > 30: numjets30 += 1
             if jetpt > 50: numjets50 += 1
             if jetpt > 100: numjets100 += 1
@@ -2006,21 +1696,22 @@ for f in options.inputFiles:
             if jetpt > jets[idxhighestptjet].pt(): idxhighestptjet = ijet
 
         if len(jets) > 0:
-            event_level_var_array['ptleadingjet'][0] = jets[idxhighestptjet].pt()
-            event_level_var_array['etaleadingjet'][0] = jets[idxhighestptjet].eta()
-            event_level_var_array['phileadingjet'][0] = jets[idxhighestptjet].phi()
+            event_level_var_array['leadingJet_pt'][0] = jets[idxhighestptjet].pt()
+            event_level_var_array['leadingJet_eta'][0] = jets[idxhighestptjet].eta()
+            event_level_var_array['leadingJet_phi'][0] = jets[idxhighestptjet].phi()
         else:
-            event_level_var_array['ptleadingjet'][0] = -1
-            event_level_var_array['etaleadingjet'][0] = -1
-            event_level_var_array['phileadingjet'][0] = -1
-        event_level_var_array['numjets'][0] = numjets
-        event_level_var_array['numjets30'][0] = numjets30
-        event_level_var_array['numjets50'][0] = numjets50
-        event_level_var_array['numjets100'][0] = numjets100
-        event_level_var_array['numjets200'][0] = numjets200
+            event_level_var_array['leadingJet_pt'][0] = -1
+            event_level_var_array['leadingJet_eta'][0] = -1
+            event_level_var_array['leadingJet_phi'][0] = -1
+        event_level_var_array['n_jet'][0] = numjets
+        event_level_var_array['n_jet_15'][0] = numjets15
+        event_level_var_array['n_jet_30'][0] = numjets30
+        event_level_var_array['n_jet_50'][0] = numjets50
+        event_level_var_array['n_jet_100'][0] = numjets100
+        event_level_var_array['n_jet_200'][0] = numjets200
         event_level_var_array['ht'][0] = ht
         event_level_var_array['ht5'][0] = ht5
-        event_level_var_array['htmiss'][0] = htmissTlv.Pt()
+        event_level_var_array['htMiss'][0] = htmissTlv.Pt()
 
         hNumjets.Fill(numjets)
         hNumjets30.Fill(numjets30)
@@ -2039,20 +1730,20 @@ for f in options.inputFiles:
             if len(dphimetjets) > 3: break
 
         if len(dphimetjets) > 0:
-            event_level_var_array['mindphimetjets'][0] = min(dphimetjets)
+            event_level_var_array['dphiminMetJets'][0] = min(dphimetjets)
             hMindphimetjets.Fill(min(dphimetjets))
         else:
-            event_level_var_array['mindphimetjets'][0] = -1
+            event_level_var_array['dphiminMetJets'][0] = -1
             hMindphimetjets.Fill(-1)
 
 
-        hNPVsPerEvent.Fill(len(primaryvertices))
+        hNPVsPerEvent.Fill(n_pv)
 
         hPV0x.Fill(primaryvertices[0].x())
         hPV0y.Fill(primaryvertices[0].y())
         hPV0z.Fill(primaryvertices[0].z())
 
-        for i in range(1, len(primaryvertices)):
+        for i in range(1, n_pv):
 
             hPVsx.Fill(primaryvertices[i].x())
             hPVsy.Fill(primaryvertices[i].y())
@@ -2067,166 +1758,716 @@ for f in options.inputFiles:
 
         if not met.pt() > metthreshold: continue
 
-        ###########################################################################################veto
+        # ########################################################################################### veto
 
-        hCutflow.Fill(6)
         cutflow = 6
+        hCutflow.Fill(cutflow)
 
-        if 'nonumjets100veto' not in options.tag:
+        if 'veto_jet100' in options.tag:
             if not numjets100 > 0: continue
 
-        ###########################################################################################veto
+        # ########################################################################################### veto
 
-        hCutflow.Fill(7)
         cutflow = 7
+        hCutflow.Fill(cutflow)
 
-        if 'nodphimetjetsveto' not in options.tag:
+        if 'veto_dphimetjets' in options.tag:
             if len(dphimetjets) > 0:
                 if not min(dphimetjets) > 0.5: continue
             else:
                 continue
 
-        ###########################################################################################veto
+        # ########################################################################################### veto
 
-        hCutflow.Fill(8)
         cutflow = 8
+        hCutflow.Fill(cutflow)
 
 
-        # chpfcandsforiso = [p for p in pfcands if passesPreselection_iso_pfc(p, pv_pos, dz_threshold=0.1)]
-        chpfcandsforiso = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_pfc(p, pv_pos, dz_threshold=0.1)])
-        pfcandsforiso = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands])
-        jetsforiso = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets])
+        chpfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_chpf(p, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.)])
+        pfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_pf(p, pt_threshold=0.)])
+        jetsforiso15 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets if passesPreselection_iso_jet(j, pt_threshold=15.)])
 
 
-        event_level_var_array['numelectrons'][0] = len(electrons)
+        event_level_var_array['n_electron'][0] = len(electrons)
 
         numelectronsiso = 0
         for ie, e in enumerate(electrons):
 
-            electron_var_array['chargeelectron'][ie] = e.charge()
-            electron_var_array['pxelectron'][ie] = e.px()
-            electron_var_array['pyelectron'][ie] = e.py()
-            electron_var_array['pzelectron'][ie] = e.pz()
-            electron_var_array['ptelectron'][ie] = e.pt()
-            electron_var_array['energyelectron'][ie] = e.energy()
-            electron_var_array['etaelectron'][ie] = e.eta()
-            electron_var_array['phielectron'][ie] = e.phi()
-            electron_var_array['dzelectron'][ie] = abs(e.gsfTrack().dz(pv_pos))
-            electron_var_array['dxyelectron'][ie] = abs(e.gsfTrack().dxy(pv_pos))
-            electron_var_array['pfabsisoelectron'][ie], _, _, _ = calcIso_pf_or_track_new(e, pfcandsforiso)
-            electron_var_array['pfabsisominielectron'][ie], _, _, _ = calcIso_pf_or_track_new(e, pfcandsforiso, isMini=True)
-            electron_var_array['chpfabsisoelectron'][ie], _, _, _ = calcIso_pf_or_track_new(e, chpfcandsforiso)
-            electron_var_array['chpfabsisominielectron'][ie], _, _, _ = calcIso_pf_or_track_new(e, chpfcandsforiso, isMini=True)
-            electron_var_array['jetisoelectron'][ie], electron_var_array['jetisomultielectron'][ie], electron_var_array['jetdrminelectron'][ie], _ = calcIso_jet_new(e, jetsforiso, isTrack=False, btagvalues=btagvalues)
-            electron_var_array['chhadisoelectron'][ie] = e.pfIsolationVariables().sumChargedHadronPt
-            electron_var_array['challisoelectron'][ie] = e.pfIsolationVariables().sumChargedParticlePt
-            electron_var_array['neuhadisoelectron'][ie] = e.pfIsolationVariables().sumNeutralHadronEt
-            electron_var_array['photisoelectron'][ie] = e.pfIsolationVariables().sumPhotonEt
-            electron_var_array['puchhadisoelectron'][ie] = e.pfIsolationVariables().sumPUPt
-            electron_var_array['absisodbetaelectron'][ie] = calcIso_dBeta(e.pfIsolationVariables())
-            electron_var_array['relisodbetaelectron'][ie] = calcIso_dBeta(e.pfIsolationVariables()) / e.pt()
+            electron_var_array['electron_charge'][ie] = e.charge()
+            electron_var_array['electron_px'][ie] = e.px()
+            electron_var_array['electron_py'][ie] = e.py()
+            electron_var_array['electron_pz'][ie] = e.pz()
+            electron_var_array['electron_pt'][ie] = e.pt()
+            electron_var_array['electron_energy'][ie] = e.energy()
+            electron_var_array['electron_eta'][ie] = e.eta()
+            electron_var_array['electron_phi'][ie] = e.phi()
+            electron_var_array['electron_dz'][ie] = abs(e.gsfTrack().dz(pv_pos))
+            electron_var_array['electron_dxy'][ie] = abs(e.gsfTrack().dxy(pv_pos))
+            electron_var_array['electron_pfAbsIso'][ie], _, _, _ = calcIso_pf_or_track_new(e, pfcandsforiso0, subtractObject=True)
+            electron_var_array['electron_pfAbsIsoMini'][ie], _, _, _ = calcIso_pf_or_track_new(e, pfcandsforiso0, isMini=True, subtractObject=True)
+            electron_var_array['electron_chPfAbsIso'][ie], _, _, _ = calcIso_pf_or_track_new(e, chpfcandsforiso0, subtractObject=(abs(e.gsfTrack().dz(pv_pos)) < 0.1 and abs(e.gsfTrack().dxy(pv_pos)) < 0.1))
+            electron_var_array['electron_chPfAbsIsoMini'][ie], _, _, _ = calcIso_pf_or_track_new(e, chpfcandsforiso0, isMini=True, subtractObject=(abs(e.gsfTrack().dz(pv_pos)) < 0.1 and abs(e.gsfTrack().dxy(pv_pos)) < 0.1))
+            electron_var_array['electron_jetIso'][ie], electron_var_array['electron_jetIsoMulti'][ie], electron_var_array['electron_drminJet'][ie], _ = calcIso_jet_new(e, jetsforiso15, isTrack=False, btagvalues=btagvalues)
+            electron_var_array['electron_chHadIso'][ie] = e.pfIsolationVariables().sumChargedHadronPt
+            electron_var_array['electron_chAllIso'][ie] = e.pfIsolationVariables().sumChargedParticlePt
+            electron_var_array['electron_neHadIso'][ie] = e.pfIsolationVariables().sumNeutralHadronEt
+            electron_var_array['electron_photIso'][ie] = e.pfIsolationVariables().sumPhotonEt
+            electron_var_array['electron_puChHadIso'][ie] = e.pfIsolationVariables().sumPUPt
+            electron_var_array['electron_dBetaAbsIso'][ie] = calcIso_dBeta(e.pfIsolationVariables())
+            electron_var_array['electron_dBetaRelIso'][ie] = calcIso_dBeta(e.pfIsolationVariables()) / e.pt()
 
             if calcIso_dBeta(e.pfIsolationVariables()) / e.pt() < 0.2: numelectronsiso += 1
 
-        event_level_var_array['numelectronsiso'][0] = numelectronsiso
+        event_level_var_array['n_electron_iso'][0] = numelectronsiso
 
 
-        event_level_var_array['nummuons'][0] = len(muons)
+        event_level_var_array['n_muon'][0] = len(muons)
 
         nummuonsiso = 0
         for im, m in enumerate(muons):
 
-            muon_var_array['chargemuon'][im] = m.charge()
-            muon_var_array['pxmuon'][im] = m.px()
-            muon_var_array['pymuon'][im] = m.py()
-            muon_var_array['pzmuon'][im] = m.pz()
-            muon_var_array['ptmuon'][im] = m.pt()
-            muon_var_array['energymuon'][im] = m.energy()
-            muon_var_array['etamuon'][im] = m.eta()
-            muon_var_array['phimuon'][im] = m.phi()
-            muon_var_array['dzmuon'][im] = abs(m.muonBestTrack().dz(pv_pos))
-            muon_var_array['dxymuon'][im] = abs(m.muonBestTrack().dxy(pv_pos))
-            muon_var_array['pfabsisomuon'][im], _, _, _ = calcIso_pf_or_track_new(m, pfcandsforiso)
-            muon_var_array['pfabsisominimuon'][im], _, _, _ = calcIso_pf_or_track_new(m, pfcandsforiso, isMini=True)
-            muon_var_array['chpfabsisomuon'][im], _, _, _ = calcIso_pf_or_track_new(m, chpfcandsforiso)
-            muon_var_array['chpfabsisominimuon'][im], _, _, _ = calcIso_pf_or_track_new(m, chpfcandsforiso, isMini=True)
-            muon_var_array['jetisomuon'][im], muon_var_array['jetisomultimuon'][im], muon_var_array['jetdrminmuon'][im], _ = calcIso_jet_new(m, jetsforiso, isTrack=False, btagvalues=btagvalues)
-            muon_var_array['chhadisomuon'][im] = m.pfIsolationR03().sumChargedHadronPt
-            muon_var_array['challisomuon'][im] = m.pfIsolationR03().sumChargedParticlePt
-            muon_var_array['neuhadisomuon'][im] = m.pfIsolationR03().sumNeutralHadronEt
-            muon_var_array['photisomuon'][im] = m.pfIsolationR03().sumPhotonEt
-            muon_var_array['puchhadisomuon'][im] = m.pfIsolationR03().sumPUPt
-            muon_var_array['absisodbetamuon'][im] = calcIso_dBeta(m.pfIsolationR03())
-            muon_var_array['relisodbetamuon'][im] = calcIso_dBeta(m.pfIsolationR03()) / m.pt()
+            muon_var_array['muon_charge'][im] = m.charge()
+            muon_var_array['muon_px'][im] = m.px()
+            muon_var_array['muon_py'][im] = m.py()
+            muon_var_array['muon_pz'][im] = m.pz()
+            muon_var_array['muon_pt'][im] = m.pt()
+            muon_var_array['muon_energy'][im] = m.energy()
+            muon_var_array['muon_eta'][im] = m.eta()
+            muon_var_array['muon_phi'][im] = m.phi()
+            muon_var_array['muon_dz'][im] = abs(m.muonBestTrack().dz(pv_pos))
+            muon_var_array['muon_dxy'][im] = abs(m.muonBestTrack().dxy(pv_pos))
+            muon_var_array['muon_pfAbsIso'][im], _, _, _ = calcIso_pf_or_track_new(m, pfcandsforiso0, subtractObject=True)
+            muon_var_array['muon_pfAbsIsoMini'][im], _, _, _ = calcIso_pf_or_track_new(m, pfcandsforiso0, isMini=True, subtractObject=True)
+            muon_var_array['muon_chPfAbsIso'][im], _, _, _ = calcIso_pf_or_track_new(m, chpfcandsforiso0, subtractObject=(abs(m.muonBestTrack().dz(pv_pos)) < 0.1 and abs(m.muonBestTrack().dxy(pv_pos)) < 0.1))
+            muon_var_array['muon_chPfAbsIsoMini'][im], _, _, _ = calcIso_pf_or_track_new(m, chpfcandsforiso0, isMini=True, subtractObject=(abs(m.muonBestTrack().dz(pv_pos)) < 0.1 and abs(m.muonBestTrack().dxy(pv_pos)) < 0.1))
+            muon_var_array['muon_jetIso'][im], muon_var_array['muon_jetIsoMulti'][im], muon_var_array['muon_drminJet'][im], _ = calcIso_jet_new(m, jetsforiso15, isTrack=False, btagvalues=btagvalues)
+            muon_var_array['muon_chHadIso'][im] = m.pfIsolationR03().sumChargedHadronPt
+            muon_var_array['muon_chAllIso'][im] = m.pfIsolationR03().sumChargedParticlePt
+            muon_var_array['muon_neHadIso'][im] = m.pfIsolationR03().sumNeutralHadronEt
+            muon_var_array['muon_photIso'][im] = m.pfIsolationR03().sumPhotonEt
+            muon_var_array['muon_puChHadIso'][im] = m.pfIsolationR03().sumPUPt
+            muon_var_array['muon_dBetaAbsIso'][im] = calcIso_dBeta(m.pfIsolationR03())
+            muon_var_array['muon_dBetaRelIso'][im] = calcIso_dBeta(m.pfIsolationR03()) / m.pt()
 
             if calcIso_dBeta(m.pfIsolationR03()) / m.pt() < 0.2: nummuonsiso += 1
 
-        event_level_var_array['nummuonsiso'][0] = nummuonsiso
+        event_level_var_array['n_muon_iso'][0] = nummuonsiso
 
-        event_level_var_array['numleptons'][0] = len(electrons) + len(muons)
-        event_level_var_array['numleptonsiso'][0] = numelectronsiso + nummuonsiso
+        event_level_var_array['n_lepton'][0] = len(electrons) + len(muons)
+        event_level_var_array['n_lepton_iso'][0] = numelectronsiso + nummuonsiso
 
         hNumleptons.Fill(numelectronsiso+nummuonsiso)
 
-        if 'noleptonveto' not in options.tag:
-            if not (numelectronsiso+nummuonsiso) == 0: continue
+        if 'veto_isolepton' in options.tag:
+            if not (numelectronsiso + nummuonsiso) == 0: continue
 
-        ###########################################################################################veto
+        # ########################################################################################### veto
 
-        hCutflow.Fill(9)
         cutflow = 9
+        hCutflow.Fill(cutflow)
 
 
-        eventWeight = 1.
+        '''
+        ###############################################################################################
+        # GEN info background
+        ###############################################################################################
+        '''
 
+        numZgamma = 0
+        pdgidZgamma = -1
+        ptZgamma = -1
+        etaZgamma = -1
+        phiZgamma = -1
+        numZgammaDaughters = 0
+        ptsumZgammaNeutrinos = -1
+        if 'geninfoZ' in options.tag:
+
+            Zgammas = [gp for gp in genparticles if gp.isLastCopy() and gp.statusFlags().fromHardProcess()
+                       and (abs(gp.pdgId()) == 22 or abs(gp.pdgId()) == 23)]
+
+            numZgamma = len(Zgammas)
+
+            if numZgamma == 1:  # else there's something funny going on...
+
+                Zgamma = Zgammas[0]
+
+                pdgidZgamma = Zgamma.pdgId()
+                ptZgamma = Zgamma.pt()
+                etaZgamma = Zgamma.eta()
+                phiZgamma = Zgamma.phi()
+
+                numZgammaDaughters = Zgamma.numberOfDaughters()
+
+                ZgammaNeutrinos = ROOT.TLorentzVector()
+
+                for i in range(numZgammaDaughters):
+
+                    daughter = Zgamma.daughter(i)
+                    if not abs(daughter.pdgId()) == 15:
+                        daughter = getLastCopyStatusOne(daughter)
+                    else:
+                        daughter = getLastCopy(daughter)
+
+                    if daughter is None: continue
+
+                    zdaughter_var_array['zDaughter_pdgId'][i] = daughter.pdgId()
+                    zdaughter_var_array['zDaughter_pt'][i] = daughter.pt()
+                    zdaughter_var_array['zDaughter_eta'][i] = daughter.eta()
+                    zdaughter_var_array['zDaughter_phi'][i] = daughter.phi()
+
+                    if abs(daughter.pdgId()) == 12 or abs(daughter.pdgId()) == 14 or abs(daughter.pdgId()) == 16:
+                        nTlv = ROOT.TLorentzVector(daughter.px(), daughter.py(), daughter.pz(), daughter.energy())
+                        ZgammaNeutrinos += nTlv
+
+                ptsumZgammaNeutrinos = ZgammaNeutrinos.Pt()
+
+        event_level_var_array['n_zGamma'][0] = numZgamma
+        event_level_var_array['zGamma_pdgId'][0] = pdgidZgamma
+        event_level_var_array['zGamma_pt'][0] = ptZgamma
+        event_level_var_array['zGamma_eta'][0] = etaZgamma
+        event_level_var_array['zGamma_phi'][0] = phiZgamma
+        event_level_var_array['zGamma_neutrinoSumPt'][0] = ptsumZgammaNeutrinos
+        event_level_var_array['n_zDaughter'][0] = numZgammaDaughters
+
+
+        numW = 0
+        pdgidW = -1
+        ptW = -1
+        etaW = -1
+        phiW = -1
+        numWDaughters = 0
+        ptWneutrino = -1
+        decayWtau = -1
+        thetau = None
+        if 'geninfoW' in options.tag:
+
+            Ws = [gp for gp in genparticles if gp.isLastCopy() and gp.statusFlags().fromHardProcess()
+                  and abs(gp.pdgId()) == 24]
+
+            numW = len(Ws)
+
+            if numW == 1:  # else there's something funny going on...
+
+                W = Ws[0]
+
+                ptW = W.pt()
+                etaW = W.eta()
+                phiW = W.phi()
+                pdgidW = W.pdgId()
+
+                numWDaughters = W.numberOfDaughters()
+
+                ptWneutrino = -1
+                decayWtau = -1
+
+                for i in range(numWDaughters):
+
+                    daughter = W.daughter(i)
+                    if not abs(daughter.pdgId()) == 15:
+                        daughter = getLastCopyStatusOne(daughter)
+                    else:
+                        daughter = getLastCopy(daughter)
+
+                    if daughter is None: continue
+
+                    viswdaughter = ROOT.TLorentzVector()
+                    for igranddaughter in range(daughter.numberOfDaughters()):
+                        if abs(daughter.daughter(igranddaughter).pdgId()) in [11, 12, 13, 14, 15, 16]: continue
+                        viswdaughterTlv = ROOT.TLorentzVector(daughter.daughter(igranddaughter).px(), daughter.daughter(igranddaughter).py(), daughter.daughter(igranddaughter).pz(), daughter.daughter(igranddaughter).energy())
+                        viswdaughter += viswdaughterTlv
+
+                    wdaughter_var_array['wDaughter_pdgId'][i] = daughter.pdgId()
+
+                    wdaughter_var_array['wDaughter_pt'][i] = daughter.pt()
+                    wdaughter_var_array['wDaughter_eta'][i] = daughter.eta()
+                    wdaughter_var_array['wDaughter_phi'][i] = daughter.phi()
+
+                    wdaughter_var_array['wDaughter_ptVis'][i] = viswdaughter.Pt()
+                    wdaughter_var_array['wDaughter_etaVis'][i] = viswdaughter.Eta()
+                    wdaughter_var_array['wDaughter_phiVis'][i] = viswdaughter.Phi()
+
+                    if abs(daughter.pdgId()) == 15:
+
+                        thetau = daughter
+
+                        nprongs = 0
+                        nneutral = 0
+
+                        for k in range(daughter.numberOfDaughters()):
+
+                            taudaughterpdgid = abs(daughter.daughter(k).pdgId())
+
+                            # see: https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauIDRecommendationForRun2#Decay_Mode_Reconstruction
+                            if taudaughterpdgid in [12, 14, 16]:  # skip the neutrinos
+                                continue
+                            elif taudaughterpdgid in [11, 13]:  # charged lepton
+                                decayWtau = 10 + taudaughterpdgid
+                            elif taudaughterpdgid == 111:  # neutral pion
+                                nneutral += 1
+                            else:  # has to be a charged hadron
+                                nprongs += 1
+
+                        if decayWtau not in [21, 23]:
+                            decayWtau = 5 * (nprongs - 1) + nneutral
+
+                    if abs(daughter.pdgId()) == 12 or abs(daughter.pdgId()) == 14 or abs(daughter.pdgId()) == 16:
+                        ptWneutrino = daughter.pt()
+
+        event_level_var_array['n_wBoson'][0] = numW
+        event_level_var_array['wBoson_pdgId'][0] = pdgidW
+        event_level_var_array['wBoson_pt'][0] = ptW
+        event_level_var_array['wBoson_eta'][0] = etaW
+        event_level_var_array['wBoson_phi'][0] = phiW
+        event_level_var_array['wBoson_neutrinoPt'][0] = ptWneutrino
+        event_level_var_array['wBoson_tauDecayMode'][0] = decayWtau
+        event_level_var_array['n_wDaughter'][0] = numWDaughters
+
+
+        '''
+        ###############################################################################################
+        # GEN info for signal and track matching
+        ###############################################################################################
+        '''
+
+        matchedTrackIdxCharginoPion1 = -1
+        matchedTrackIdxCharginoPion2 = -1
+
+        stop_mass, antistop_mass = -1, -1
+        stop_pt, antistop_pt = -1, -1
+        stop_eta, antistop_eta = -1, -1
+        stop_phi, antistop_phi = -1, -1
+        stop_decay, antistop_decay = -1, -1
+
+        susytracks = {}
+
+        if 'Signal' in options.tag:
+
+            chipmmFILE = float(re.search(r'mChipm(.*?)GeV', f).group(1))
+            deltamFILE = float(re.search(r'dm(.*?)GeV', f).group(1).replace('p', '.'))
+            try:
+                mstopFILE = float(re.search(r'stopstop_(.*?)GeV', f).group(1))
+            except AttributeError:
+                pass
+
+            C1s = [gp for gp in genparticles if gp.isLastCopy() and abs(gp.pdgId()) == 1000024]
+            N2s = [gp for gp in genparticles if gp.isLastCopy() and abs(gp.pdgId()) == 1000023]
+            N1s = [gp for gp in genparticles if gp.isLastCopy() and abs(gp.pdgId()) == 1000022]
+
+            numC1 = len(C1s)
+            numN2 = len(N2s)
+            numN1 = len(N1s)
+
+            c1daughters = []
+            n2daughters = []
+
+            for igp, gp in enumerate(C1s):
+
+                chipmmGEN = round(gp.mass(), 2)
+
+                deltamGEN = round((gp.mass() - gp.daughter(0).mass()), 2)
+
+                chiC1_var_array['chiC1_pt'][igp] = gp.pt()
+                chiC1_var_array['chiC1_eta'][igp] = gp.eta()
+                chiC1_var_array['chiC1_phi'][igp] = gp.phi()
+
+                chiC1_decaylengthXYZ = ROOT.TMath.Sqrt(pow(gp.vx() - gp.daughter(0).vx(), 2)
+                                                       + pow(gp.vy() - gp.daughter(0).vy(), 2)
+                                                       + pow(gp.vz() - gp.daughter(0).vz(), 2))
+
+                chiC1_decaylengthXY = ROOT.TMath.Sqrt(pow(gp.vx() - gp.daughter(0).vx(), 2)
+                                                      + pow(gp.vy() - gp.daughter(0).vy(), 2))
+
+                chiC1_chidecaylengthZ = abs(gp.vz() - gp.daughter(0).vz())
+
+                chiC1_var_array['chiC1_decaylengthXYZ'][igp] = chiC1_decaylengthXYZ
+                chiC1_var_array['chiC1_decaylengthXY'][igp] = chiC1_decaylengthXY
+                chiC1_var_array['chiC1_chidecaylengthZ'][igp] = chiC1_chidecaylengthZ
+
+                if chiC1_decaylengthXYZ > 0:
+                    chiC1_var_array['chiC1_log10(decaylengthXYZ)'][igp] = ROOT.TMath.Log10(chiC1_decaylengthXYZ)
+                    chiC1_var_array['chiC1_log10(decaylengthXY)'][igp] = ROOT.TMath.Log10(chiC1_decaylengthXY)
+                    chiC1_var_array['chiC1_log10(chidecaylengthZ)'][igp] = ROOT.TMath.Log10(chiC1_chidecaylengthZ)
+                else:
+                    chiC1_var_array['chiC1_log10(decaylengthXYZ)'][igp] = -10.
+                    chiC1_var_array['chiC1_log10(decaylengthXY)'][igp] = -10.
+                    chiC1_var_array['chiC1_log10(chidecaylengthZ)'][igp] = -10.
+
+                thisc1daughters = findDaughters(gp)
+                c1daughters += thisc1daughters
+
+                hasPion = 0
+                hasMatchedTrackPion = 0
+
+                for c1d in thisc1daughters:
+
+                    if abs(c1d.pdgId()) == 211:
+
+                        pion = c1d
+
+                        hasPion = 1
+
+                        chiC1_var_array['chiC1_pionPt'][igp] = pion.pt()
+                        chiC1_var_array['chiC1_pionEta'][igp] = pion.eta()
+                        chiC1_var_array['chiC1_pionPhi'][igp] = pion.phi()
+                        chiC1_var_array['chiC1_pionCharge'][igp] = pion.charge()
+
+                        idxold, drminold = findMatch_track_old(pion, tracks)
+                        _, drminoldrandom = findMatch_track_old_random(pion, tracks)
+
+                        idx, dxyzmin, tminmatching, drmin = findMatch_track_new(pion, tracks)
+                        _, dxyzminrandom, _, drminrandom = findMatch_track_new_random(pion, tracks)
+
+                        chiC1_var_array['chiC1_pionMatching_tmin'][igp] = tminmatching
+                        chiC1_var_array['chiC1_pionMatching_dxyzmin'][igp] = dxyzmin
+                        chiC1_var_array['chiC1_pionMatching_drmin'][igp] = drmin
+                        chiC1_var_array['chiC1_pionMatching_dxyzminrandom'][igp] = dxyzminrandom
+                        chiC1_var_array['chiC1_pionMatching_drminrandom'][igp] = drminrandom
+                        chiC1_var_array['chiC1_pionMatching_drminold'][igp] = drminold
+                        chiC1_var_array['chiC1_pionMatching_drminoldrandom'][igp] = drminoldrandom
+
+                        if not idx == -1:
+                            if drmin < matchingDrThreshold and dxyzmin < matchingDxyzThreshold:
+
+                                hasMatchedTrackPion = 1
+
+                                if matchedTrackIdxCharginoPion1 == -1: matchedTrackIdxCharginoPion1 = idx
+                                else: matchedTrackIdxCharginoPion2 = idx
+
+                        break
+
+                chiC1_var_array['chiC1_hasPion'][igp] = hasPion
+                chiC1_var_array['chiC1_hasMatchedTrackPion'][igp] = hasMatchedTrackPion
+
+
+            for igp, gp in enumerate(N2s):
+
+                chiN2mGEN = round(gp.mass(), 2)
+
+                deltamN2GEN = round((gp.mass() - gp.daughter(0).mass()), 2)
+
+                chiN2_var_array['chiN2_pt'][igp] = gp.pt()
+                chiN2_var_array['chiN2_eta'][igp] = gp.eta()
+                chiN2_var_array['chiN2_phi'][igp] = gp.phi()
+
+                chiN2_decaylengthXYZ = ROOT.TMath.Sqrt(pow(gp.vx() - gp.daughter(0).vx(), 2)
+                                                       + pow(gp.vy() - gp.daughter(0).vy(), 2)
+                                                       + pow(gp.vz() - gp.daughter(0).vz(), 2))
+
+                chiN2_decaylengthXY = ROOT.TMath.Sqrt(pow(gp.vx() - gp.daughter(0).vx(), 2)
+                                                      + pow(gp.vy() - gp.daughter(0).vy(), 2))
+
+                chiN2_chidecaylengthZ = abs(gp.vz() - gp.daughter(0).vz())
+
+                chiN2_var_array['chiN2_decaylengthXYZ'][igp] = chiN2_decaylengthXYZ
+                chiN2_var_array['chiN2_decaylengthXY'][igp] = chiN2_decaylengthXY
+                chiN2_var_array['chiN2_chidecaylengthZ'][igp] = chiN2_chidecaylengthZ
+
+                if chiN2_decaylengthXYZ > 0:
+                    chiN2_var_array['chiN2_log10(decaylengthXYZ)'][igp] = ROOT.TMath.Log10(chiN2_decaylengthXYZ)
+                    chiN2_var_array['chiN2_log10(decaylengthXY)'][igp] = ROOT.TMath.Log10(chiN2_decaylengthXY)
+                    chiN2_var_array['chiN2_log10(chidecaylengthZ)'][igp] = ROOT.TMath.Log10(chiN2_chidecaylengthZ)
+                else:
+                    chiN2_var_array['chiN2_log10(decaylengthXYZ)'][igp] = -10.
+                    chiN2_var_array['chiN2_log10(decaylengthXY)'][igp] = -10.
+                    chiN2_var_array['chiN2_log10(chidecaylengthZ)'][igp] = -10.
+
+                n2daughters += findDaughters(gp)
+
+
+            for igp, gp in enumerate(N1s):
+                chiN1_var_array['chiN1_pt'][igp] = gp.pt()
+                chiN1_var_array['chiN1_eta'][igp] = gp.eta()
+                chiN1_var_array['chiN1_phi'][igp] = gp.phi()
+
+
+            chipmnumdaughters = len(c1daughters)
+            chiN2numdaughters = len(n2daughters)
+            numchidaughters = chipmnumdaughters + chiN2numdaughters
+            for ichid, chid in enumerate(c1daughters + n2daughters):
+
+                chidaughter_var_array['chiDaughter_pdgIdMother'][ichid] = chid.mother(0).pdgId()
+                chidaughter_var_array['chiDaughter_pdgId'][ichid] = chid.pdgId()
+                chidaughter_var_array['chiDaughter_pt'][ichid] = chid.pt()
+                chidaughter_var_array['chiDaughter_eta'][ichid] = chid.eta()
+                chidaughter_var_array['chiDaughter_phi'][ichid] = chid.phi()
+
+                chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 0
+
+                if chid.charge() != 0:
+
+                    idxchid, dxyzminchid, _, drminchid = findMatch_track_new(chid, tracks)
+
+                    if not idxchid == -1:
+                        if drminchid < matchingDrThreshold and dxyzminchid < matchingDxyzThreshold:
+                            susytracks[idxchid] = (chid.mother(0).pdgId(), chid.pdgId())
+                            chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 1
+
+
+            stops = [gp for gp in genparticles if gp.isLastCopy() and gp.pdgId() == 1000006]
+            antistops = [gp for gp in genparticles if gp.isLastCopy() and gp.pdgId() == -1000006]
+
+            if len(stops) == 1 and len(antistops) == 1:
+
+                thestop = stops[0]
+                theantistop = antistops[0]
+
+                stop_mass = thestop.mass()
+                stop_pt = thestop.pt()
+                stop_eta = thestop.eta()
+                stop_phi = thestop.phi()
+
+                thestop_top = None
+                for idx in range(thestop.numberOfDaughters()):
+                    if abs(thestop.daughter(idx).pdgId()) == 6:
+                        thestop_top = getLastCopy(thestop.daughter(idx))
+                        break
+
+                if thestop_top is not None:
+                    thestop_w = None
+                    for idx in range(thestop_top.numberOfDaughters()):
+                        if abs(thestop_top.daughter(idx).pdgId()) == 24:
+                            thestop_w = getLastCopy(thestop_top.daughter(idx))
+                            break
+
+                    if thestop_w is not None:
+                        stop_decay = len([thestop_w.daughter(idx) for idx in range(thestop_w.numberOfDaughters()) if abs(thestop_w.daughter(idx).pdgId()) in [11, 13]])
+
+                antistop_mass = theantistop.mass()
+                antistop_pt = theantistop.pt()
+                antistop_eta = theantistop.eta()
+                antistop_phi = theantistop.phi()
+
+                theantistop_top = None
+                for idx in range(theantistop.numberOfDaughters()):
+                    if abs(theantistop.daughter(idx).pdgId()) == 6:
+                        theantistop_top = getLastCopy(theantistop.daughter(idx))
+                        break
+
+                if theantistop_top is not None:
+                    theantistop_w = None
+                    for idx in range(theantistop_top.numberOfDaughters()):
+                        if abs(theantistop_top.daughter(idx).pdgId()) == 24:
+                            theantistop_w = getLastCopy(theantistop_top.daughter(idx))
+                            break
+
+                    if theantistop_w is not None:
+                        antistop_decay = len([theantistop_w.daughter(idx) for idx in range(theantistop_w.numberOfDaughters()) if abs(theantistop_w.daughter(idx).pdgId()) in [11, 13]])
+
+
+        event_level_var_array['mchipmFile'][0] = chipmmFILE
+        event_level_var_array['deltamFile'][0] = deltamFILE
+        event_level_var_array['mstopFile'][0] = mstopFILE
+
+        event_level_var_array['chiC1_m'][0] = chipmmGEN
+        event_level_var_array['chiC1_deltamN1'][0] = deltamGEN
+
+        event_level_var_array['chiN2_m'][0] = chiN2mGEN
+        event_level_var_array['chiN2_deltamN1'][0] = deltamN2GEN
+
+        event_level_var_array['n_chiC1'][0] = numC1
+        event_level_var_array['n_chiN2'][0] = numN2
+        event_level_var_array['n_chiN1'][0] = numN1
+
+        event_level_var_array['n_chiC1Daughter'][0] = chipmnumdaughters
+        event_level_var_array['n_chiN2Daughter'][0] = chiN2numdaughters
+        event_level_var_array['n_chiDaughter'][0] = numchidaughters
+
+        event_level_var_array['stop_mass'][0] = stop_mass
+        event_level_var_array['stop_pt'][0] = stop_pt
+        event_level_var_array['stop_eta'][0] = stop_eta
+        event_level_var_array['stop_phi'][0] = stop_phi
+        event_level_var_array['stop_decay'][0] = stop_decay
+        
+        event_level_var_array['antistop_mass'][0] = antistop_mass
+        event_level_var_array['antistop_pt'][0] = antistop_pt
+        event_level_var_array['antistop_eta'][0] = antistop_eta
+        event_level_var_array['antistop_phi'][0] = antistop_phi
+        event_level_var_array['antistop_decay'][0] = antistop_decay
+
+
+
+        '''
+        ###############################################################################################
+        # Weights
+        ###############################################################################################
+        '''
+
+        crossSection = 1.
+        numSimEvents = 1.
+
+        if 'SignalV1' in options.tag or 'SignalV2' in options.tag or 'SignalFullV2' in options.tag:
+
+            # from https://twiki.cern.ch/twiki/bin/view/LHCPhysics/SUSYCrossSections13TeVhino
+            higgsinoxsecfile = ROOT.TFile('/nfs/dust/cms/user/wolfmor/NTupleStuff/CN_hino_13TeV.root')
+
+            if 100 <= chipmmFILE < 150:
+                higgsinoxsec = higgsinoxsecfile.Get('fit_nom_0')
+            elif 150 <= chipmmFILE < 200:
+                higgsinoxsec = higgsinoxsecfile.Get('fit_nom_1')
+            elif 200 <= chipmmFILE < 300:
+                higgsinoxsec = higgsinoxsecfile.Get('fit_nom_2')
+            elif 300 <= chipmmFILE < 400:
+                higgsinoxsec = higgsinoxsecfile.Get('fit_nom_3')
+            elif 400 <= chipmmFILE < 600:
+                higgsinoxsec = higgsinoxsecfile.Get('fit_nom_4')
+            elif 600 <= chipmmFILE < 800:
+                higgsinoxsec = higgsinoxsecfile.Get('fit_nom_5')
+            elif 800 <= chipmmFILE < 1000:
+                higgsinoxsec = higgsinoxsecfile.Get('fit_nom_6')
+            elif 1000 <= chipmmFILE < 1200:
+                higgsinoxsec = higgsinoxsecfile.Get('fit_nom_7')
+            elif 1200 <= chipmmFILE < 1500:
+                higgsinoxsec = higgsinoxsecfile.Get('fit_nom_8')
+            else:
+                higgsinoxsec = None
+
+            if higgsinoxsec is not None:
+                crossSection = higgsinoxsec.Eval(chipmmFILE)
+
+            higgsinoxsecfile.Close()
+
+            fSimEventNumbers_Signal = None
+            hSimEventNumbers_Signal = None
+            if 'SignalV1' in options.tag:
+                fSimEventNumbers_Signal = ROOT.TFile('/nfs/dust/cms/user/wolfmor/NTupleStuff/simEventNumbers_AOD_v1.root')
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_AOD_v1')  # is TH2F with sim. event numbers for each model point
+            elif 'SignalV2' in options.tag:
+                fSimEventNumbers_Signal = ROOT.TFile('/nfs/dust/cms/user/wolfmor/NTupleStuff/simEventNumbers_AOD_v2.root')
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_AOD_v2')  # is TH2F with sim. event numbers for each model point
+            elif 'SignalFullV2' in options.tag:
+                fSimEventNumbers_Signal = ROOT.TFile('/nfs/dust/cms/user/wolfmor/NTupleStuff/simEventNumbers_FullSim_AOD_v2.root')
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_FullSim_AOD_v2')  # is TH2F with sim. event numbers for each model point
+                
+            if fSimEventNumbers_Signal is not None and hSimEventNumbers_Signal is not None:
+
+                binx = hSimEventNumbers_Signal.GetXaxis().FindBin(chipmmFILE)
+                biny = hSimEventNumbers_Signal.GetYaxis().FindBin(deltamFILE)
+                binglob = hSimEventNumbers_Signal.GetBin(binx, biny)
+                numSimEvents = hSimEventNumbers_Signal.GetBinContent(binglob)
+
+                fSimEventNumbers_Signal.Close()
+
+        elif 'SignalStopV3' in options.tag:
+
+            with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/SUSYCrossSections13TeVstopsbottom.json') as stopxsecfile:
+                stopxsec = json.load(stopxsecfile)
+                crossSection = stopxsec[str(int(mstopFILE))][0]
+
+        else:
+            pass
+            # TODO: implement for bkg
+
+        event_level_var_array['crossSection'][0] = crossSection
+        event_level_var_array['numSimEvents'][0] = numSimEvents
+
+
+        eventWeightFastSimBug = 1.
         if 'fastsim' in options.tag:
-            eventWeight = computeFastSimBugWeight(genjets, genparticles)
+            eventWeightFastSimBug = computeFastSimBugWeight(genjets, genparticles)
+        event_level_var_array['weight_fastSimBug'][0] = eventWeightFastSimBug
 
-        event_level_var_array['eventweight'][0] = eventWeight
+        weight_PU_FastFull = 1.
+        weight_PU_FastFull_rebin = 1.
+        weight_PU_SigBkg = 1.
+        weight_PU_SigBkg_rebin = 1.
+        if 'fastsim' in options.tag and 'Signal' in options.tag:
+
+            fPUweights = ROOT.TFile('/nfs/dust/cms/user/wolfmor/NTupleStuff/PUweights.root')
+
+            hPUweightFastFull = fPUweights.Get('NPVsPerEventSignalFull:SignalFast')
+            binPUweightFastFull = hPUweightFastFull.GetXaxis().FindBin(n_pv)
+            weight_PU_FastFull = hPUweightFastFull.GetBinContent(binPUweightFastFull)
+
+            hPUweightFastFull_rebin = fPUweights.Get('NPVsPerEvent_rebinFastFullSignalFull:SignalFast')
+            binPUweightFastFull_rebin = hPUweightFastFull_rebin.GetXaxis().FindBin(n_pv)
+            weight_PU_FastFull_rebin = hPUweightFastFull_rebin.GetBinContent(binPUweightFastFull_rebin)
+            
+            hPUweightSigBkg = fPUweights.Get('NPVsPerEventZJetsToNuNu_Zpt-200toInf_16:SignalFast')
+            binPUweightSigBkg = hPUweightSigBkg.GetXaxis().FindBin(n_pv)
+            weight_PU_SigBkg = hPUweightSigBkg.GetBinContent(binPUweightSigBkg)
+
+            hPUweightSigBkg_rebin = fPUweights.Get('NPVsPerEvent_rebinSigBkgZJetsToNuNu_Zpt-200toInf_16:SignalFast')
+            binPUweightSigBkg_rebin = hPUweightSigBkg_rebin.GetXaxis().FindBin(n_pv)
+            weight_PU_SigBkg_rebin = hPUweightSigBkg_rebin.GetBinContent(binPUweightSigBkg_rebin)
+
+            fPUweights.Close()
+
+        event_level_var_array['weight_PU_FastFull'][0] = weight_PU_FastFull
+        event_level_var_array['weight_PU_FastFull_rebin'][0] = weight_PU_FastFull_rebin
+        event_level_var_array['weight_PU_SigBkg'][0] = weight_PU_SigBkg
+        event_level_var_array['weight_PU_SigBkg_rebin'][0] = weight_PU_SigBkg_rebin
 
 
-        event_level_var_array['numgenjets'][0] = 0
+        event_level_var_array['n_genParticle'][0] = 0
+        event_level_var_array['n_genJet'][0] = 0
 
         if 'data' not in options.tag:
 
-            event_level_var_array['numgenjets'][0] = len(genjets)
+            genparticlesfinalstate = [genparticle for genparticle in genparticles if genparticle.fromHardProcessFinalState() == 1]
+                            
+            event_level_var_array['n_genParticle'][0] = len(genparticlesfinalstate)
+
+            for igp, gp in enumerate(genparticlesfinalstate):
+
+
+                genparticle_var_array['genParticle_pdgId'][igp] = gp.pdgId()
+                genparticle_var_array['genParticle_status'][igp] = gp.status()
+                genparticle_var_array['genParticle_mass'][igp] = gp.mass()
+                genparticle_var_array['genParticle_energy'][igp] = gp.energy()
+                genparticle_var_array['genParticle_pt'][igp] = gp.pt()
+                genparticle_var_array['genParticle_eta'][igp] = gp.eta()
+                genparticle_var_array['genParticle_phi'][igp] = gp.phi()
+
+                mm = 0
+                while not gp.statusFlags().isFirstCopy():
+                    for idx in range(gp.numberOfMothers()):
+                        if gp.pdgId() == gp.mother(idx).pdgId():
+                            gp = gp.mother(idx)
+                            break
+                    mm += 1
+                    if mm > 100: break
+
+                genparticle_var_array['genParticle_motherPdgId'][igp] = gp.mother(0).pdgId()
+            
+
+            event_level_var_array['n_genJet'][0] = len(genjets)
 
             for igj, gj in enumerate(genjets):
 
-                genjet_var_array['ptgenjet'][igj] = gj.pt()
-                genjet_var_array['etagenjet'][igj] = gj.eta()
-                genjet_var_array['phigenjet'][igj] = gj.phi()
-                genjet_var_array['massgenjet'][igj] = gj.mass()
+                genjet_var_array['genJet_pt'][igj] = gj.pt()
+                genjet_var_array['genJet_eta'][igj] = gj.eta()
+                genjet_var_array['genJet_phi'][igj] = gj.phi()
+                genjet_var_array['genJet_mass'][igj] = gj.mass()
 
 
-        event_level_var_array['numphotons'][0] = len(photons)
+        event_level_var_array['n_photon'][0] = len(photons)
 
         numphotonsiso = 0
         for ip, p in enumerate(photons):
 
-            photon_var_array['pxphoton'][ip] = p.px()
-            photon_var_array['pyphoton'][ip] = p.py()
-            photon_var_array['pzphoton'][ip] = p.pz()
-            photon_var_array['ptphoton'][ip] = p.pt()
-            photon_var_array['energyphoton'][ip] = p.energy()
-            photon_var_array['etaphoton'][ip] = p.eta()
-            photon_var_array['phiphoton'][ip] = p.phi()
-            photon_var_array['pfabsisophoton'][ip], _, _, _ = calcIso_pf_or_track_new(p, pfcandsforiso, dontSubtractObject=True)
-            photon_var_array['pfabsisominiphoton'][ip], _, _, _ = calcIso_pf_or_track_new(p, pfcandsforiso, isMini=True, dontSubtractObject=True)
-            photon_var_array['chpfabsisophoton'][ip], _, _, _ = calcIso_pf_or_track_new(p, chpfcandsforiso, dontSubtractObject=True)
-            photon_var_array['chpfabsisominiphoton'][ip], _, _, _ = calcIso_pf_or_track_new(p, chpfcandsforiso, isMini=True, dontSubtractObject=True)
-            photon_var_array['jetisophoton'][ip], photon_var_array['jetisomultiphoton'][ip], photon_var_array['jetdrminphoton'][ip], _ = calcIso_jet_new(p, jetsforiso, isTrack=False, btagvalues=btagvalues)
-            photon_var_array['chhadisophoton'][ip] = p.chargedHadronIso()
-            photon_var_array['neuhadisophoton'][ip] = p.neutralHadronIso()
-            photon_var_array['photisophoton'][ip] = p.photonIso()
+            photon_var_array['photon_px'][ip] = p.px()
+            photon_var_array['photon_py'][ip] = p.py()
+            photon_var_array['photon_pz'][ip] = p.pz()
+            photon_var_array['photon_pt'][ip] = p.pt()
+            photon_var_array['photon_energy'][ip] = p.energy()
+            photon_var_array['photon_eta'][ip] = p.eta()
+            photon_var_array['photon_phi'][ip] = p.phi()
+            photon_var_array['photon_pfAbsIso'][ip], _, _, _ = calcIso_pf_or_track_new(p, pfcandsforiso0, subtractObject=True)
+            photon_var_array['photon_pfAbsIsoMini'][ip], _, _, _ = calcIso_pf_or_track_new(p, pfcandsforiso0, isMini=True, subtractObject=True)
+            photon_var_array['photon_chPfAbsIso'][ip], _, _, _ = calcIso_pf_or_track_new(p, chpfcandsforiso0, subtractObject=False)
+            photon_var_array['photon_chPfAbsIsoMini'][ip], _, _, _ = calcIso_pf_or_track_new(p, chpfcandsforiso0, isMini=True, subtractObject=False)
+            photon_var_array['photon_jetIso'][ip], photon_var_array['photon_jetIsoMulti'][ip], photon_var_array['photon_drminJet'][ip], _ = calcIso_jet_new(p, jetsforiso15, isTrack=False, btagvalues=btagvalues)
+            photon_var_array['photon_chHadIso'][ip] = p.chargedHadronIso()
+            photon_var_array['photon_neHadIso'][ip] = p.neutralHadronIso()
+            photon_var_array['photon_photIso'][ip] = p.photonIso()
             absisophoton = p.chargedHadronIso() + p.neutralHadronIso() + p.photonIso()
-            photon_var_array['absisophoton'][ip] = absisophoton
+            photon_var_array['photon_absIso'][ip] = absisophoton
             relisophoton = absisophoton / p.pt()
-            photon_var_array['relisophoton'][ip] = relisophoton
+            photon_var_array['photon_relIso'][ip] = relisophoton
 
             if relisophoton < 0.2: numphotonsiso += 1
 
-        event_level_var_array['numphotonsiso'][0] = numphotonsiso
+        event_level_var_array['n_photon_iso'][0] = numphotonsiso
         hNumphotons.Fill(numphotonsiso)
 
 
@@ -2236,44 +2477,44 @@ for f in options.inputFiles:
                          and abs(l.eta()) < 2.4
                          and not (1.4442 < abs(l.eta()) < 1.566))]
 
-        event_level_var_array['numpfleptons'][0] = len(pfleptons)
+        event_level_var_array['n_pfLepton'][0] = len(pfleptons)
 
         numpfleptonsiso = 0
         for il, l in enumerate(pfleptons):
 
-            pflepton_var_array['chargepflepton'][il] = l.charge()
-            pflepton_var_array['pdgidpflepton'][il] = l.pdgId()
-            pflepton_var_array['pxpflepton'][il] = l.px()
-            pflepton_var_array['pypflepton'][il] = l.py()
-            pflepton_var_array['pzpflepton'][il] = l.pz()
-            pflepton_var_array['ptpflepton'][il] = l.pt()
-            pflepton_var_array['energypflepton'][il] = l.energy()
-            pflepton_var_array['etapflepton'][il] = l.eta()
-            pflepton_var_array['phipflepton'][il] = l.phi()
+            pflepton_var_array['pfLepton_charge'][il] = l.charge()
+            pflepton_var_array['pfLepton_pdgId'][il] = l.pdgId()
+            pflepton_var_array['pfLepton_px'][il] = l.px()
+            pflepton_var_array['pfLepton_py'][il] = l.py()
+            pflepton_var_array['pfLepton_pz'][il] = l.pz()
+            pflepton_var_array['pfLepton_pt'][il] = l.pt()
+            pflepton_var_array['pfLepton_energy'][il] = l.energy()
+            pflepton_var_array['pfLepton_eta'][il] = l.eta()
+            pflepton_var_array['pfLepton_phi'][il] = l.phi()
             if l.trackRef().isNull():
-                pflepton_var_array['dzpflepton'][il] = -1
-                pflepton_var_array['dxypflepton'][il] = -1
+                pflepton_var_array['pfLepton_dz'][il] = -1
+                pflepton_var_array['pfLepton_dxy'][il] = -1
             else:
-                pflepton_var_array['dzpflepton'][il] = abs(l.trackRef().get().dz(pv_pos))
-                pflepton_var_array['dxypflepton'][il] = abs(l.trackRef().get().dxy(pv_pos))
-            _, pfrelisopflepton, _, _ = calcIso_pf_or_track_new(l, pfcandsforiso)
-            pflepton_var_array['pfrelisopflepton'][il] = pfrelisopflepton
-            _, pflepton_var_array['pfrelisominipflepton'][il], _, _ = calcIso_pf_or_track_new(l, pfcandsforiso, isMini=True)
-            _, pflepton_var_array['chpfrelisopflepton'][il], _, _ = calcIso_pf_or_track_new(l, chpfcandsforiso)
-            _, pflepton_var_array['chpfrelisominipflepton'][il], _, _ = calcIso_pf_or_track_new(l, chpfcandsforiso, isMini=True)
-            pflepton_var_array['jetisopflepton'][il], pflepton_var_array['jetisomultipflepton'][il], pflepton_var_array['jetdrminpflepton'][il], _ = calcIso_jet_new(l, jetsforiso, isTrack=False, btagvalues=btagvalues)
+                pflepton_var_array['pfLepton_dz'][il] = abs(l.trackRef().get().dz(pv_pos))
+                pflepton_var_array['pfLepton_dxy'][il] = abs(l.trackRef().get().dxy(pv_pos))
+            _, pfrelisopflepton, _, _ = calcIso_pf_or_track_new(l, pfcandsforiso0)
+            pflepton_var_array['pfLepton_pfRelIso'][il] = pfrelisopflepton
+            _, pflepton_var_array['pfLepton_pfRelIsoMini'][il], _, _ = calcIso_pf_or_track_new(l, pfcandsforiso0, isMini=True)
+            _, pflepton_var_array['pfLepton_chPfRelIso'][il], _, _ = calcIso_pf_or_track_new(l, chpfcandsforiso0)
+            _, pflepton_var_array['pfLepton_chPfRelIsoMini'][il], _, _ = calcIso_pf_or_track_new(l, chpfcandsforiso0, isMini=True)
+            pflepton_var_array['pfLepton_jetIso'][il], pflepton_var_array['pfLepton_jetIsoMulti'][il], pflepton_var_array['pfLepton_drminJet'][il], _ = calcIso_jet_new(l, jetsforiso15, isTrack=False, btagvalues=btagvalues)
 
             if pfrelisopflepton < 0.2: numpfleptonsiso += 1
 
-        event_level_var_array['numpfleptonsiso'][0] = numpfleptonsiso
+        event_level_var_array['n_pfLepton_iso'][0] = numpfleptonsiso
 
 
-        event_level_var_array['numtaus'][0] = len(tauswithdiscriminators)
+        event_level_var_array['n_tau'][0] = len(tauswithdiscriminators)
 
         # for info on MC matching and categories see
         # https://twiki.cern.ch/twiki/bin/viewauth/CMS/HiggsToTauTauWorking2016#MC_Matching
         # https://github.com/cms-tau-pog/TauIDSFs
-        if len(tauswithdiscriminators) > 0 or 'genmatchtracks' in options.tag or 'genmatchalltracks' in options.tag:
+        if 'data' not in options.tag and (len(tauswithdiscriminators) > 0 or 'genmatchtracks' in options.tag or 'genmatchalltracks' in options.tag):
 
             # key = category ID
             genparticlesfortaumatching = {}
@@ -2325,68 +2566,72 @@ for f in options.inputFiles:
 
             genmatchtau = 6
             genmatchpdgidtau = -1.
-            for taumatchcategory in [1, 2, 3, 4, 5]:
-                idxtaumatch, drmintaumatch = findMatch_gen_old_easy(t[0], genparticlesfortaumatching[taumatchcategory])
-                tau_var_array['genmatchdrtau'][it] = drmintaumatch
-                if drmintaumatch < 0.2:
-                    genmatchtau = taumatchcategory
-                    genmatchpdgidtau = 15 if taumatchcategory == 5 else genparticlesfortaumatching[taumatchcategory][idxtaumatch].pdgId()
-            tau_var_array['genmatchtau'][it] = genmatchtau
-            tau_var_array['genmatchpdgidtau'][it] = genmatchpdgidtau
+            drmintaumatch = 9.
+
+            if 'data' not in options.tag:
+                for taumatchcategory in [1, 2, 3, 4, 5]:
+                    idxtaumatch, drmintaumatch = findMatch_gen_old_easy(t[0], genparticlesfortaumatching[taumatchcategory])
+                    if drmintaumatch < 0.2:
+                        genmatchtau = taumatchcategory
+                        genmatchpdgidtau = 15 if taumatchcategory == 5 else genparticlesfortaumatching[taumatchcategory][idxtaumatch].pdgId()
+
+            tau_var_array['tau_genMatch'][it] = genmatchtau
+            tau_var_array['tau_genMatchPdgId'][it] = genmatchpdgidtau
+            tau_var_array['tau_genMatchDr'][it] = drmintaumatch
 
             tes = 1.
             if genmatchtau == 5:
                 tes = teshist.GetBinContent(teshist.GetXaxis().FindBin(t[0].decayMode()))
 
-            tau_var_array['sanitytauDM'][it] = t[11] - t[0].pt()
-            tau_var_array['sanitytauRaw'][it] = t[12] - t[0].pt()
-            tau_var_array['sanitytauVloose'][it] = t[13] - t[0].pt()
+            tau_var_array['tau_sanityDm'][it] = t[11] - t[0].pt()
+            tau_var_array['tau_sanityRaw'][it] = t[12] - t[0].pt()
+            tau_var_array['tau_sanityVloose'][it] = t[13] - t[0].pt()
 
-            tau_var_array['chargetau'][it] = t[0].charge()
-            tau_var_array['pxtau'][it] = t[0].px()
-            tau_var_array['pytau'][it] = t[0].py()
-            tau_var_array['pztau'][it] = t[0].pz()
-            tau_var_array['pttau'][it] = t[0].pt()
-            tau_var_array['energytau'][it] = t[0].energy()
-            tau_var_array['masstau'][it] = t[0].mass()
-            tau_var_array['scaledpttau'][it] = t[0].pt() * tes
-            tau_var_array['scaledenergytau'][it] = t[0].energy() * tes
-            tau_var_array['scaledmasstau'][it] = t[0].mass() * tes
-            tau_var_array['etatau'][it] = t[0].eta()
-            tau_var_array['phitau'][it] = t[0].phi()
+            tau_var_array['tau_charge'][it] = t[0].charge()
+            tau_var_array['tau_px'][it] = t[0].px()
+            tau_var_array['tau_py'][it] = t[0].py()
+            tau_var_array['tau_pz'][it] = t[0].pz()
+            tau_var_array['tau_pt'][it] = t[0].pt()
+            tau_var_array['tau_energy'][it] = t[0].energy()
+            tau_var_array['tau_mass'][it] = t[0].mass()
+            tau_var_array['tau_ptScaled'][it] = t[0].pt() * tes
+            tau_var_array['tau_energyScaled'][it] = t[0].energy() * tes
+            tau_var_array['tau_massScaled'][it] = t[0].mass() * tes
+            tau_var_array['tau_eta'][it] = t[0].eta()
+            tau_var_array['tau_phi'][it] = t[0].phi()
             try:
                 if t[0].leadPFChargedHadrCand().trackRef().isNonnull() and t[0].leadPFChargedHadrCand().trackRef().get():
                     leadpfchhadcand = t[0].leadPFChargedHadrCand().trackRef().get()
-                    tau_var_array['dztau'][it] = leadpfchhadcand.dz(pv_pos)
-                    tau_var_array['dxytau'][it] = leadpfchhadcand.dxy(pv_pos)
-                    tau_var_array['tauleadpfchhadcandpt'][it] = leadpfchhadcand.pt()
-                    tau_var_array['tauleadpfchhadcandeta'][it] = leadpfchhadcand.eta()
-                    tau_var_array['tauleadpfchhadcandphi'][it] = leadpfchhadcand.phi()
+                    tau_var_array['tau_dz'][it] = abs(leadpfchhadcand.dz(pv_pos))
+                    tau_var_array['tau_dxy'][it] = abs(leadpfchhadcand.dxy(pv_pos))
+                    tau_var_array['tau_leadPfChHadCandPt'][it] = leadpfchhadcand.pt()
+                    tau_var_array['tau_leadPfChHadCandEta'][it] = leadpfchhadcand.eta()
+                    tau_var_array['tau_leadPfChHadCandPhi'][it] = leadpfchhadcand.phi()
                 else:
-                    tau_var_array['dztau'][it] = -1
-                    tau_var_array['dxytau'][it] = -1
-                    tau_var_array['tauleadpfchhadcandpt'][it] = 0.
-                    tau_var_array['tauleadpfchhadcandeta'][it] = 0.
-                    tau_var_array['tauleadpfchhadcandphi'][it] = 0.
+                    tau_var_array['tau_dz'][it] = -1.
+                    tau_var_array['tau_dxy'][it] = -1.
+                    tau_var_array['tau_leadPfChHadCandPt'][it] = -1.
+                    tau_var_array['tau_leadPfChHadCandEta'][it] = -1.
+                    tau_var_array['tau_leadPfChHadCandPhi'][it] = -1.
             except :
-                tau_var_array['dztau'][it] = -1
-                tau_var_array['dxytau'][it] = -1
-                tau_var_array['tauleadpfchhadcandpt'][it] = 0.
-                tau_var_array['tauleadpfchhadcandeta'][it] = 0.
-                tau_var_array['tauleadpfchhadcandphi'][it] = 0.
-            tau_var_array['chhadisotau'][it] = t[0].isolationPFChargedHadrCandsPtSum()
-            tau_var_array['photisotau'][it] = t[0].isolationPFGammaCandsEtSum()
+                tau_var_array['tau_dz'][it] = -1.
+                tau_var_array['tau_dxy'][it] = -1.
+                tau_var_array['tau_leadPfChHadCandPt'][it] = -1.
+                tau_var_array['tau_leadPfChHadCandEta'][it] = -1.
+                tau_var_array['tau_leadPfChHadCandPhi'][it] = -1.
+            tau_var_array['tau_chHadIso'][it] = t[0].isolationPFChargedHadrCandsPtSum()
+            tau_var_array['tau_photIso'][it] = t[0].isolationPFGammaCandsEtSum()
 
-            tau_var_array['decaymodetau'][it] = t[0].decayMode()
-            tau_var_array['decaymodefindingtau'][it] = t[1]
-            tau_var_array['mvadiscrtau'][it] = t[2]
+            tau_var_array['tau_decayMode'][it] = t[0].decayMode()
+            tau_var_array['tau_decayModeFinding'][it] = t[1]
+            tau_var_array['tau_mvaDiscr'][it] = t[2]
 
-            tau_var_array['isvloosetau'][it] = t[3]
-            tau_var_array['isloosetau'][it] = t[4]
-            tau_var_array['ismediumtau'][it] = t[5]
-            tau_var_array['istighttau'][it] = t[6]
-            tau_var_array['isvtighttau'][it] = t[7]
-            tau_var_array['isvvtighttau'][it] = t[8]
+            tau_var_array['tau_isvloose'][it] = t[3]
+            tau_var_array['tau_isloose'][it] = t[4]
+            tau_var_array['tau_ismedium'][it] = t[5]
+            tau_var_array['tau_istight'][it] = t[6]
+            tau_var_array['tau_isvtight'][it] = t[7]
+            tau_var_array['tau_isvvtight'][it] = t[8]
 
             if t[3] > 0.5:
                 numtausvloose += 1
@@ -2407,46 +2652,46 @@ for f in options.inputFiles:
                 numtausvvtight += 1
                 if t[0].pt() > 20: numtausvvtightPt20 += 1
 
-            tau_var_array['elrejtau'][it] = t[9]
-            tau_var_array['murejtau'][it] = t[10]
+            tau_var_array['tau_elRejection'][it] = t[9]
+            tau_var_array['tau_muRejection'][it] = t[10]
 
         hNumtaus.Fill(len(tauswithdiscriminators))
-        event_level_var_array['numtausvloose'][0] = numtausvloose
-        event_level_var_array['numtausloose'][0] = numtausloose
-        event_level_var_array['numtausmedium'][0] = numtausmedium
-        event_level_var_array['numtaustight'][0] = numtaustight
-        event_level_var_array['numtausvtight'][0] = numtausvtight
-        event_level_var_array['numtausvvtight'][0] = numtausvvtight
-        event_level_var_array['numtausvloosePt20'][0] = numtausvloosePt20
-        event_level_var_array['numtausloosePt20'][0] = numtausloosePt20
-        event_level_var_array['numtausmediumPt20'][0] = numtausmediumPt20
-        event_level_var_array['numtaustightPt20'][0] = numtaustightPt20
-        event_level_var_array['numtausvtightPt20'][0] = numtausvtightPt20
-        event_level_var_array['numtausvvtightPt20'][0] = numtausvvtightPt20
+        event_level_var_array['n_tau_vloose'][0] = numtausvloose
+        event_level_var_array['n_tau_loose'][0] = numtausloose
+        event_level_var_array['n_tau_medium'][0] = numtausmedium
+        event_level_var_array['n_tau_tight'][0] = numtaustight
+        event_level_var_array['n_tau_vtight'][0] = numtausvtight
+        event_level_var_array['n_tau_vvtight'][0] = numtausvvtight
+        event_level_var_array['n_tau_20_vloose'][0] = numtausvloosePt20
+        event_level_var_array['n_tau_20_loose'][0] = numtausloosePt20
+        event_level_var_array['n_tau_20_medium'][0] = numtausmediumPt20
+        event_level_var_array['n_tau_20_tight'][0] = numtaustightPt20
+        event_level_var_array['n_tau_20_vtight'][0] = numtausvtightPt20
+        event_level_var_array['n_tau_20_vvtight'][0] = numtausvvtightPt20
 
 
         tracksByPV = {}
         for ipv, pv in enumerate(primaryvertices):
 
-            pv_var_array['idxpv'][ipv] = ipv
-            pv_var_array['numtrackspv'][ipv] = pv.tracksSize()
-            pv_var_array['xpv'][ipv] = pv.position().x()
-            pv_var_array['ypv'][ipv] = pv.position().y()
-            pv_var_array['zpv'][ipv] = pv.position().z()
+            pv_var_array['pv_idx'][ipv] = ipv
+            pv_var_array['pv_numTracks'][ipv] = pv.tracksSize()
+            pv_var_array['pv_x'][ipv] = pv.position().x()
+            pv_var_array['pv_y'][ipv] = pv.position().y()
+            pv_var_array['pv_z'][ipv] = pv.position().z()
             tracksByPV[ipv] = [pv.trackRefAt(i).get() for i in range(pv.tracksSize())]
 
 
         isleptonjetidxlist = []
         for ijet, jet in enumerate(jets):
 
-            jet_var_array['ptjet'][ijet] = jet.pt()
-            jet_var_array['etajet'][ijet] = jet.eta()
-            jet_var_array['phijet'][ijet] = jet.phi()
-            jet_var_array['pxjet'][ijet] = jet.px()
-            jet_var_array['pyjet'][ijet] = jet.py()
-            jet_var_array['pzjet'][ijet] = jet.pz()
-            jet_var_array['energyjet'][ijet] = jet.energy()
-            jet_var_array['nconstituentsjet'][ijet] = jet.numberOfDaughters()
+            jet_var_array['jet_px'][ijet] = jet.px()
+            jet_var_array['jet_py'][ijet] = jet.py()
+            jet_var_array['jet_pz'][ijet] = jet.pz()
+            jet_var_array['jet_pt'][ijet] = jet.pt()
+            jet_var_array['jet_energy'][ijet] = jet.energy()
+            jet_var_array['jet_eta'][ijet] = jet.eta()
+            jet_var_array['jet_phi'][ijet] = jet.phi()
+            jet_var_array['jet_numConstituents'][ijet] = jet.numberOfDaughters()
 
             dRmin = 0.1
             thisbtag = -2.
@@ -2456,12 +2701,12 @@ for f in options.inputFiles:
                     dRmin = dR
                     thisbtag = max(-1.0, handle_btag.product().value(ib))
 
-            jet_var_array['btagjet'][ijet] = thisbtag
+            jet_var_array['jet_btag'][ijet] = thisbtag
             btagvalues.append((thisbtag, jet.pt(), jet.eta()))
             hBtagjets.Fill(thisbtag)
 
-            drminleptonjet = 10.
-            ptclosestleptonjet = 0.
+            drminleptonjet = 9.
+            ptclosestleptonjet = -1.
             isleptonjet = 0.
 
             ptthreshold_leptonjet = 50
@@ -2484,25 +2729,26 @@ for f in options.inputFiles:
                 isleptonjet = 1.
                 isleptonjetidxlist.append(ijet)
 
-            jet_var_array['drminleptonjet'][ijet] = drminleptonjet
-            jet_var_array['ptclosestleptonjet'][ijet] = ptclosestleptonjet
-            jet_var_array['isleptonjet'][ijet] = isleptonjet
+            jet_var_array['jet_drminLepton'][ijet] = drminleptonjet
+            jet_var_array['jet_ptClosestLepton'][ijet] = ptclosestleptonjet
+            jet_var_array['jet_isLepton'][ijet] = isleptonjet
 
-            drmingenjetjet = 10.
-            ptclosestgenjetjet = 0.
+            drmingenjetjet = 9.
+            ptclosestgenjetjet = -1.
             isgenjetjet = 0.
 
             if 'data' not in options.tag:
 
                 idx_genjet, drmingenjetjet = findMatch_gen_old_easy(jet, genjets)
+                if not idx_genjet == -1:
+                    ptclosestgenjetjet = genjets[idx_genjet].pt()
 
                 if drmingenjetjet < 0.2:
-                    ptclosestgenjetjet = genjets[idx_genjet].pt()
                     isgenjetjet = 1.
 
-            jet_var_array['drmingenjetjet'][ijet] = drmingenjetjet
-            jet_var_array['ptclosestgenjetjet'][ijet] = ptclosestgenjetjet
-            jet_var_array['isgenjetjet'][ijet] = isgenjetjet
+            jet_var_array['jet_drminGenJet'][ijet] = drmingenjetjet
+            jet_var_array['jet_ptClosestGenJet'][ijet] = ptclosestgenjetjet
+            jet_var_array['jet_isGenJet'][ijet] = isgenjetjet
 
         if 'era16' in options.tag:
             # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco
@@ -2522,21 +2768,21 @@ for f in options.inputFiles:
         else:
             raise NotImplementedError('btag: era unknown or not specified')
 
-        event_level_var_array['njetsbtagloose'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > loosewp and jetpt > 30 and abs(jeteta) < 2.4)])
-        event_level_var_array['njetsbtaglooseTIGHT'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > loosewp and jetpt > 15 and abs(jeteta) < 2.4)])
+        event_level_var_array['n_jet_30_btagloose'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > loosewp and jetpt > 30 and abs(jeteta) < 2.4)])
+        event_level_var_array['n_jet_15_btagloose'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > loosewp and jetpt > 15 and abs(jeteta) < 2.4)])
 
         njetsbtagmedium = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > mediumwp and jetpt > 30 and abs(jeteta) < 2.4)])
         hNjetsbtagmedium.Fill(njetsbtagmedium)
-        event_level_var_array['njetsbtagmedium'][0] = njetsbtagmedium
-        event_level_var_array['njetsbtagmediumTIGHT'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > mediumwp and jetpt > 15 and abs(jeteta) < 2.4)])
+        event_level_var_array['n_jet_30_btagmedium'][0] = njetsbtagmedium
+        event_level_var_array['n_jet_15_btagmedium'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > mediumwp and jetpt > 15 and abs(jeteta) < 2.4)])
         
-        event_level_var_array['njetsbtagtight'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > tightwp and jetpt > 30 and abs(jeteta) < 2.4)])
-        event_level_var_array['njetsbtagtightTIGHT'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > tightwp and jetpt > 15 and abs(jeteta) < 2.4)])
+        event_level_var_array['n_jet_30_btagtight'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > tightwp and jetpt > 30 and abs(jeteta) < 2.4)])
+        event_level_var_array['n_jet_15_btagtight'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > tightwp and jetpt > 15 and abs(jeteta) < 2.4)])
 
         mtmetleadingjet = ROOT.TMath.Sqrt(2 * met.pt() * jets[idxhighestptjet].pt()
                                           * (1 - ROOT.TMath.Cos(deltaPhi(met.phi(), jets[idxhighestptjet].phi()))))
         hMtmetleadingjet.Fill(mtmetleadingjet)
-        event_level_var_array['mtmetleadingjet'][0] = mtmetleadingjet
+        event_level_var_array['mtMetLeadingJet'][0] = mtmetleadingjet
 
 
         if phifirsttrack == tracks[0].phi() and etafirsttrack == tracks[0].eta():
@@ -2552,29 +2798,29 @@ for f in options.inputFiles:
         ###############################################################################################
         '''
 
-        tracksforiso = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
-                                 if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=1000., pt_threshold=0.)])
-        tracksforisotight = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
-                                      if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=1.)])
+        tracksforiso0 = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
+                                  if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.)])
+        tracksforiso1 = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
+                                  if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=1.)])
+        tracksforiso10 = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
+                                   if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=10.)])
 
-        # jetsforisotightNoLepton = [j for ij, j in enumerate(jets) if passesPreselection_iso_jet(j, pt_threshold=30) and ij not in isleptonjetidxlist]
-        # jetsforisotight = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=30)]
-        # jetsforisomeditight = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=20)]
-        # jetsforisomedium = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=15)]
-        # jetsforisoloose = [j for j in jets if passesPreselection_iso_jet(j, pt_threshold=10)]
+        jetsforiso0 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
+                                if passesPreselection_iso_jet(j, pt_threshold=0.)])
+        jetsforiso10 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
+                                if passesPreselection_iso_jet(j, pt_threshold=10.)])
+        jetsforiso20 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
+                                if passesPreselection_iso_jet(j, pt_threshold=20.)])
+        jetsforiso30 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
+                                if passesPreselection_iso_jet(j, pt_threshold=30.)])
 
-        jetsforisotightNoLepton = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
-                                            if passesPreselection_iso_jet(j, pt_threshold=30) and ij not in isleptonjetidxlist])
-        jetsforisotight = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
-                                    if passesPreselection_iso_jet(j, pt_threshold=30)])
-        jetsforisomeditight = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
-                                        if passesPreselection_iso_jet(j, pt_threshold=20)])
-        jetsforisomedium = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
-                                     if passesPreselection_iso_jet(j, pt_threshold=15)])
-        jetsforisoloose = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
-                                    if passesPreselection_iso_jet(j, pt_threshold=10)])
+        jetsforisoNoLepton15 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
+                                         if passesPreselection_iso_jet(j, pt_threshold=15.) and ij not in isleptonjetidxlist])
 
-        neutralhadrons = [p for p in pfcands if p.particleId() == 5]
+        # see https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideParticleFlow#Output
+        neutralhadrons0 = [p for p in pfcands if p.particleId() == 5]
+        neutralhadrons1 = [p for p in pfcands if p.particleId() == 5 and p.pt() > 1.]
+        neutralhadrons10 = [p for p in pfcands if p.particleId() == 5 and p.pt() > 10.]
 
         if 'genmatchtracks' in options.tag or 'genmatchalltracks' in options.tag:
             genparticlesformatching = [gp for gp in genparticles if gp.status() == 1]
@@ -2591,49 +2837,82 @@ for f in options.inputFiles:
 
             # TODO: adapt preselection
             if not abs(track.dz(pv_pos)) < 1: continue
-            jetisotight, jetisomultitight, jetdrmintight, jetisobtagtight = calcIso_jet_new(track, jetsforisotight, isTrack=True, btagvalues=btagvalues)
-            if not jetdrmintight > 0.4: continue
+            jetiso30, jetisomulti30, jetdrmin30, jetisobtag30 = calcIso_jet_new(track, jetsforiso30, isTrack=True, btagvalues=btagvalues)
+            if not jetdrmin30 > 0.4: continue
 
             numtracksfinalpreselection += 1
 
-            track_level_var_array['randomtrack'][i] = random.randrange(10)
+            track_level_var_array['track_random'][i] = random.randrange(10)
 
-            track_level_var_array['charge'][i] = track.charge()
+            track_level_var_array['track_charge'][i] = track.charge()
 
-            track_level_var_array['pxtrack'][i] = track.px()
-            track_level_var_array['pytrack'][i] = track.py()
-            track_level_var_array['pztrack'][i] = track.pz()
+            track_level_var_array['track_px'][i] = track.px()
+            track_level_var_array['track_py'][i] = track.py()
+            track_level_var_array['track_pz'][i] = track.pz()
 
-            track_level_var_array['pttrack'][i] = track.pt()
-            track_level_var_array['pttrackerror/pttrack'][i] = track.ptError()/track.pt()
-            track_level_var_array['log10(pttrackerror/pttrack)'][i] = ROOT.TMath.Log10(track.ptError()/track.pt())
+            track_level_var_array['track_pt'][i] = track.pt()
 
-            track_level_var_array['pttrackerror'][i] = track.ptError()
-            track_level_var_array['log10(pttrackerror)'][i] = ROOT.TMath.Log10(track.ptError())
+            track_level_var_array['track_ptError'][i] = track.ptError()
+            track_level_var_array['track_log10(ptError)'][i] = ROOT.TMath.Log10(track.ptError())
 
-            track_level_var_array['etaerror'][i] = track.etaError()
-            track_level_var_array['phierror'][i] = track.phiError()
+            track_level_var_array['track_ptError/pt'][i] = track.ptError()/track.pt()
+            track_level_var_array['track_log10(ptError/pt)'][i] = ROOT.TMath.Log10(track.ptError()/track.pt())
 
-            track_level_var_array['eta'][i] = track.eta()
-            track_level_var_array['phi'][i] = track.phi()
+            track_level_var_array['track_eta'][i] = track.eta()
+            track_level_var_array['track_phi'][i] = track.phi()
 
-            track_level_var_array['associatedpv'][i] = -1
-            for ipv in range(len(primaryvertices)):
-                if track in tracksByPV[ipv]: track_level_var_array['associatedpv'][i] = ipv
+            track_level_var_array['track_etaError'][i] = track.etaError()
+            track_level_var_array['track_phiError'][i] = track.phiError()
+
+            ispfcand = False
+            thepfcand = None
+            for pfc in pfcands:
+                if pfc.charge() == 0: continue
+                if pfc.trackRef().isNull(): continue
+                if pfc.trackRef().get() == track:
+                    ispfcand = True
+                    thepfcand = pfc
+                    break
+
+            if ispfcand:
+                track_level_var_array['track_isPfCand'][i] = 1
+                track_level_var_array['track_pfCandPt'][i] = thepfcand.pt()
+                track_level_var_array['track_pfCandEta'][i] = thepfcand.eta()
+                track_level_var_array['track_pfCandPhi'][i] = thepfcand.phi()
+                track_level_var_array['track_pfCandPdgId'][i] = thepfcand.pdgId()
+                track_level_var_array['track_pfCandEnergy'][i] = thepfcand.energy()
+                track_level_var_array['track_pfCandEcalEnergy'][i] = thepfcand.ecalEnergy()
+                track_level_var_array['track_pfCandHcalEnergy'][i] = thepfcand.hcalEnergy()
+            else:
+                track_level_var_array['track_isPfCand'][i] = 0
+                track_level_var_array['track_pfCandPt'][i] = -1
+                track_level_var_array['track_pfCandEta'][i] = -1
+                track_level_var_array['track_pfCandPhi'][i] = -1
+                track_level_var_array['track_pfCandPdgId'][i] = -1
+                track_level_var_array['track_pfCandEnergy'][i] = -1
+                track_level_var_array['track_pfCandEcalEnergy'][i] = -1
+                track_level_var_array['track_pfCandHcalEnergy'][i] = -1
+
+
+            track_level_var_array['track_associatedPV'][i] = -1
+            for ipv in range(n_pv):
+                if track in tracksByPV[ipv]:
+                    track_level_var_array['track_associatedPV'][i] = ipv
+                    break
 
             ip = IPcalculator(track, primaryvertices[0])
-            track_level_var_array['IPsignificance'][i] = ip.getIPsignificance()
-            track_level_var_array['IPxyz'][i] = ip.getIP()
-            track_level_var_array['IPxy'][i] = ip.getDxy()
-            track_level_var_array['IPz'][i] = ip.getDz()
-            track_level_var_array['log10(IPsignificance)'][i] = ROOT.TMath.Log10(ip.getIPsignificance())
-            track_level_var_array['log10(IPxyz)'][i] = ROOT.TMath.Log10(ip.getIP())
-            track_level_var_array['log10(IPxy)'][i] = ROOT.TMath.Log10(ip.getDxy())
-            track_level_var_array['log10(IPz)'][i] = ROOT.TMath.Log10(ip.getDz())
+            track_level_var_array['track_IPsig'][i] = ip.getIPsignificance()
+            track_level_var_array['track_IPxyz'][i] = ip.getIP()
+            track_level_var_array['track_IPxy'][i] = ip.getDxy()
+            track_level_var_array['track_IPz'][i] = ip.getDz()
+            track_level_var_array['track_log10(IPsig)'][i] = ROOT.TMath.Log10(ip.getIPsignificance())
+            track_level_var_array['track_log10(IPxyz)'][i] = ROOT.TMath.Log10(ip.getIP())
+            track_level_var_array['track_log10(IPxy)'][i] = ROOT.TMath.Log10(ip.getDxy())
+            track_level_var_array['track_log10(IPz)'][i] = ROOT.TMath.Log10(ip.getDz())
 
             minipPU = None
             minivPU = -1
-            minIPsignificancePU = 999
+            minIPsignificancePU = float('inf')
             for iv, v in enumerate(primaryvertices[1:]):
                 thisipPU = IPcalculator(track, v)
                 thisIPsignificancePU = thisipPU.getIPsignificance()
@@ -2643,48 +2922,46 @@ for f in options.inputFiles:
                     minIPsignificancePU = thisIPsignificancePU
 
             if not minivPU == -1:
-                track_level_var_array['idxpvPU'][i] = minivPU+1
-                track_level_var_array['IPsignificancePU'][i] = minipPU.getIPsignificance()
-                track_level_var_array['IPxyzPU'][i] = minipPU.getIP()
-                track_level_var_array['IPxyPU'][i] = minipPU.getDxy()
-                track_level_var_array['IPzPU'][i] = minipPU.getDz()
-                track_level_var_array['log10(IPsignificancePU)'][i] = ROOT.TMath.Log10(minipPU.getIPsignificance())
-                track_level_var_array['log10(IPxyzPU)'][i] = ROOT.TMath.Log10(minipPU.getIP())
-                track_level_var_array['log10(IPxyPU)'][i] = ROOT.TMath.Log10(minipPU.getDxy())
-                track_level_var_array['log10(IPzPU)'][i] = ROOT.TMath.Log10(minipPU.getDz())
+                track_level_var_array['track_associatedPU'][i] = minivPU+1
+                track_level_var_array['track_IPsigPU'][i] = minipPU.getIPsignificance()
+                track_level_var_array['track_IPxyzPU'][i] = minipPU.getIP()
+                track_level_var_array['track_IPxyPU'][i] = minipPU.getDxy()
+                track_level_var_array['track_IPzPU'][i] = minipPU.getDz()
+                track_level_var_array['track_log10(IPsigPU)'][i] = ROOT.TMath.Log10(minipPU.getIPsignificance())
+                track_level_var_array['track_log10(IPxyzPU)'][i] = ROOT.TMath.Log10(minipPU.getIP())
+                track_level_var_array['track_log10(IPxyPU)'][i] = ROOT.TMath.Log10(minipPU.getDxy())
+                track_level_var_array['track_log10(IPzPU)'][i] = ROOT.TMath.Log10(minipPU.getDz())
+            else:
+                track_level_var_array['track_associatedPU'][i] = -1
+                track_level_var_array['track_IPsigPU'][i] = -1
+                track_level_var_array['track_IPxyzPU'][i] = -1
+                track_level_var_array['track_IPxyPU'][i] = -1
+                track_level_var_array['track_IPzPU'][i] = -1
+                track_level_var_array['track_log10(IPsigPU)'][i] = -10
+                track_level_var_array['track_log10(IPxyzPU)'][i] = -10
+                track_level_var_array['track_log10(IPxyPU)'][i] = -10
+                track_level_var_array['track_log10(IPzPU)'][i] = -10
 
-            track_level_var_array['dxy0'][i] = abs(track.dxy())
-            track_level_var_array['dz0'][i] = abs(track.dz())
-            track_level_var_array['log10(dxy0)'][i] = ROOT.TMath.Log10(abs(track.dxy()))
-            track_level_var_array['log10(dz0)'][i] = ROOT.TMath.Log10(abs(track.dz()))
+            track_level_var_array['track_dxy0'][i] = abs(track.dxy())
+            track_level_var_array['track_dz0'][i] = abs(track.dz())
+            track_level_var_array['track_log10(dxy0)'][i] = ROOT.TMath.Log10(abs(track.dxy()))
+            track_level_var_array['track_log10(dz0)'][i] = ROOT.TMath.Log10(abs(track.dz()))
 
-            track_level_var_array['dxynoabs'][i] = track.dxy(pv_pos)
-            track_level_var_array['dznoabs'][i] = track.dz(pv_pos)
+            track_level_var_array['track_dxyNoAbs'][i] = track.dxy(pv_pos)
+            track_level_var_array['track_dzNoAbs'][i] = track.dz(pv_pos)
+            track_level_var_array['track_dxySign'][i] = track.dxy(pv_pos) / abs(track.dxy(pv_pos))
+            track_level_var_array['track_dzSign'][i] = track.dz(pv_pos) / abs(track.dz(pv_pos))
 
-            track_level_var_array['dxy'][i] = abs(track.dxy(pv_pos))
-            track_level_var_array['dz'][i] = abs(track.dz(pv_pos))
-            track_level_var_array['log10(dxy)'][i] = ROOT.TMath.Log10(abs(track.dxy(pv_pos)))
-            track_level_var_array['log10(dz)'][i] = ROOT.TMath.Log10(abs(track.dz(pv_pos)))
+            track_level_var_array['track_dxy'][i] = abs(track.dxy(pv_pos))
+            track_level_var_array['track_dz'][i] = abs(track.dz(pv_pos))
+            track_level_var_array['track_log10(dxy)'][i] = ROOT.TMath.Log10(abs(track.dxy(pv_pos)))
+            track_level_var_array['track_log10(dz)'][i] = ROOT.TMath.Log10(abs(track.dz(pv_pos)))
 
             dxyhandmade, dzhandmade = handmadeDxyDz(track, pv_pos)
-            track_level_var_array['dxyhandmade'][i] = dxyhandmade
-            track_level_var_array['dzhandmade'][i] = dzhandmade
-            track_level_var_array['log10(dxyhandmade)'][i] = ROOT.TMath.Log10(dxyhandmade)
-            track_level_var_array['log10(dzhandmade)'][i] = ROOT.TMath.Log10(dzhandmade)
-
-            mindxy = 999
-            mindz = 999
-            for v in primaryvertices:
-                thisdxy = abs(track.dxy(v.position()))
-                if thisdxy < mindxy:
-                    mindxy = thisdxy
-                thisdz = abs(track.dz(v.position()))
-                if thisdz < mindz:
-                    mindz = thisdz
-            track_level_var_array['dxyclosestpv'][i] = mindxy
-            track_level_var_array['dzclosestpv'][i] = mindz
-            track_level_var_array['log10(dxyclosestpv)'][i] = ROOT.TMath.Log10(mindxy)
-            track_level_var_array['log10(dzclosestpv)'][i] = ROOT.TMath.Log10(mindz)
+            track_level_var_array['track_dxyHandmade'][i] = dxyhandmade
+            track_level_var_array['track_dzHandmade'][i] = dzhandmade
+            track_level_var_array['track_log10(dxyHandmade)'][i] = ROOT.TMath.Log10(dxyhandmade)
+            track_level_var_array['track_log10(dzHandmade)'][i] = ROOT.TMath.Log10(dzhandmade)
 
             mindxyPU = 999
             mindzPU = 999
@@ -2695,78 +2972,81 @@ for f in options.inputFiles:
                 thisdzPU = abs(track.dz(v.position()))
                 if thisdzPU < mindzPU:
                     mindzPU = thisdzPU
-            track_level_var_array['dxyclosestpvPU'][i] = mindxyPU
-            track_level_var_array['dzclosestpvPU'][i] = mindzPU
-            track_level_var_array['log10(dxyclosestpvPU)'][i] = ROOT.TMath.Log10(mindxyPU)
-            track_level_var_array['log10(dzclosestpvPU)'][i] = ROOT.TMath.Log10(mindzPU)
+            track_level_var_array['track_dxyPU'][i] = mindxyPU
+            track_level_var_array['track_dzPU'][i] = mindzPU
+            track_level_var_array['track_log10(dxyPU)'][i] = ROOT.TMath.Log10(mindxyPU)
+            track_level_var_array['track_log10(dzPU)'][i] = ROOT.TMath.Log10(mindzPU)
 
-            track_level_var_array['dxyerror'][i] = abs(track.dxyError())
-            track_level_var_array['dzerror'][i] = abs(track.dzError())
-            track_level_var_array['log10(dxyerror)'][i] = ROOT.TMath.Log10(abs(track.dxyError()))
-            track_level_var_array['log10(dzerror)'][i] = ROOT.TMath.Log10(abs(track.dzError()))
+            track_level_var_array['track_dxyError'][i] = abs(track.dxyError())
+            track_level_var_array['track_dzError'][i] = abs(track.dzError())
+            track_level_var_array['track_log10(dxyError)'][i] = ROOT.TMath.Log10(abs(track.dxyError()))
+            track_level_var_array['track_log10(dzError)'][i] = ROOT.TMath.Log10(abs(track.dzError()))
 
-            dontSubtractTrackPt = False
-            if abs(track.dz(pv_pos)) >= 0.1 or abs(track.dxy(pv_pos)) >= 0.1 or track.pt() <= 1.: dontSubtractTrackPt = True
-            track_level_var_array['trackabsisotight'][i], track_level_var_array['trackrelisotight'][i], track_level_var_array['trackdrmintight'][i], track_level_var_array['tracknumneighbourstight'][i] = calcIso_pf_or_track_new(track, tracksforisotight, dontSubtractObject=dontSubtractTrackPt)
+            track_level_var_array['track_pfAbsIso'][i], track_level_var_array['track_pfRelIso'][i], track_level_var_array['track_drminPf'][i], track_level_var_array['track_numneighboursPf'][i] = calcIso_pf_or_track_new(track, pfcandsforiso0, subtractObject=ispfcand)
+            track_level_var_array['track_chPfAbsIso'][i], track_level_var_array['track_chPfRelIso'][i], track_level_var_array['track_drminChPf'][i], track_level_var_array['track_numneighboursChPf'][i] = calcIso_pf_or_track_new(track, chpfcandsforiso0, subtractObject=(ispfcand and abs(track.dxy(pv_pos)) < 0.1 and abs(track.dz(pv_pos)) < 0.1))
 
-            dontSubtractTrackPt = False
-            if abs(track.dz(pv_pos)) >= 0.1: dontSubtractTrackPt = True
-            track_level_var_array['trackabsiso'][i], track_level_var_array['trackreliso'][i], track_level_var_array['trackdrmin'][i], track_level_var_array['tracknumneighbours'][i] = calcIso_pf_or_track_new(track, tracksforiso, dontSubtractObject=dontSubtractTrackPt)
+            track_level_var_array['track_tkAbsIso0'][i], track_level_var_array['track_tkRelIso0'][i], track_level_var_array['track_drminTrack0'][i], track_level_var_array['track_numneighboursTrack0'][i] = calcIso_pf_or_track_new(track, tracksforiso0, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.))
+            track_level_var_array['track_tkAbsIso1'][i], track_level_var_array['track_tkRelIso1'][i], track_level_var_array['track_drminTrack1'][i], track_level_var_array['track_numneighboursTrack1'][i] = calcIso_pf_or_track_new(track, tracksforiso1, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=1.))
+            track_level_var_array['track_tkAbsIso10'][i], track_level_var_array['track_tkRelIso10'][i], track_level_var_array['track_drminTrack10'][i], track_level_var_array['track_numneighboursTrack10'][i] = calcIso_pf_or_track_new(track, tracksforiso10, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=10.))
 
-            track_level_var_array['pfabsiso'][i], track_level_var_array['pfreliso'][i], track_level_var_array['pfdrmin'][i], track_level_var_array['pfnumneighbours'][i] = calcIso_pf_or_track_new(track, pfcandsforiso)
-            track_level_var_array['chpfabsiso'][i], track_level_var_array['chpfreliso'][i], track_level_var_array['chpfdrmin'][i], track_level_var_array['chpfnumneighbours'][i] = calcIso_pf_or_track_new(track, chpfcandsforiso, dontSubtractObject=dontSubtractTrackPt)
+            track_level_var_array['track_jetIso0'][i], track_level_var_array['track_jetIsoMulti0'][i], track_level_var_array['track_drminJet0'][i], track_level_var_array['track_btagJet0'][i] = calcIso_jet_new(track, jetsforiso0, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_jetIso10'][i], track_level_var_array['track_jetIsoMulti10'][i], track_level_var_array['track_drminJet10'][i], track_level_var_array['track_btagJet10'][i] = calcIso_jet_new(track, jetsforiso10, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_jetIso15'][i], track_level_var_array['track_jetIsoMulti15'][i], track_level_var_array['track_drminJet15'][i], track_level_var_array['track_btagJet15'][i] = calcIso_jet_new(track, jetsforiso15, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_jetIso20'][i], track_level_var_array['track_jetIsoMulti20'][i], track_level_var_array['track_drminJet20'][i], track_level_var_array['track_btagJet20'][i] = calcIso_jet_new(track, jetsforiso20, isTrack=True, btagvalues=btagvalues)
 
-            track_level_var_array['jetiso'][i], track_level_var_array['jetisomulti'][i], track_level_var_array['jetdrmin'][i], track_level_var_array['jetisobtag'][i] = calcIso_jet_new(track, jetsforiso, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['jetisoloose'][i], track_level_var_array['jetisomultiloose'][i], track_level_var_array['jetdrminloose'][i], track_level_var_array['jetisobtagloose'][i] = calcIso_jet_new(track, jetsforisoloose, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['jetisomeditight'][i], track_level_var_array['jetisomultimeditight'][i], track_level_var_array['jetdrminmeditight'][i], track_level_var_array['jetisobtagmeditight'][i] = calcIso_jet_new(track, jetsforisomeditight, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['jetisomedium'][i], track_level_var_array['jetisomultimedium'][i], track_level_var_array['jetdrminmedium'][i], track_level_var_array['jetisobtagmedium'][i] = calcIso_jet_new(track, jetsforisomedium, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['jetisotightNoLepton'][i], track_level_var_array['jetisomultitightNoLepton'][i], track_level_var_array['jetdrmintightNoLepton'][i], track_level_var_array['jetisobtagtightNoLepton'][i] = calcIso_jet_new(track, jetsforisotightNoLepton, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['jetisotight'][i] = jetisotight
-            track_level_var_array['jetisomultitight'][i] = jetisomultitight
-            track_level_var_array['jetdrmintight'][i] = jetdrmintight
-            track_level_var_array['jetisobtagtight'][i] = jetisobtagtight
+            track_level_var_array['track_jetIso30'][i] = jetiso30
+            track_level_var_array['track_jetIsoMulti30'][i] = jetisomulti30
+            track_level_var_array['track_drminJet30'][i] = jetdrmin30
+            track_level_var_array['track_btagJet30'][i] = jetisobtag30
+
+            track_level_var_array['track_jetIsoNoLepton15'][i], track_level_var_array['track_jetIsoMultiNoLepton15'][i], track_level_var_array['track_drminJetNoLepton15'][i], track_level_var_array['track_btagJetNoLepton15'][i] = calcIso_jet_new(track, jetsforisoNoLepton15, isTrack=True, btagvalues=btagvalues)
 
 
-            drminneutralhadron = 10
-            closestneutralhadronTlv = ROOT.TLorentzVector()
             trackTlv = ROOT.TLorentzVector()
             trackTlv.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), 0.1396)
-            for p in neutralhadrons:
-                dr = deltaR(track.eta(), p.eta(), track.phi(), p.phi())
-                if dr < drminneutralhadron:
-                    drminneutralhadron = dr
-                    closestneutralhadronTlv.SetPtEtaPhiM(p.pt(), p.eta(), p.phi(), 0.1350)
-            track_level_var_array['drminneutralhadron'][i] = drminneutralhadron
-            if drminneutralhadron < 10:
-                track_level_var_array['invmclosestneutralhadrontrack'][i] = (closestneutralhadronTlv + trackTlv).M()
-            else:
-                track_level_var_array['invmclosestneutralhadrontrack'][i] = 0
+            for suffix, neutralhadroncollection in [('0', neutralhadrons0), ('1', neutralhadrons1), ('10', neutralhadrons10)]:
+                absisoneutralhadron = 0
+                drminneutralhadron = 9
+                closestneutralhadronTlv = ROOT.TLorentzVector()
+                for p in neutralhadroncollection:
+                    dr = deltaR(track.eta(), p.eta(), track.phi(), p.phi())
+                    if dr < 0.3:
+                        absisoneutralhadron += p.energy()
+                    if dr < drminneutralhadron:
+                        drminneutralhadron = dr
+                        closestneutralhadronTlv.SetPtEtaPhiM(p.pt(), p.eta(), p.phi(), 0.1350)
+                track_level_var_array['track_neHadAbsIso' + suffix][i] = absisoneutralhadron
+                track_level_var_array['track_drminNeHad' + suffix][i] = drminneutralhadron
+                if drminneutralhadron < 10:
+                    track_level_var_array['track_invmNeHad' + suffix][i] = (closestneutralhadronTlv + trackTlv).M()
+                else:
+                    track_level_var_array['track_invmNeHad' + suffix][i] = 0
 
-            drminphoton = 10
+            drminphoton = 9
             for p in photons:
                 dr = deltaR(track.eta(), p.eta(), track.phi(), p.phi())
                 if dr < drminphoton:
                     drminphoton = dr
-            track_level_var_array['drminphoton'][i] = drminphoton
+            track_level_var_array['track_drminPhoton'][i] = drminphoton
 
-            drminelectron = 10
+            drminelectron = 9
             for e in electrons:
                 dr = deltaR(track.eta(), e.eta(), track.phi(), e.phi())
                 if dr < drminelectron:
                     drminelectron = dr
-            track_level_var_array['drminelectron'][i] = drminelectron
+            track_level_var_array['track_drminElectron'][i] = drminelectron
 
-            drminmuon = 10
+            drminmuon = 9
             for m in muons:
                 dr = deltaR(track.eta(), m.eta(), track.phi(), m.phi())
                 if dr < drminmuon:
                     drminmuon = dr
-            track_level_var_array['drminmuon'][i] = drminmuon
+            track_level_var_array['track_drminMuon'][i] = drminmuon
 
             for itaucolleciton, taucollection in enumerate([tauswithdiscriminators, [t for t in tauswithdiscriminators if t[0].pt() > 20]]):
 
                 istauleadpfchhadcand = 0
-                drmintau = 10
+                drmintau = 9
                 closesttaumvadiscr = -1
                 closesttaudecaymode = -1
                 taudr3wp = 0
@@ -2776,10 +3056,11 @@ for f in options.inputFiles:
 
                     try:
                         leadpfchhadcand = t[0].leadPFChargedHadrCand().trackRef().get()
+                        leadpfchhadcand.pt()
                     except:
                         leadpfchhadcand = None
 
-                    if leadpfchhadcand:
+                    if leadpfchhadcand is not None:
                         if deltaR(leadpfchhadcand.eta(), track.eta(), leadpfchhadcand.phi(), track.phi()) < 0.001:
                             istauleadpfchhadcand = 1
 
@@ -2804,37 +3085,37 @@ for f in options.inputFiles:
                                     if taudr3wp < itauwp: taudr3wp = itauwp
                                     itauwp += 1
 
-                suffix = ''
-                if itaucolleciton == 1: suffix = 'Pt20'
+                suffix = '0'
+                if itaucolleciton == 1: suffix = '20'
 
-                track_level_var_array['istauleadpfchhadcand' + suffix][i] = istauleadpfchhadcand
-                track_level_var_array['drmintau' + suffix][i] = drmintau
-                track_level_var_array['closesttaumvadiscr' + suffix][i] = closesttaumvadiscr
-                track_level_var_array['closesttaudecaymode' + suffix][i] = closesttaudecaymode
-                track_level_var_array['taudr3wp' + suffix][i] = taudr3wp
-                track_level_var_array['taudr4wp' + suffix][i] = taudr4wp
-                track_level_var_array['taudr5wp' + suffix][i] = taudr5wp
+                track_level_var_array['track_isTauLeadPfChHadCand' + suffix][i] = istauleadpfchhadcand
+                track_level_var_array['track_drminTau' + suffix][i] = drmintau
+                track_level_var_array['track_mvaDiscrTau' + suffix][i] = closesttaumvadiscr
+                track_level_var_array['track_decayModeTau' + suffix][i] = closesttaudecaymode
+                track_level_var_array['track_dr3highestWpTau' + suffix][i] = taudr3wp
+                track_level_var_array['track_dr4highestWpTau' + suffix][i] = taudr4wp
+                track_level_var_array['track_dr5highestWpTau' + suffix][i] = taudr5wp
 
-            track_level_var_array['detahighestptjet'][i] = abs(track.eta() - jets[idxhighestptjet].eta())
-            track_level_var_array['dphihighestptjet'][i] = deltaPhi(track.phi(), jets[idxhighestptjet].phi())
+            track_level_var_array['track_detaLeadingJet'][i] = abs(track.eta() - jets[idxhighestptjet].eta())
+            track_level_var_array['track_dphiLeadingJet'][i] = deltaPhi(track.phi(), jets[idxhighestptjet].phi())
 
-            track_level_var_array['dphimet'][i] = deltaPhi(track.phi(), met.phi())
-            track_level_var_array['dphimetpca'][i], _, _ = handmadeDphiMetPCA(track, pv_pos, met)
+            track_level_var_array['track_dphiMet'][i] = deltaPhi(track.phi(), met.phi())
+            track_level_var_array['track_dphiMetPca'][i], _, _ = handmadeDphiMetPCA(track, pv_pos, met)
 
-            track_level_var_array['chi2'][i] = track.normalizedChi2()
+            track_level_var_array['track_chi2'][i] = track.normalizedChi2()
 
             quality = 0
             if track.quality(track.qualityByName('loose')): quality = 1
             if track.quality(track.qualityByName('tight')): quality = 2
             if track.quality(track.qualityByName('highPurity')): quality = 3
-            track_level_var_array['quality'][i] = quality
+            track_level_var_array['track_quality'][i] = quality
 
-            track_level_var_array['nvalidhits'][i] = track.numberOfValidHits()
-            track_level_var_array['nlosthits'][i] = track.numberOfLostHits()
+            track_level_var_array['track_numValidHits'][i] = track.numberOfValidHits()
+            track_level_var_array['track_numLostHits'][i] = track.numberOfLostHits()
 
 
             hasGenMatch = -1
-            tmingen = -999
+            tmingen = -1
             genmatchpdgid = -1
             genmatchmotherpdgid = -1
             genmatchpt = -1
@@ -2849,7 +3130,7 @@ for f in options.inputFiles:
             genmatchisdirecttaudecayproduct = -1
             genmatchmotheristhetau = 0
 
-            gentaujetmatchdrmin = 10
+            gentaujetmatchdrmin = 9
             gentaujetmatchpt = -1
 
             dothegenmatch = False
@@ -2863,7 +3144,7 @@ for f in options.inputFiles:
             if dothegenmatch:
 
                 idxgentaujet, gentaujetmatchdrmin = findMatch_gen_old_easy(track, gentaujets)
-                if gentaujetmatchdrmin < 10:
+                if gentaujetmatchdrmin < 9:
                     gentaujetmatchpt = gentaujets[idxgentaujet].pt()
 
                 idxgen, dxyzmingen, tmingen, drmingen = findMatch_gen_new(track, genparticlesformatching)
@@ -2924,47 +3205,47 @@ for f in options.inputFiles:
 
                     if genmatchmother == thetau: genmatchmotheristhetau = 1
 
-            track_level_var_array['hasGenMatch'][i] = hasGenMatch
-            track_level_var_array['genmatchtmin'][i] = tmingen
-            track_level_var_array['genmatchpdgid'][i] = genmatchpdgid
-            track_level_var_array['genmatchmotherpdgid'][i] = genmatchmotherpdgid
-            track_level_var_array['genmatchpt'][i] = genmatchpt
-            track_level_var_array['genmatchmotherpt'][i] = genmatchmotherpt
-            track_level_var_array['genmatchstatus'][i] = genmatchstatus
-            track_level_var_array['genmatchmotherstatus'][i] = genmatchmotherstatus
-            track_level_var_array['genmatchishardprocess'][i] = genmatchishardprocess
-            track_level_var_array['genmatchmotherishardprocess'][i] = genmatchmotherishardprocess
-            track_level_var_array['genmatchisfromhardprocess'][i] = genmatchisfromhardprocess
-            track_level_var_array['genmatchisprompt'][i] = genmatchisprompt
-            track_level_var_array['genmatchisdirecthadrondecayproduct'][i] = genmatchisdirecthadrondecayproduct
-            track_level_var_array['genmatchisdirecttaudecayproduct'][i] = genmatchisdirecttaudecayproduct
-            track_level_var_array['genmatchmotheristhetau'][i] = genmatchmotheristhetau
-            track_level_var_array['genmatchmothertaudecay'][i] = decayWtau
+            track_level_var_array['track_hasGenMatch'][i] = hasGenMatch
+            track_level_var_array['track_genMatchTmin'][i] = tmingen
+            track_level_var_array['track_genMatchPdgId'][i] = genmatchpdgid
+            track_level_var_array['track_genMatchMotherPdgId'][i] = genmatchmotherpdgid
+            track_level_var_array['track_genMatchPt'][i] = genmatchpt
+            track_level_var_array['track_genMatchMotherPt'][i] = genmatchmotherpt
+            track_level_var_array['track_genMatchStatus'][i] = genmatchstatus
+            track_level_var_array['track_genMatchMotherStatus'][i] = genmatchmotherstatus
+            track_level_var_array['track_genMatchIsHardProcess'][i] = genmatchishardprocess
+            track_level_var_array['track_genMatchMotherIsHardProcess'][i] = genmatchmotherishardprocess
+            track_level_var_array['track_genMatchIsFromHardProcess'][i] = genmatchisfromhardprocess
+            track_level_var_array['track_genMatchIsPrompt'][i] = genmatchisprompt
+            track_level_var_array['track_genMatchIsDirectHadronDecayProduct'][i] = genmatchisdirecthadrondecayproduct
+            track_level_var_array['track_genMatchIsDirectTauDecayProduct'][i] = genmatchisdirecttaudecayproduct
+            track_level_var_array['track_genMatchMotherIsTheTau'][i] = genmatchmotheristhetau
+            track_level_var_array['track_genMatchMotherTauDecay'][i] = decayWtau
 
-            track_level_var_array['gentaujetmatchdrmin'][i] = gentaujetmatchdrmin
-            track_level_var_array['gentaujetmatchpt'][i] = gentaujetmatchpt
+            track_level_var_array['track_drminGenTauJet'][i] = gentaujetmatchdrmin
+            track_level_var_array['track_genTauJetPt'][i] = gentaujetmatchpt
 
             issignaltrack = 0
             if itrack == matchedTrackIdxCharginoPion1 or itrack == matchedTrackIdxCharginoPion2: issignaltrack = 1
-            track_level_var_array['issignaltrack'][i] = issignaltrack
+            track_level_var_array['track_isSignalTrack'][i] = issignaltrack
 
             issusytrack = 0
             if itrack in susytracks: issusytrack = 1
-            track_level_var_array['issusytrack'][i] = issusytrack
+            track_level_var_array['track_isSusyTrack'][i] = issusytrack
 
             susytrackmother = 0
             susytrackpdgid = 0
             if issusytrack:
                 susytrackmother = susytracks[itrack][0]
                 susytrackpdgid = susytracks[itrack][1]
-            track_level_var_array['susytrackmother'][i] = susytrackmother
-            track_level_var_array['susytrackpdgid'][i] = susytrackpdgid
+            track_level_var_array['track_susyTrackPdgIdMother'][i] = susytrackmother
+            track_level_var_array['track_susyTrackPdgId'][i] = susytrackpdgid
 
             i += 1
 
-        event_level_var_array['numtrackstotal'][0] = len(tracks)
-        event_level_var_array['numtracksbasicpreselection'][0] = numtracksbasicpreselection
-        event_level_var_array['numtracksfinalpreselection'][0] = numtracksfinalpreselection
+        event_level_var_array['n_track_total'][0] = len(tracks)
+        event_level_var_array['n_track_basic'][0] = numtracksbasicpreselection
+        event_level_var_array['n_track'][0] = numtracksfinalpreselection
 
         event_level_var_array['cutflow'][0] = cutflow
 
