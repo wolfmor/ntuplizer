@@ -247,7 +247,7 @@ if True:
 
         , ('n_zGamma', 'I'), ('zGamma_pdgId', 'F')
         , ('zGamma_pt', 'F'), ('zGamma_eta', 'F'), ('zGamma_phi', 'F')
-        , ('zGamma_neutrinoSumPt', 'F')
+        , ('zGamma_neutrinoSumPt', 'F'), ('zGamma_tauDecayMode', 'F')
         , ('n_zDaughter', 'I')
 
         , ('n_wBoson', 'I'), ('wBoson_pdgId', 'F')
@@ -328,34 +328,88 @@ if True:
 
     # TODO: implement the correct MET filters for data:
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/MissingETOptionalFiltersRun2
-    if 'era16' in options.tag:
+    trigger_flags = []
+    if 'era16_07Aug17' in options.tag:
+        trigger_flags = [
+            'goodVertices'
+            , 'globalSuperTightHalo2016Filter'
+            , 'HBHENoiseFilter'
+            , 'HBHENoiseIsoFilter'
+            , 'EcalDeadCellTriggerPrimitiveFilter'
+            , 'BadPFMuonFilter'
+            # , 'BadChargedCandidateFilter'
+            , 'eeBadScFilter'
+        ]
+    elif 'era16_UL' in options.tag:
         pass
-    elif 'era17' in options.tag:
+    elif 'era17_17Nov2017' in options.tag:
         pass
-    elif 'era18' in options.tag:
+    elif 'era18_17Sep2018' in options.tag:
         pass
     else:
         raise NotImplementedError('MET filters: era unknown or not specified')
 
-    trigger_flags = [
-        'globalSuperTightHalo2016Filter'
-        , 'HBHENoiseFilter'
-        , 'HBHEIsoNoiseFilter'
-        , 'eeBadScFilter'
-        , 'EcalDeadCellTriggerPrimitiveFilter'
-        , 'ecalBadCalibFilter'
-        , 'BadChargedHadronFilter'
-        , 'BadPFMuonFilter'
-        , 'globalTightHalo2016Filter'
-        , 'PrimaryVertexFilter'
-        , 'CSCTightHaloFilter'
-        ]
+    """
+    flags available in /nfs/dust/cms/user/wolfmor/testsamples/DataMET_16C/8AFF8257-2BAF-E711-BBAC-0CC47A4D7614.root
+    
+    raw2digi_step
+    L1Reco_step
+    reconstruction_step
+    EXOMONOPOLEPath
+    condPath
+    pathALCARECOHcalCalNoise
+    eventinterpretaion_step
+    HBHENoiseFilter
+    HBHENoiseIsoFilter
+    CSCTightHaloFilter
+    CSCTightHaloTrkMuUnvetoFilter
+    CSCTightHalo2015Filter
+    globalTightHalo2016Filter
+    globalSuperTightHalo2016Filter
+    HcalStripHaloFilter
+    hcalLaserEventFilter
+    EcalDeadCellTriggerPrimitiveFilter
+    EcalDeadCellBoundaryEnergyFilter
+    goodVertices
+    eeBadScFilter
+    ecalLaserCorrFilter
+    trkPOGFilters
+    chargedHadronTrackResolutionFilter
+    muonBadTrackFilter
+    BadChargedCandidateFilter
+    BadPFMuonFilter
+    BadChargedCandidateSummer16Filter
+    BadPFMuonSummer16Filter
+    trkPOG_manystripclus53X
+    trkPOG_toomanystripclus53X
+    trkPOG_logErrorTooManyClusters
+    METFilters
+    dqmoffline_step
+    dqmoffline_1_step
+    dqmoffline_2_step
+    dqmoffline_3_step
+    dqmoffline_4_step
+    """
+
+    # trigger_flags = [
+    #     'globalSuperTightHalo2016Filter'
+    #     , 'HBHENoiseFilter'
+    #     , 'HBHEIsoNoiseFilter'
+    #     , 'eeBadScFilter'
+    #     , 'EcalDeadCellTriggerPrimitiveFilter'
+    #     , 'ecalBadCalibFilter'
+    #     , 'BadChargedHadronFilter'
+    #     , 'BadPFMuonFilter'
+    #     , 'globalTightHalo2016Filter'
+    #     , 'PrimaryVertexFilter'
+    #     , 'CSCTightHaloFilter'
+    #     ]
 
     for tf in trigger_flags:
         event_level_var_array[tf] = array('i', [0])
         tEvent.Branch(tf, event_level_var_array[tf], tf + '/I')
 
-
+    # TODO: add triggers for SingleMuon datastream
     trigger_hlt = [
         'HLT_PFMET90_PFMHT90_IDTight_v'
         , 'HLT_PFMET100_PFMHT100_IDTight_BeamHaloCleaned_v'
@@ -363,6 +417,14 @@ if True:
         , 'HLT_PFMET110_PFMHT110_IDTight_v'
         , 'HLT_PFMET120_PFMHT120_IDTight_v'
         , 'triggerfired'
+    ]
+
+    if 'SingleMuon' in options.tag:
+        trigger_hlt = [
+            'HLT_IsoMu24_v'
+            , 'HLT_IsoMu27_v'
+            , 'HLT_Mu50_v'
+            , 'triggerfired'
         ]
 
     for t_hlt in trigger_hlt:
@@ -606,8 +668,8 @@ if True:
         , ('track_etaError', 'F'), ('track_phiError', 'F')
 
         , ('track_isPfCand', 'I')
-        , ('track_pfCandPt', 'I'), ('track_pfCandEta', 'I'), ('track_pfCandPhi', 'I'), ('track_pfCandPdgId', 'I')
-        , ('track_pfCandEnergy', 'I'), ('track_pfCandEcalEnergy', 'I'), ('track_pfCandHcalEnergy', 'I')
+        , ('track_pfCandPt', 'F'), ('track_pfCandEta', 'F'), ('track_pfCandPhi', 'F'), ('track_pfCandPdgId', 'F'), ('track_pfCandParticleId', 'F')
+        , ('track_pfCandEnergy', 'F'), ('track_pfCandEcalEnergy', 'F'), ('track_pfCandHcalEnergy', 'F')
 
         , ('track_associatedPV', 'I')
         , ('track_associatedPU', 'I')
@@ -1189,6 +1251,7 @@ for f in options.inputFiles:
 
         allfine = True
 
+        # TODO: do this also for MC??
         if 'data' in options.tag:
 
             event.getByLabel(label_trigger_flags, handle_trigger_flags)
@@ -1881,6 +1944,7 @@ for f in options.inputFiles:
         etaZgamma = -1
         phiZgamma = -1
         numZgammaDaughters = 0
+        decayZtau = -1
         ptsumZgammaNeutrinos = -1
         if 'ZJetsToNuNu' in options.tag or 'DYJetsToLL' in options.tag:
 
@@ -1902,6 +1966,7 @@ for f in options.inputFiles:
 
                 ZgammaNeutrinos = ROOT.TLorentzVector()
 
+                firstZtau = True
                 for i in range(numZgammaDaughters):
 
                     daughter = Zgamma.daughter(i)
@@ -1917,6 +1982,10 @@ for f in options.inputFiles:
                     zdaughter_var_array['zDaughter_eta'][i] = daughter.eta()
                     zdaughter_var_array['zDaughter_phi'][i] = daughter.phi()
 
+                    if abs(daughter.pdgId()) == 15 and firstZtau:
+                        decayZtau = getTauDecayMode(daughter, decayZtau)
+                        firstZtau = False
+
                     if abs(daughter.pdgId()) == 12 or abs(daughter.pdgId()) == 14 or abs(daughter.pdgId()) == 16:
                         nTlv = ROOT.TLorentzVector(daughter.px(), daughter.py(), daughter.pz(), daughter.energy())
                         ZgammaNeutrinos += nTlv
@@ -1929,6 +1998,7 @@ for f in options.inputFiles:
         event_level_var_array['zGamma_eta'][0] = etaZgamma
         event_level_var_array['zGamma_phi'][0] = phiZgamma
         event_level_var_array['zGamma_neutrinoSumPt'][0] = ptsumZgammaNeutrinos
+        event_level_var_array['zGamma_tauDecayMode'][0] = decayZtau
         event_level_var_array['n_zDaughter'][0] = numZgammaDaughters
 
 
@@ -1989,28 +2059,8 @@ for f in options.inputFiles:
                     wdaughter_var_array['wDaughter_phiVis'][i] = viswdaughter.Phi()
 
                     if abs(daughter.pdgId()) == 15:
-
                         thetau = daughter
-
-                        nprongs = 0
-                        nneutral = 0
-
-                        for k in range(daughter.numberOfDaughters()):
-
-                            taudaughterpdgid = abs(daughter.daughter(k).pdgId())
-
-                            # see: https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauIDRecommendationForRun2#Decay_Mode_Reconstruction
-                            if taudaughterpdgid in [12, 14, 16]:  # skip the neutrinos
-                                continue
-                            elif taudaughterpdgid in [11, 13]:  # charged lepton
-                                decayWtau = 10 + taudaughterpdgid
-                            elif taudaughterpdgid == 111:  # neutral pion
-                                nneutral += 1
-                            else:  # has to be a charged hadron
-                                nprongs += 1
-
-                        if decayWtau not in [21, 23]:
-                            decayWtau = 5 * (nprongs - 1) + nneutral
+                        decayWtau = getTauDecayMode(daughter, decayWtau)
 
                     if abs(daughter.pdgId()) == 12 or abs(daughter.pdgId()) == 14 or abs(daughter.pdgId()) == 16:
                         ptWneutrino = daughter.pt()
@@ -2376,6 +2426,12 @@ for f in options.inputFiles:
                 processid = 'WJetsToLNu_HT-2500ToInf'
             elif 'DYJetsToLL_Zpt-150toInf' in options.tag:
                 processid = 'DYJetsToLL_Zpt-150toInf'
+            elif 'TTJets_DiLept' in options.tag:
+                processid = 'TTJets_DiLept'
+            elif 'TTJets_SingleLeptFromT' in options.tag:
+                processid = 'TTJets_SingleLeptFromT'
+            elif 'TTJets_SingleLeptFromTbar' in options.tag:
+                processid = 'TTJets_SingleLeptFromTbar'
             else:
                 pass
 
@@ -2830,6 +2886,12 @@ for f in options.inputFiles:
         ###############################################################################################
         '''
 
+        # TODO: add track/nehad iso with objects with pT>5?
+        # TODO: add (ch)PF iso with pT cut
+        # TODO: add isolation with _only_ bjets
+        # TODO: add "m_lb" like invariant mass (track, closest jet)
+        # TODO: add jet iso vars also if drmin>0.4
+
         tracksforiso0 = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
                                   if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.)])
         tracksforiso1 = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
@@ -2912,6 +2974,7 @@ for f in options.inputFiles:
                 track_level_var_array['track_pfCandEta'][i] = thepfcand.eta()
                 track_level_var_array['track_pfCandPhi'][i] = thepfcand.phi()
                 track_level_var_array['track_pfCandPdgId'][i] = thepfcand.pdgId()
+                track_level_var_array['track_pfCandParticleId'][i] = thepfcand.particleId()
                 track_level_var_array['track_pfCandEnergy'][i] = thepfcand.energy()
                 track_level_var_array['track_pfCandEcalEnergy'][i] = thepfcand.ecalEnergy()
                 track_level_var_array['track_pfCandHcalEnergy'][i] = thepfcand.hcalEnergy()
@@ -2921,6 +2984,7 @@ for f in options.inputFiles:
                 track_level_var_array['track_pfCandEta'][i] = -1
                 track_level_var_array['track_pfCandPhi'][i] = -1
                 track_level_var_array['track_pfCandPdgId'][i] = -1
+                track_level_var_array['track_pfCandParticleId'][i] = -1
                 track_level_var_array['track_pfCandEnergy'][i] = -1
                 track_level_var_array['track_pfCandEcalEnergy'][i] = -1
                 track_level_var_array['track_pfCandHcalEnergy'][i] = -1

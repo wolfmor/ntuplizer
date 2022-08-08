@@ -790,6 +790,31 @@ def findDaughters(gp):
     return daughters
 
 
+def getTauDecayMode(tau, decaymode):
+
+    nprongs = 0
+    nneutral = 0
+
+    for k in range(tau.numberOfDaughters()):
+
+        taudaughterpdgid = abs(tau.daughter(k).pdgId())
+
+        # see: https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauIDRecommendationForRun2#Decay_Mode_Reconstruction
+        if taudaughterpdgid in [12, 14, 16]:  # skip the neutrinos
+            continue
+        elif taudaughterpdgid in [11, 13]:  # charged lepton
+            decaymode = 10 + taudaughterpdgid
+        elif taudaughterpdgid == 111:  # neutral pion
+            nneutral += 1
+        else:  # has to be a charged hadron
+            nprongs += 1
+
+    if decaymode not in [21, 23]:
+        decaymode = 5 * (nprongs - 1) + nneutral
+
+    return decaymode
+
+
 ###############################################################################################
 
 def passesPreselection_basic_pfc(pfc):
@@ -1624,25 +1649,26 @@ class IPcalculator:
         return self.getIP() / self.IPerror
 
 
-'''event weight correcting FastSim bug (from Sam)
-'''
-
-weightfile = ROOT.TFile('/nfs/dust/cms/user/beinsam/pMSSM13TeV/Scan2/FixWeights/rootfiles/fastsim_decay_bug_weights.root')
-weighthist_map = {}
-for iflav in range(1,4):
-    weighthist_map[iflav] = weightfile.Get('hRatio_GenJetHadronPtGenJetHadronFlavorLt4')
-weighthist_map[4] = weightfile.Get('hRatio_GenJetHadronPtGenJetHadronFlavorEqEq4')
-weighthist_map[5] = weightfile.Get('hRatio_GenJetHadronPtGenJetHadronFlavorEqEq5')
-weightHistAxis = weighthist_map[5].GetXaxis()
-rangesOfHadFlav = {}
-rangesOfHadFlav[1] = (100,400)
-rangesOfHadFlav[2] = (100,400)
-rangesOfHadFlav[3] = (100,400)
-rangesOfHadFlav[4] = (400,500)
-rangesOfHadFlav[5] = (400,600)
-
-
+###############################################################################################
 def computeFastSimBugWeight(genjets, genparticles):
+    """event weight correcting FastSim bug (from Sam)
+    """
+
+    # weightfile = ROOT.TFile('/nfs/dust/cms/user/beinsam/pMSSM13TeV/Scan2/FixWeights/rootfiles/fastsim_decay_bug_weights.root')
+    weightfile = ROOT.TFile('/nfs/dust/cms/user/wolfmor/NTupleStuff/fastsim_decay_bug_weights.root')
+    weighthist_map = {}
+    for iflav in range(1,4):
+        weighthist_map[iflav] = weightfile.Get('hRatio_GenJetHadronPtGenJetHadronFlavorLt4')
+    weighthist_map[4] = weightfile.Get('hRatio_GenJetHadronPtGenJetHadronFlavorEqEq4')
+    weighthist_map[5] = weightfile.Get('hRatio_GenJetHadronPtGenJetHadronFlavorEqEq5')
+    weightHistAxis = weighthist_map[5].GetXaxis()
+    rangesOfHadFlav = {}
+    rangesOfHadFlav[1] = (100,400)
+    rangesOfHadFlav[2] = (100,400)
+    rangesOfHadFlav[3] = (100,400)
+    rangesOfHadFlav[4] = (400,500)
+    rangesOfHadFlav[5] = (400,600)
+
     event_weight = 1.0
     for ig, gjet in enumerate(genjets):
         gjettlv = ROOT.TLorentzVector(gjet.px(),gjet.py(),gjet.pz(),gjet.energy())
