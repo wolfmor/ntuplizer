@@ -499,7 +499,7 @@ def converter_jet(func):
             else:
                 return func(np.array((one.pt(), one.eta(), one.phi(), one.energy())), many, isTrack, btagvalues)
         else:
-            return 0, 0, 9., -2.
+            return 0, 0, 9., -2., -1.
 
     return helper
 
@@ -513,6 +513,7 @@ def calcIso_jet_new(one, many, isTrack=False, btagvalues=None):
     jetiso = 0
     jetisomulti = 0
     jetisobtag = -2.
+    minv = -1.
 
     dRmin = 9.
     closestjet = None
@@ -524,7 +525,7 @@ def calcIso_jet_new(one, many, isTrack=False, btagvalues=None):
             dRmin = dR
             closestjet = many[i]
 
-    if dRmin < 0.4:
+    if dRmin < 9.:
 
         # oneTlv = MyTLorentzVector(one[0], one[1], one[2], one[3], isPtEtaPhiE=True)
         # jetTlv = MyTLorentzVector(closestjet[0], closestjet[1], closestjet[2], closestjet[3], isPtEtaPhiE=True)
@@ -532,11 +533,13 @@ def calcIso_jet_new(one, many, isTrack=False, btagvalues=None):
         # subTlv = jetTlv - oneTlv
         # jetiso = np.sqrt(subTlv.px()**2 + subTlv.py()**2)  # pT
 
+
         # pT of jet with track subtracted = sqrt(pX^2 + pY^2)
         jetiso = np.sqrt((closestjet[0] * np.cos(closestjet[2]) - one[0] * np.cos(one[2]))**2 +
                          (closestjet[0] * np.sin(closestjet[2]) - one[0] * np.sin(one[2]))**2)
 
         jetisomulti = closestjet[4]
+
         if btagvalues:
             for (bt, jetpt, jeteta) in btagvalues:
                 # if np.allclose([jetpt, jeteta], [closestjet[0], closestjet[1]]):
@@ -545,7 +548,9 @@ def calcIso_jet_new(one, many, isTrack=False, btagvalues=None):
                     jetisobtag = bt
                     break
 
-    return jetiso, jetisomulti, dRmin, jetisobtag
+        minv = np.sqrt(2 * one[0] * closestjet[0] * (np.cosh(one[1] - closestjet[1]) - np.cos(one[2] - closestjet[2])))
+
+    return jetiso, jetisomulti, dRmin, jetisobtag, minv
 
 
 # def calcIso_pf_or_track_new(one, many, isMini=False, dontSubtractObject=False):
@@ -881,7 +886,7 @@ def passesPreselection_basic_track(track):
     
     if track.charge() == 0: return False
     
-    if track.pt() > 5: return False
+    # if track.pt() > 5: return False
     
     return True
 

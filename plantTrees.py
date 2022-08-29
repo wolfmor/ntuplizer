@@ -174,8 +174,8 @@ nMaxTracksPerEvent = 10000
 # TODO: check if saveoutputfile and if test
 saveOutputFile = True
 isTest = False
-nEventsTest = 10  # number of events to run over in case of test
-printevery = 100  # print event number for every Xth event
+nEventsTest = 100  # number of events that are analyzed in case of test
+printevery = 100
 
 # TODO: check thresholds for "new" matching
 matchingDrThreshold = 0.05
@@ -252,7 +252,11 @@ if True:
 
         , ('n_wBoson', 'I'), ('wBoson_pdgId', 'F')
         , ('wBoson_pt', 'F'), ('wBoson_eta', 'F'), ('wBoson_phi', 'F')
-        , ('wBoson_neutrinoPt', 'F'), ('wBoson_tauDecayMode', 'F')
+        , ('wBoson_neutrinoPt', 'F')
+        , ('wBoson_tauDecayMode', 'F')
+        , ('wBoson_tauDecaylengthXYZ', 'F'), ('wBoson_tauDecaylengthXY', 'F'), ('wBoson_tauDecaylengthZ', 'F')
+        , ('wBoson_tauPt', 'F'), ('wBoson_tauEta', 'F'), ('wBoson_tauPhi', 'F')
+        , ('wBoson_tauPtVis', 'F'), ('wBoson_tauEtaVis', 'F'), ('wBoson_tauPhiVis', 'F')
         , ('n_wDaughter', 'I')
 
         , ('n_genParticle', 'I')
@@ -326,7 +330,7 @@ if True:
         tEvent.Branch(nice_string(n[0]), event_level_var_array[n[0]], nice_string(n[0]) + '/' + n[1])
 
 
-    # TODO: implement the correct MET filters for data:
+    # TODO: implement the correct MET filters:
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/MissingETOptionalFiltersRun2
     trigger_flags = []
     if 'era16_07Aug17' in options.tag:
@@ -563,7 +567,7 @@ if True:
         , ('photon_eta', 'F'), ('photon_phi', 'F')
         , ('photon_pfAbsIso', 'F'), ('photon_pfAbsIsoMini', 'F')
         , ('photon_chPfAbsIso', 'F'), ('photon_chPfAbsIsoMini', 'F')
-        , ('photon_jetIso', 'F'), ('photon_jetIsoMulti', 'F'), ('photon_drminJet', 'F')
+        , ('photon_jetIso', 'F'), ('photon_jetIsoMulti', 'F'), ('photon_drminJet', 'F'), ('photon_minvJet', 'F')
         , ('photon_chHadIso', 'F'), ('photon_neHadIso', 'F'), ('photon_photIso', 'F')
         , ('photon_absIso', 'F'), ('photon_relIso', 'F')
         ]
@@ -582,7 +586,7 @@ if True:
         , ('electron_dz', 'F'), ('electron_dxy', 'F')
         , ('electron_pfAbsIso', 'F'), ('electron_pfAbsIsoMini', 'F')
         , ('electron_chPfAbsIso', 'F'), ('electron_chPfAbsIsoMini', 'F')
-        , ('electron_jetIso', 'F'), ('electron_jetIsoMulti', 'F'), ('electron_drminJet', 'F')
+        , ('electron_jetIso', 'F'), ('electron_jetIsoMulti', 'F'), ('electron_drminJet', 'F'), ('electron_minvJet', 'F')
         , ('electron_chHadIso', 'F'), ('electron_chAllIso', 'F')
         , ('electron_neHadIso', 'F'), ('electron_photIso', 'F')
         , ('electron_puChHadIso', 'F')
@@ -603,7 +607,7 @@ if True:
         , ('muon_dz', 'F'), ('muon_dxy', 'F')
         , ('muon_pfAbsIso', 'F'), ('muon_pfAbsIsoMini', 'F')
         , ('muon_chPfAbsIso', 'F'), ('muon_chPfAbsIsoMini', 'F')
-        , ('muon_jetIso', 'F'), ('muon_jetIsoMulti', 'F'), ('muon_drminJet', 'F')
+        , ('muon_jetIso', 'F'), ('muon_jetIsoMulti', 'F'), ('muon_drminJet', 'F'), ('muon_minvJet', 'F')
         , ('muon_chHadIso', 'F'), ('muon_chAllIso', 'F')
         , ('muon_neHadIso', 'F'), ('muon_photIso', 'F')
         , ('muon_puChHadIso', 'F')
@@ -647,7 +651,7 @@ if True:
         , ('pfLepton_dz', 'F'), ('pfLepton_dxy', 'F')
         , ('pfLepton_pfRelIso', 'F'), ('pfLepton_pfRelIsoMini', 'F')
         , ('pfLepton_chPfRelIso', 'F'), ('pfLepton_chPfRelIsoMini', 'F')
-        , ('pfLepton_jetIso', 'F'), ('pfLepton_jetIsoMulti', 'F'), ('pfLepton_drminJet', 'F')
+        , ('pfLepton_jetIso', 'F'), ('pfLepton_jetIsoMulti', 'F'), ('pfLepton_drminJet', 'F'), ('pfLepton_minvJet', 'F')
         ]
 
     pflepton_var_array = {}
@@ -673,6 +677,9 @@ if True:
 
         , ('track_associatedPV', 'I')
         , ('track_associatedPU', 'I')
+        , ('track_associatedPUAssPV', 'I')
+
+        , ('track_distPVAssPVxy', 'F'), ('track_distPVAssPVz', 'F')
 
         , ('track_IPsig', 'F'), ('track_IPxyz', 'F'), ('track_IPxy', 'F'), ('track_IPz', 'F')
         , ('track_log10(IPsig)', 'F'), ('track_log10(IPxyz)', 'F'), ('track_log10(IPxy)', 'F'), ('track_log10(IPz)', 'F')
@@ -691,6 +698,20 @@ if True:
         , ('track_log10(dxy)', 'F'), ('track_log10(dxyHandmade)', 'F'), ('track_log10(dxyPU)', 'F')
         , ('track_log10(dz)', 'F'), ('track_log10(dzHandmade)', 'F'), ('track_log10(dzPU)', 'F')
 
+        , ('track_IPsigAssPV', 'F'), ('track_IPxyzAssPV', 'F'), ('track_IPxyAssPV', 'F'), ('track_IPzAssPV', 'F')
+        , ('track_log10(IPsigAssPV)', 'F'), ('track_log10(IPxyzAssPV)', 'F'), ('track_log10(IPxyAssPV)', 'F'), ('track_log10(IPzAssPV)', 'F')
+
+        , ('track_IPsigPUAssPV', 'F'), ('track_IPxyzPUAssPV', 'F'), ('track_IPxyPUAssPV', 'F'), ('track_IPzPUAssPV', 'F')
+        , ('track_log10(IPsigPUAssPV)', 'F'), ('track_log10(IPxyzPUAssPV)', 'F'), ('track_log10(IPxyPUAssPV)', 'F'), ('track_log10(IPzPUAssPV)', 'F')
+
+        , ('track_dxyNoAbsAssPV', 'F'), ('track_dzNoAbsAssPV', 'F')
+        , ('track_dxySignAssPV', 'F'), ('track_dzSignAssPV', 'F')
+
+        , ('track_dxyAssPV', 'F'), ('track_dxyHandmadeAssPV', 'F'), ('track_dxyPUAssPV', 'F')
+        , ('track_dzAssPV', 'F'), ('track_dzHandmadeAssPV', 'F'), ('track_dzPUAssPV', 'F')
+        , ('track_log10(dxyAssPV)', 'F'), ('track_log10(dxyHandmadeAssPV)', 'F'), ('track_log10(dxyPUAssPV)', 'F')
+        , ('track_log10(dzAssPV)', 'F'), ('track_log10(dzHandmadeAssPV)', 'F'), ('track_log10(dzPUAssPV)', 'F')
+
         , ('track_dxyError', 'F'), ('track_dzError', 'F')
         , ('track_log10(dxyError)', 'F'), ('track_log10(dzError)', 'F')
 
@@ -699,18 +720,27 @@ if True:
         
         , ('track_tkAbsIso0', 'F'), ('track_tkRelIso0', 'F'), ('track_drminTrack0', 'F'), ('track_numneighboursTrack0', 'I')
         , ('track_tkAbsIso1', 'F'), ('track_tkRelIso1', 'F'), ('track_drminTrack1', 'F'), ('track_numneighboursTrack1', 'I')
+        , ('track_tkAbsIso5', 'F'), ('track_tkRelIso5', 'F'), ('track_drminTrack5', 'F'), ('track_numneighboursTrack5', 'I')
         , ('track_tkAbsIso10', 'F'), ('track_tkRelIso10', 'F'), ('track_drminTrack10', 'F'), ('track_numneighboursTrack10', 'I')
         
-        , ('track_jetIso0', 'F'), ('track_jetIsoMulti0', 'F'), ('track_drminJet0', 'F'), ('track_btagJet0', 'F')
-        , ('track_jetIso10', 'F'), ('track_jetIsoMulti10', 'F'), ('track_drminJet10', 'F'), ('track_btagJet10', 'F')
-        , ('track_jetIso15', 'F'), ('track_jetIsoMulti15', 'F'), ('track_drminJet15', 'F'), ('track_btagJet15', 'F')
-        , ('track_jetIso20', 'F'), ('track_jetIsoMulti20', 'F'), ('track_drminJet20', 'F'), ('track_btagJet20', 'F')
-        , ('track_jetIso30', 'F'), ('track_jetIsoMulti30', 'F'), ('track_drminJet30', 'F'), ('track_btagJet30', 'F')
+        , ('track_jetIso0', 'F'), ('track_jetIsoMulti0', 'F'), ('track_drminJet0', 'F'), ('track_btagJet0', 'F'), ('track_minvJet0', 'F')
+        , ('track_jetIso10', 'F'), ('track_jetIsoMulti10', 'F'), ('track_drminJet10', 'F'), ('track_btagJet10', 'F'), ('track_minvJet10', 'F')
+        , ('track_jetIso15', 'F'), ('track_jetIsoMulti15', 'F'), ('track_drminJet15', 'F'), ('track_btagJet15', 'F'), ('track_minvJet15', 'F')
+        , ('track_jetIso20', 'F'), ('track_jetIsoMulti20', 'F'), ('track_drminJet20', 'F'), ('track_btagJet20', 'F'), ('track_minvJet20', 'F')
+        , ('track_jetIso30', 'F'), ('track_jetIsoMulti30', 'F'), ('track_drminJet30', 'F'), ('track_btagJet30', 'F'), ('track_minvJet30', 'F')
         
-        , ('track_jetIsoNoLepton15', 'F'), ('track_jetIsoMultiNoLepton15', 'F'), ('track_drminJetNoLepton15', 'F'), ('track_btagJetNoLepton15', 'F')
+        , ('track_jetIsoNoLepton15', 'F'), ('track_jetIsoMultiNoLepton15', 'F'), ('track_drminJetNoLepton15', 'F'), ('track_btagJetNoLepton15', 'F'), ('track_minvJetNoLepton15', 'F')
 
+        , ('track_bjetLooseIso15', 'F'), ('track_bjetLooseIsoMulti15', 'F'), ('track_drminBjetLoose15', 'F'), ('track_btagBjetLoose15', 'F'), ('track_minvBjetLoose15', 'F')
+        , ('track_bjetLooseIso30', 'F'), ('track_bjetLooseIsoMulti30', 'F'), ('track_drminBjetLoose30', 'F'), ('track_btagBjetLoose30', 'F'), ('track_minvBjetLoose30', 'F')
+        , ('track_bjetMediumIso15', 'F'), ('track_bjetMediumIsoMulti15', 'F'), ('track_drminBjetMedium15', 'F'), ('track_btagBjetMedium15', 'F'), ('track_minvBjetMedium15', 'F')
+        , ('track_bjetMediumIso30', 'F'), ('track_bjetMediumIsoMulti30', 'F'), ('track_drminBjetMedium30', 'F'), ('track_btagBjetMedium30', 'F'), ('track_minvBjetMedium30', 'F')
+        , ('track_bjetTightIso15', 'F'), ('track_bjetTightIsoMulti15', 'F'), ('track_drminBjetTight15', 'F'), ('track_btagBjetTight15', 'F'), ('track_minvBjetTight15', 'F')
+        , ('track_bjetTightIso30', 'F'), ('track_bjetTightIsoMulti30', 'F'), ('track_drminBjetTight30', 'F'), ('track_btagBjetTight30', 'F'), ('track_minvBjetTight30', 'F')
+        
         , ('track_neHadAbsIso0', 'F'), ('track_drminNeHad0', 'F'), ('track_invmNeHad0', 'F')
         , ('track_neHadAbsIso1', 'F'), ('track_drminNeHad1', 'F'), ('track_invmNeHad1', 'F')
+        , ('track_neHadAbsIso5', 'F'), ('track_drminNeHad5', 'F'), ('track_invmNeHad5', 'F')
         , ('track_neHadAbsIso10', 'F'), ('track_drminNeHad10', 'F'), ('track_invmNeHad10', 'F')
         
         , ('track_drminPhoton', 'F'), ('track_drminElectron', 'F'), ('track_drminMuon', 'F')
@@ -1084,11 +1114,14 @@ for f in options.inputFiles:
 
     events = Events(fin)
 
-    try:
-        nevents = events.size()
-    except:
-        print 'skipping file ' + f
-        continue
+    nevents = events.size()
+
+    # don't just silently skip a file
+    # try:
+    #     nevents = events.size()
+    # except:
+    #     print 'skipping file ' + f
+    #     continue
 
     print '### with ' + str(nevents) + ' events'
     print '### printing every ' + str(printevery) + '. event'
@@ -1125,7 +1158,7 @@ for f in options.inputFiles:
 
         if saveOutputFile and ievent % 100 == 0: fout.Write('', ROOT.TObject.kWriteDelete)
 
-        if ievent % printevery == 0: print 'analyzing event %d of %d' % (ievent, nEventsTest if isTest else nevents)
+        if ievent % printevery == 0: print 'analyzing event %d of %d' % (ievent, nevents)
 
         tCounter.Fill()
 
@@ -1611,7 +1644,7 @@ for f in options.inputFiles:
             elif muonsCleaned: collection = muons
             else:
                 print 'not tidy...'
-                sys.exit(0)
+                sys.exit(1)
 
             l1pt = collection[l1Idx].pt()
             l2pt = collection[l2Idx].pt()
@@ -1872,7 +1905,7 @@ for f in options.inputFiles:
             electron_var_array['electron_pfAbsIsoMini'][ie], _, _, _ = calcIso_pf_or_track_new(e, pfcandsforiso0, isMini=True, subtractObject=True)
             electron_var_array['electron_chPfAbsIso'][ie], _, _, _ = calcIso_pf_or_track_new(e, chpfcandsforiso0, subtractObject=(abs(e.gsfTrack().dz(pv_pos)) < 0.1 and abs(e.gsfTrack().dxy(pv_pos)) < 0.1))
             electron_var_array['electron_chPfAbsIsoMini'][ie], _, _, _ = calcIso_pf_or_track_new(e, chpfcandsforiso0, isMini=True, subtractObject=(abs(e.gsfTrack().dz(pv_pos)) < 0.1 and abs(e.gsfTrack().dxy(pv_pos)) < 0.1))
-            electron_var_array['electron_jetIso'][ie], electron_var_array['electron_jetIsoMulti'][ie], electron_var_array['electron_drminJet'][ie], _ = calcIso_jet_new(e, jetsforiso15, isTrack=False, btagvalues=btagvalues)
+            electron_var_array['electron_jetIso'][ie], electron_var_array['electron_jetIsoMulti'][ie], electron_var_array['electron_drminJet'][ie], _, electron_var_array['electron_minvJet'][ie] = calcIso_jet_new(e, jetsforiso15, isTrack=False, btagvalues=btagvalues)
             electron_var_array['electron_chHadIso'][ie] = e.pfIsolationVariables().sumChargedHadronPt
             electron_var_array['electron_chAllIso'][ie] = e.pfIsolationVariables().sumChargedParticlePt
             electron_var_array['electron_neHadIso'][ie] = e.pfIsolationVariables().sumNeutralHadronEt
@@ -1905,7 +1938,7 @@ for f in options.inputFiles:
             muon_var_array['muon_pfAbsIsoMini'][im], _, _, _ = calcIso_pf_or_track_new(m, pfcandsforiso0, isMini=True, subtractObject=True)
             muon_var_array['muon_chPfAbsIso'][im], _, _, _ = calcIso_pf_or_track_new(m, chpfcandsforiso0, subtractObject=(abs(m.muonBestTrack().dz(pv_pos)) < 0.1 and abs(m.muonBestTrack().dxy(pv_pos)) < 0.1))
             muon_var_array['muon_chPfAbsIsoMini'][im], _, _, _ = calcIso_pf_or_track_new(m, chpfcandsforiso0, isMini=True, subtractObject=(abs(m.muonBestTrack().dz(pv_pos)) < 0.1 and abs(m.muonBestTrack().dxy(pv_pos)) < 0.1))
-            muon_var_array['muon_jetIso'][im], muon_var_array['muon_jetIsoMulti'][im], muon_var_array['muon_drminJet'][im], _ = calcIso_jet_new(m, jetsforiso15, isTrack=False, btagvalues=btagvalues)
+            muon_var_array['muon_jetIso'][im], muon_var_array['muon_jetIsoMulti'][im], muon_var_array['muon_drminJet'][im], _, muon_var_array['muon_minvJet'][im] = calcIso_jet_new(m, jetsforiso15, isTrack=False, btagvalues=btagvalues)
             muon_var_array['muon_chHadIso'][im] = m.pfIsolationR03().sumChargedHadronPt
             muon_var_array['muon_chAllIso'][im] = m.pfIsolationR03().sumChargedParticlePt
             muon_var_array['muon_neHadIso'][im] = m.pfIsolationR03().sumNeutralHadronEt
@@ -2010,6 +2043,15 @@ for f in options.inputFiles:
         numWDaughters = 0
         ptWneutrino = -1
         decayWtau = -1
+        decaylengthXYZWtau = -1
+        decaylengthXYWtau = -1
+        decaylengthZWtau = -1
+        ptWtau = -1
+        etaWtau = -1
+        phiWtau = -1
+        ptVisWtau = -1
+        etaVisWtau = -1
+        phiVisWtau = -1
         thetau = None
         if 'WJetsToLNu' in options.tag:
 
@@ -2031,6 +2073,15 @@ for f in options.inputFiles:
 
                 ptWneutrino = -1
                 decayWtau = -1
+                decaylengthXYZWtau = -1
+                decaylengthXYWtau = -1
+                decaylengthZWtau = -1
+                ptWtau = -1
+                etaWtau = -1
+                phiWtau = -1
+                ptVisWtau = -1
+                etaVisWtau = -1
+                phiVisWtau = -1
 
                 for i in range(numWDaughters):
 
@@ -2061,6 +2112,18 @@ for f in options.inputFiles:
                     if abs(daughter.pdgId()) == 15:
                         thetau = daughter
                         decayWtau = getTauDecayMode(daughter, decayWtau)
+                        decaylengthXYZWtau = ROOT.TMath.Sqrt(pow(daughter.vx() - daughter.daughter(0).vx(), 2)
+                                                             + pow(daughter.vy() - daughter.daughter(0).vy(), 2)
+                                                             + pow(daughter.vz() - daughter.daughter(0).vz(), 2))
+                        decaylengthXYWtau = ROOT.TMath.Sqrt(pow(daughter.vx() - daughter.daughter(0).vx(), 2)
+                                                            + pow(daughter.vy() - daughter.daughter(0).vy(), 2))
+                        decaylengthZWtau = abs(daughter.vz() - daughter.daughter(0).vz())
+                        ptWtau = daughter.pt()
+                        etaWtau = daughter.eta()
+                        phiWtau = daughter.phi()
+                        ptVisWtau = viswdaughter.Pt()
+                        etaVisWtau = viswdaughter.Eta()
+                        phiVisWtau = viswdaughter.Phi()
 
                     if abs(daughter.pdgId()) == 12 or abs(daughter.pdgId()) == 14 or abs(daughter.pdgId()) == 16:
                         ptWneutrino = daughter.pt()
@@ -2072,6 +2135,15 @@ for f in options.inputFiles:
         event_level_var_array['wBoson_phi'][0] = phiW
         event_level_var_array['wBoson_neutrinoPt'][0] = ptWneutrino
         event_level_var_array['wBoson_tauDecayMode'][0] = decayWtau
+        event_level_var_array['wBoson_tauDecaylengthXYZ'][0] = decaylengthXYZWtau
+        event_level_var_array['wBoson_tauDecaylengthXY'][0] = decaylengthXYWtau
+        event_level_var_array['wBoson_tauDecaylengthZ'][0] = decaylengthZWtau
+        event_level_var_array['wBoson_tauPt'][0] = ptWtau
+        event_level_var_array['wBoson_tauEta'][0] = etaWtau
+        event_level_var_array['wBoson_tauPhi'][0] = phiWtau
+        event_level_var_array['wBoson_tauPtVis'][0] = ptVisWtau
+        event_level_var_array['wBoson_tauEtaVis'][0] = etaVisWtau
+        event_level_var_array['wBoson_tauPhiVis'][0] = phiVisWtau
         event_level_var_array['n_wDaughter'][0] = numWDaughters
 
 
@@ -2407,6 +2479,9 @@ for f in options.inputFiles:
 
         else:
 
+
+            # TODO: adapt x-sec and nsimevents for UL
+
             processid = None
             if 'ZJetsToNuNu_Zpt-200toInf' in options.tag:
                 processid = 'ZJetsToNuNu_Zpt-200toInf'
@@ -2544,7 +2619,7 @@ for f in options.inputFiles:
             photon_var_array['photon_pfAbsIsoMini'][ip], _, _, _ = calcIso_pf_or_track_new(p, pfcandsforiso0, isMini=True, subtractObject=True)
             photon_var_array['photon_chPfAbsIso'][ip], _, _, _ = calcIso_pf_or_track_new(p, chpfcandsforiso0, subtractObject=False)
             photon_var_array['photon_chPfAbsIsoMini'][ip], _, _, _ = calcIso_pf_or_track_new(p, chpfcandsforiso0, isMini=True, subtractObject=False)
-            photon_var_array['photon_jetIso'][ip], photon_var_array['photon_jetIsoMulti'][ip], photon_var_array['photon_drminJet'][ip], _ = calcIso_jet_new(p, jetsforiso15, isTrack=False, btagvalues=btagvalues)
+            photon_var_array['photon_jetIso'][ip], photon_var_array['photon_jetIsoMulti'][ip], photon_var_array['photon_drminJet'][ip], _, photon_var_array['photon_minvJet'][ip] = calcIso_jet_new(p, jetsforiso15, isTrack=False, btagvalues=btagvalues)
             photon_var_array['photon_chHadIso'][ip] = p.chargedHadronIso()
             photon_var_array['photon_neHadIso'][ip] = p.neutralHadronIso()
             photon_var_array['photon_photIso'][ip] = p.photonIso()
@@ -2590,7 +2665,7 @@ for f in options.inputFiles:
             _, pflepton_var_array['pfLepton_pfRelIsoMini'][il], _, _ = calcIso_pf_or_track_new(l, pfcandsforiso0, isMini=True)
             _, pflepton_var_array['pfLepton_chPfRelIso'][il], _, _ = calcIso_pf_or_track_new(l, chpfcandsforiso0)
             _, pflepton_var_array['pfLepton_chPfRelIsoMini'][il], _, _ = calcIso_pf_or_track_new(l, chpfcandsforiso0, isMini=True)
-            pflepton_var_array['pfLepton_jetIso'][il], pflepton_var_array['pfLepton_jetIsoMulti'][il], pflepton_var_array['pfLepton_drminJet'][il], _ = calcIso_jet_new(l, jetsforiso15, isTrack=False, btagvalues=btagvalues)
+            pflepton_var_array['pfLepton_jetIso'][il], pflepton_var_array['pfLepton_jetIsoMulti'][il], pflepton_var_array['pfLepton_drminJet'][il], _, pflepton_var_array['pfLepton_minvJet'][il] = calcIso_jet_new(l, jetsforiso15, isTrack=False, btagvalues=btagvalues)
 
             if pfrelisopflepton < 0.2: numpfleptonsiso += 1
 
@@ -2769,7 +2844,26 @@ for f in options.inputFiles:
             tracksByPV[ipv] = [pv.trackRefAt(i).get() for i in range(pv.tracksSize())]
 
 
+        if 'era16' in options.tag:
+            # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco
+            loosewp = 0.5426
+            mediumwp = 0.8484
+            tightwp = 0.9535
+        elif 'era17' in options.tag:
+            # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation94X
+            loosewp = 0.5803
+            mediumwp = 0.8838
+            tightwp = 0.9693
+        elif 'era18' in options.tag:
+            # same as for 17... because no info for 18
+            loosewp = 0.5803
+            mediumwp = 0.8838
+            tightwp = 0.9693
+        else:
+            raise NotImplementedError('btag: era unknown or not specified')
+
         isleptonjetidxlist = []
+        btaglist = []
         for ijet, jet in enumerate(jets):
 
             jet_var_array['jet_px'][ijet] = jet.px()
@@ -2790,6 +2884,7 @@ for f in options.inputFiles:
                     thisbtag = max(-1.0, handle_btag.product().value(ib))
 
             jet_var_array['jet_btag'][ijet] = thisbtag
+            btaglist.append(thisbtag)
             btagvalues.append((thisbtag, jet.pt(), jet.eta()))
             hBtagjets.Fill(thisbtag)
 
@@ -2838,23 +2933,6 @@ for f in options.inputFiles:
             jet_var_array['jet_ptClosestGenJet'][ijet] = ptclosestgenjetjet
             jet_var_array['jet_isGenJet'][ijet] = isgenjetjet
 
-        if 'era16' in options.tag:
-            # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco
-            loosewp = 0.5426
-            mediumwp = 0.8484
-            tightwp = 0.9535
-        elif 'era17' in options.tag:
-            # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation94X
-            loosewp = 0.5803
-            mediumwp = 0.8838
-            tightwp = 0.9693
-        elif 'era18' in options.tag:
-            # same as for 17... because no info for 18
-            loosewp = 0.5803
-            mediumwp = 0.8838
-            tightwp = 0.9693
-        else:
-            raise NotImplementedError('btag: era unknown or not specified')
 
         event_level_var_array['n_jet_30_btagloose'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > loosewp and jetpt > 30 and abs(jeteta) < 2.4)])
         event_level_var_array['n_jet_15_btagloose'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > loosewp and jetpt > 15 and abs(jeteta) < 2.4)])
@@ -2886,16 +2964,14 @@ for f in options.inputFiles:
         ###############################################################################################
         '''
 
-        # TODO: add track/nehad iso with objects with pT>5?
         # TODO: add (ch)PF iso with pT cut
-        # TODO: add isolation with _only_ bjets
-        # TODO: add "m_lb" like invariant mass (track, closest jet)
-        # TODO: add jet iso vars also if drmin>0.4
 
         tracksforiso0 = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
                                   if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.)])
         tracksforiso1 = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
                                   if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=1.)])
+        tracksforiso5 = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
+                                  if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=5.)])
         tracksforiso10 = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
                                    if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=10.)])
 
@@ -2911,9 +2987,23 @@ for f in options.inputFiles:
         jetsforisoNoLepton15 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
                                          if passesPreselection_iso_jet(j, pt_threshold=15.) and ij not in isleptonjetidxlist])
 
+        bjetsforisoLoose15 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
+                                       if passesPreselection_iso_jet(j, pt_threshold=15.) and btaglist[ij] > loosewp])
+        bjetsforisoLoose30 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
+                                       if passesPreselection_iso_jet(j, pt_threshold=30.) and btaglist[ij] > loosewp])
+        bjetsforisoMedium15 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
+                                       if passesPreselection_iso_jet(j, pt_threshold=15.) and btaglist[ij] > mediumwp])
+        bjetsforisoMedium30 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
+                                       if passesPreselection_iso_jet(j, pt_threshold=30.) and btaglist[ij] > mediumwp])
+        bjetsforisoTight15 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
+                                       if passesPreselection_iso_jet(j, pt_threshold=15.) and btaglist[ij] > tightwp])
+        bjetsforisoTight30 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
+                                       if passesPreselection_iso_jet(j, pt_threshold=30.) and btaglist[ij] > tightwp])
+
         # see https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideParticleFlow#Output
         neutralhadrons0 = [p for p in pfcands if p.particleId() == 5]
         neutralhadrons1 = [p for p in pfcands if p.particleId() == 5 and p.pt() > 1.]
+        neutralhadrons5 = [p for p in pfcands if p.particleId() == 5 and p.pt() > 5.]
         neutralhadrons10 = [p for p in pfcands if p.particleId() == 5 and p.pt() > 10.]
 
         if 'genmatchtracks' in options.tag or 'genmatchalltracks' in options.tag:
@@ -2931,8 +3021,8 @@ for f in options.inputFiles:
 
             # TODO: adapt preselection
             if not abs(track.dz(pv_pos)) < 1: continue
-            jetiso30, jetisomulti30, jetdrmin30, jetisobtag30 = calcIso_jet_new(track, jetsforiso30, isTrack=True, btagvalues=btagvalues)
-            if not jetdrmin30 > 0.4: continue
+            jetiso30, jetisomulti30, jetdrmin30, jetisobtag30, jetminv30 = calcIso_jet_new(track, jetsforiso30, isTrack=True, btagvalues=btagvalues)
+            # if not jetdrmin30 > 0.4: continue
 
             numtracksfinalpreselection += 1
 
@@ -2990,11 +3080,21 @@ for f in options.inputFiles:
                 track_level_var_array['track_pfCandHcalEnergy'][i] = -1
 
 
-            track_level_var_array['track_associatedPV'][i] = -1
+            assPV = -1
             for ipv in range(n_pv):
                 if track in tracksByPV[ipv]:
-                    track_level_var_array['track_associatedPV'][i] = ipv
+                    assPV = ipv
                     break
+            track_level_var_array['track_associatedPV'][i] = assPV
+            if assPV > -1:
+                assPV_pos = primaryvertices[assPV].position()
+            else:  # not consistent but ok
+                assPV = 0
+                assPV_pos = pv_pos
+
+            track_level_var_array['track_distPVAssPVxy'][i] = ROOT.TMath.Sqrt(pow(assPV_pos.x() - pv_pos.x(), 2)
+                                                                              + pow(assPV_pos.y() - pv_pos.y(), 2))
+            track_level_var_array['track_distPVAssPVz'][i] = abs(assPV_pos.z() - pv_pos.z())
 
             ip = IPcalculator(track, primaryvertices[0])
             track_level_var_array['track_IPsig'][i] = ip.getIPsignificance()
@@ -3038,6 +3138,49 @@ for f in options.inputFiles:
                 track_level_var_array['track_log10(IPxyPU)'][i] = -10
                 track_level_var_array['track_log10(IPzPU)'][i] = -10
 
+
+            ipAssPV = IPcalculator(track, primaryvertices[assPV])
+            track_level_var_array['track_IPsigAssPV'][i] = ipAssPV.getIPsignificance()
+            track_level_var_array['track_IPxyzAssPV'][i] = ipAssPV.getIP()
+            track_level_var_array['track_IPxyAssPV'][i] = ipAssPV.getDxy()
+            track_level_var_array['track_IPzAssPV'][i] = ipAssPV.getDz()
+            track_level_var_array['track_log10(IPsigAssPV)'][i] = ROOT.TMath.Log10(ipAssPV.getIPsignificance())
+            track_level_var_array['track_log10(IPxyzAssPV)'][i] = ROOT.TMath.Log10(ipAssPV.getIP())
+            track_level_var_array['track_log10(IPxyAssPV)'][i] = ROOT.TMath.Log10(ipAssPV.getDxy())
+            track_level_var_array['track_log10(IPzAssPV)'][i] = ROOT.TMath.Log10(ipAssPV.getDz())
+
+            minipPUAssPV = None
+            minivPUAssPV = -1
+            minIPsignificancePUAssPV = float('inf')
+            for iv, v in enumerate(primaryvertices[:assPV] + primaryvertices[assPV+1:]):
+                thisipPUAssPV = IPcalculator(track, v)
+                thisIPsignificancePUAssPV = thisipPUAssPV.getIPsignificance()
+                if thisIPsignificancePUAssPV < minIPsignificancePUAssPV:
+                    minipPUAssPV = thisipPUAssPV
+                    minivPUAssPV = iv
+                    minIPsignificancePUAssPV = thisIPsignificancePUAssPV
+
+            if not minivPUAssPV == -1:
+                track_level_var_array['track_associatedPUAssPV'][i] = minivPUAssPV if minivPUAssPV < assPV else minivPUAssPV+1
+                track_level_var_array['track_IPsigPUAssPV'][i] = minipPUAssPV.getIPsignificance()
+                track_level_var_array['track_IPxyzPUAssPV'][i] = minipPUAssPV.getIP()
+                track_level_var_array['track_IPxyPUAssPV'][i] = minipPUAssPV.getDxy()
+                track_level_var_array['track_IPzPUAssPV'][i] = minipPUAssPV.getDz()
+                track_level_var_array['track_log10(IPsigPUAssPV)'][i] = ROOT.TMath.Log10(minipPUAssPV.getIPsignificance())
+                track_level_var_array['track_log10(IPxyzPUAssPV)'][i] = ROOT.TMath.Log10(minipPUAssPV.getIP())
+                track_level_var_array['track_log10(IPxyPUAssPV)'][i] = ROOT.TMath.Log10(minipPUAssPV.getDxy())
+                track_level_var_array['track_log10(IPzPUAssPV)'][i] = ROOT.TMath.Log10(minipPUAssPV.getDz())
+            else:
+                track_level_var_array['track_associatedPUAssPV'][i] = -1
+                track_level_var_array['track_IPsigPUAssPV'][i] = -1
+                track_level_var_array['track_IPxyzPUAssPV'][i] = -1
+                track_level_var_array['track_IPxyPUAssPV'][i] = -1
+                track_level_var_array['track_IPzPUAssPV'][i] = -1
+                track_level_var_array['track_log10(IPsigPUAssPV)'][i] = -10
+                track_level_var_array['track_log10(IPxyzPUAssPV)'][i] = -10
+                track_level_var_array['track_log10(IPxyPUAssPV)'][i] = -10
+                track_level_var_array['track_log10(IPzPUAssPV)'][i] = -10
+
             track_level_var_array['track_dxy0'][i] = abs(track.dxy())
             track_level_var_array['track_dz0'][i] = abs(track.dz())
             track_level_var_array['track_log10(dxy0)'][i] = ROOT.TMath.Log10(abs(track.dxy()))
@@ -3059,8 +3202,8 @@ for f in options.inputFiles:
             track_level_var_array['track_log10(dxyHandmade)'][i] = ROOT.TMath.Log10(dxyhandmade)
             track_level_var_array['track_log10(dzHandmade)'][i] = ROOT.TMath.Log10(dzhandmade)
 
-            mindxyPU = 999
-            mindzPU = 999
+            mindxyPU = float('inf')
+            mindzPU = float('inf')
             for v in primaryvertices[1:]:
                 thisdxyPU = abs(track.dxy(v.position()))
                 if thisdxyPU < mindxyPU:
@@ -3072,6 +3215,37 @@ for f in options.inputFiles:
             track_level_var_array['track_dzPU'][i] = mindzPU
             track_level_var_array['track_log10(dxyPU)'][i] = ROOT.TMath.Log10(mindxyPU)
             track_level_var_array['track_log10(dzPU)'][i] = ROOT.TMath.Log10(mindzPU)
+            
+            
+            track_level_var_array['track_dxyNoAbsAssPV'][i] = track.dxy(assPV_pos)
+            track_level_var_array['track_dzNoAbsAssPV'][i] = track.dz(assPV_pos)
+            track_level_var_array['track_dxySignAssPV'][i] = track.dxy(assPV_pos) / abs(track.dxy(assPV_pos))
+            track_level_var_array['track_dzSignAssPV'][i] = track.dz(assPV_pos) / abs(track.dz(assPV_pos))
+
+            track_level_var_array['track_dxyAssPV'][i] = abs(track.dxy(assPV_pos))
+            track_level_var_array['track_dzAssPV'][i] = abs(track.dz(assPV_pos))
+            track_level_var_array['track_log10(dxyAssPV)'][i] = ROOT.TMath.Log10(abs(track.dxy(assPV_pos)))
+            track_level_var_array['track_log10(dzAssPV)'][i] = ROOT.TMath.Log10(abs(track.dz(assPV_pos)))
+
+            dxyhandmade, dzhandmade = handmadeDxyDz(track, assPV_pos)
+            track_level_var_array['track_dxyHandmadeAssPV'][i] = dxyhandmade
+            track_level_var_array['track_dzHandmadeAssPV'][i] = dzhandmade
+            track_level_var_array['track_log10(dxyHandmadeAssPV)'][i] = ROOT.TMath.Log10(dxyhandmade)
+            track_level_var_array['track_log10(dzHandmadeAssPV)'][i] = ROOT.TMath.Log10(dzhandmade)
+
+            mindxyPUAssPV = float('inf')
+            mindzPUAssPV = float('inf')
+            for v in primaryvertices[:assPV] + primaryvertices[assPV+1:]:
+                thisdxyPUAssPV = abs(track.dxy(v.position()))
+                if thisdxyPUAssPV < mindxyPUAssPV:
+                    mindxyPUAssPV = thisdxyPUAssPV
+                thisdzPUAssPV = abs(track.dz(v.position()))
+                if thisdzPUAssPV < mindzPUAssPV:
+                    mindzPUAssPV = thisdzPUAssPV
+            track_level_var_array['track_dxyPUAssPV'][i] = mindxyPUAssPV
+            track_level_var_array['track_dzPUAssPV'][i] = mindzPUAssPV
+            track_level_var_array['track_log10(dxyPUAssPV)'][i] = ROOT.TMath.Log10(mindxyPUAssPV)
+            track_level_var_array['track_log10(dzPUAssPV)'][i] = ROOT.TMath.Log10(mindzPUAssPV)
 
             track_level_var_array['track_dxyError'][i] = abs(track.dxyError())
             track_level_var_array['track_dzError'][i] = abs(track.dzError())
@@ -3083,24 +3257,32 @@ for f in options.inputFiles:
 
             track_level_var_array['track_tkAbsIso0'][i], track_level_var_array['track_tkRelIso0'][i], track_level_var_array['track_drminTrack0'][i], track_level_var_array['track_numneighboursTrack0'][i] = calcIso_pf_or_track_new(track, tracksforiso0, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.))
             track_level_var_array['track_tkAbsIso1'][i], track_level_var_array['track_tkRelIso1'][i], track_level_var_array['track_drminTrack1'][i], track_level_var_array['track_numneighboursTrack1'][i] = calcIso_pf_or_track_new(track, tracksforiso1, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=1.))
+            track_level_var_array['track_tkAbsIso5'][i], track_level_var_array['track_tkRelIso5'][i], track_level_var_array['track_drminTrack5'][i], track_level_var_array['track_numneighboursTrack5'][i] = calcIso_pf_or_track_new(track, tracksforiso5, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=5.))
             track_level_var_array['track_tkAbsIso10'][i], track_level_var_array['track_tkRelIso10'][i], track_level_var_array['track_drminTrack10'][i], track_level_var_array['track_numneighboursTrack10'][i] = calcIso_pf_or_track_new(track, tracksforiso10, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=10.))
 
-            track_level_var_array['track_jetIso0'][i], track_level_var_array['track_jetIsoMulti0'][i], track_level_var_array['track_drminJet0'][i], track_level_var_array['track_btagJet0'][i] = calcIso_jet_new(track, jetsforiso0, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['track_jetIso10'][i], track_level_var_array['track_jetIsoMulti10'][i], track_level_var_array['track_drminJet10'][i], track_level_var_array['track_btagJet10'][i] = calcIso_jet_new(track, jetsforiso10, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['track_jetIso15'][i], track_level_var_array['track_jetIsoMulti15'][i], track_level_var_array['track_drminJet15'][i], track_level_var_array['track_btagJet15'][i] = calcIso_jet_new(track, jetsforiso15, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['track_jetIso20'][i], track_level_var_array['track_jetIsoMulti20'][i], track_level_var_array['track_drminJet20'][i], track_level_var_array['track_btagJet20'][i] = calcIso_jet_new(track, jetsforiso20, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_jetIso0'][i], track_level_var_array['track_jetIsoMulti0'][i], track_level_var_array['track_drminJet0'][i], track_level_var_array['track_btagJet0'][i], track_level_var_array['track_minvJet0'][i] = calcIso_jet_new(track, jetsforiso0, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_jetIso10'][i], track_level_var_array['track_jetIsoMulti10'][i], track_level_var_array['track_drminJet10'][i], track_level_var_array['track_btagJet10'][i], track_level_var_array['track_minvJet10'][i] = calcIso_jet_new(track, jetsforiso10, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_jetIso15'][i], track_level_var_array['track_jetIsoMulti15'][i], track_level_var_array['track_drminJet15'][i], track_level_var_array['track_btagJet15'][i], track_level_var_array['track_minvJet15'][i] = calcIso_jet_new(track, jetsforiso15, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_jetIso20'][i], track_level_var_array['track_jetIsoMulti20'][i], track_level_var_array['track_drminJet20'][i], track_level_var_array['track_btagJet20'][i], track_level_var_array['track_minvJet20'][i] = calcIso_jet_new(track, jetsforiso20, isTrack=True, btagvalues=btagvalues)
 
             track_level_var_array['track_jetIso30'][i] = jetiso30
             track_level_var_array['track_jetIsoMulti30'][i] = jetisomulti30
             track_level_var_array['track_drminJet30'][i] = jetdrmin30
             track_level_var_array['track_btagJet30'][i] = jetisobtag30
 
-            track_level_var_array['track_jetIsoNoLepton15'][i], track_level_var_array['track_jetIsoMultiNoLepton15'][i], track_level_var_array['track_drminJetNoLepton15'][i], track_level_var_array['track_btagJetNoLepton15'][i] = calcIso_jet_new(track, jetsforisoNoLepton15, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_jetIsoNoLepton15'][i], track_level_var_array['track_jetIsoMultiNoLepton15'][i], track_level_var_array['track_drminJetNoLepton15'][i], track_level_var_array['track_btagJetNoLepton15'][i], track_level_var_array['track_minvJetNoLepton15'][i] = calcIso_jet_new(track, jetsforisoNoLepton15, isTrack=True, btagvalues=btagvalues)
+            
+            track_level_var_array['track_bjetLooseIso15'][i], track_level_var_array['track_bjetLooseIsoMulti15'][i], track_level_var_array['track_drminBjetLoose15'][i], track_level_var_array['track_btagBjetLoose15'][i], track_level_var_array['track_minvBjetLoose15'][i] = calcIso_jet_new(track, bjetsforisoLoose15, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_bjetLooseIso30'][i], track_level_var_array['track_bjetLooseIsoMulti30'][i], track_level_var_array['track_drminBjetLoose30'][i], track_level_var_array['track_btagBjetLoose30'][i], track_level_var_array['track_minvBjetLoose30'][i] = calcIso_jet_new(track, bjetsforisoLoose30, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_bjetMediumIso15'][i], track_level_var_array['track_bjetMediumIsoMulti15'][i], track_level_var_array['track_drminBjetMedium15'][i], track_level_var_array['track_btagBjetMedium15'][i], track_level_var_array['track_minvBjetMedium15'][i] = calcIso_jet_new(track, bjetsforisoMedium15, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_bjetMediumIso30'][i], track_level_var_array['track_bjetMediumIsoMulti30'][i], track_level_var_array['track_drminBjetMedium30'][i], track_level_var_array['track_btagBjetMedium30'][i], track_level_var_array['track_minvBjetMedium30'][i] = calcIso_jet_new(track, bjetsforisoMedium30, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_bjetTightIso15'][i], track_level_var_array['track_bjetTightIsoMulti15'][i], track_level_var_array['track_drminBjetTight15'][i], track_level_var_array['track_btagBjetTight15'][i], track_level_var_array['track_minvBjetTight15'][i] = calcIso_jet_new(track, bjetsforisoTight15, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_bjetTightIso30'][i], track_level_var_array['track_bjetTightIsoMulti30'][i], track_level_var_array['track_drminBjetTight30'][i], track_level_var_array['track_btagBjetTight30'][i], track_level_var_array['track_minvBjetTight30'][i] = calcIso_jet_new(track, bjetsforisoTight30, isTrack=True, btagvalues=btagvalues)
 
 
             trackTlv = ROOT.TLorentzVector()
             trackTlv.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), 0.1396)
-            for suffix, neutralhadroncollection in [('0', neutralhadrons0), ('1', neutralhadrons1), ('10', neutralhadrons10)]:
+            for suffix, neutralhadroncollection in [('0', neutralhadrons0), ('1', neutralhadrons1), ('5', neutralhadrons5), ('10', neutralhadrons10)]:
                 absisoneutralhadron = 0
                 drminneutralhadron = 9
                 closestneutralhadronTlv = ROOT.TLorentzVector()
@@ -3113,7 +3295,7 @@ for f in options.inputFiles:
                         closestneutralhadronTlv.SetPtEtaPhiM(p.pt(), p.eta(), p.phi(), 0.1350)
                 track_level_var_array['track_neHadAbsIso' + suffix][i] = absisoneutralhadron
                 track_level_var_array['track_drminNeHad' + suffix][i] = drminneutralhadron
-                if drminneutralhadron < 10:
+                if drminneutralhadron < 9:
                     track_level_var_array['track_invmNeHad' + suffix][i] = (closestneutralhadronTlv + trackTlv).M()
                 else:
                     track_level_var_array['track_invmNeHad' + suffix][i] = 0
