@@ -3022,7 +3022,7 @@ for f in options.inputFiles:
             # TODO: adapt preselection
             if not abs(track.dz(pv_pos)) < 1: continue
             jetiso30, jetisomulti30, jetdrmin30, jetisobtag30, jetminv30 = calcIso_jet_new(track, jetsforiso30, isTrack=True, btagvalues=btagvalues)
-            # if not jetdrmin30 > 0.4: continue
+            if not jetdrmin30 > 0.4: continue
 
             numtracksfinalpreselection += 1
 
@@ -3269,6 +3269,7 @@ for f in options.inputFiles:
             track_level_var_array['track_jetIsoMulti30'][i] = jetisomulti30
             track_level_var_array['track_drminJet30'][i] = jetdrmin30
             track_level_var_array['track_btagJet30'][i] = jetisobtag30
+            track_level_var_array['track_minvJet30'][i] = jetminv30
 
             track_level_var_array['track_jetIsoNoLepton15'][i], track_level_var_array['track_jetIsoMultiNoLepton15'][i], track_level_var_array['track_drminJetNoLepton15'][i], track_level_var_array['track_btagJetNoLepton15'][i], track_level_var_array['track_minvJetNoLepton15'][i] = calcIso_jet_new(track, jetsforisoNoLepton15, isTrack=True, btagvalues=btagvalues)
             
