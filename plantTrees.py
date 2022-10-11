@@ -988,7 +988,7 @@ if 'pmssm' in options.tag:
 if 'fastsim' not in options.tag:
 
     handle_trigger_hlt = Handle('edm::TriggerResults')
-    label_trigger_hlt = ('TriggerResults', '', 'HLT')
+    label_trigger_hlt = ('TriggerResults', '', 'SVS')
 
 if 'data' in options.tag:
 
