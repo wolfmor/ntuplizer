@@ -7,6 +7,10 @@ Runs over AOD files and writes file with histos and tree.
 
 ----------------------------------------------------------------------
 python plantTrees.py inputFiles="file1, file2,..." tag="tag1 tag2 ..."
+
+minimal exapmle: 
+
+
 ----------------------------------------------------------------------
 
 tags:
@@ -1349,7 +1353,7 @@ for f in options.inputFiles:
             event.getByLabel(label_genparticles, handle_genparticles)
             event.getByLabel(label_genmet, handle_genmet)
             event.getByLabel(label_genjets, handle_genjets)
-        #event.getByLabel(label_pfcands, handle_pfcands)
+        event.getByLabel(label_pfcands, handle_pfcands)
         event.getByLabel(label_jets, handle_jets)
         event.getByLabel(label_met, handle_met)
         event.getByLabel(label_btag, handle_btag)
@@ -1362,7 +1366,7 @@ for f in options.inputFiles:
             genparticles = handle_genparticles.product()
             genmet = handle_genmet.product().front()
             genjets = handle_genjets.product()
-        #pfcands = handle_pfcands.product()
+        pfcands = handle_pfcands.product()
         jets = handle_jets.product()
         met = handle_met.product().front()
         nbtags = len(handle_btag.product())
