@@ -27,6 +27,8 @@ cleanleptons -> perform DY cleaning
 pmssm -> save pMSSM IDs
 Signal -> save Signal information, if signal files is in inputFiles
 
+skipSVs -> skip collections from SV building, do not save sv information 
+
 DATASETNAME -> save GEN info accordingly (e.g. Signal...)
 
 veto_jet100 -> veto events with no jet with pT > 100 GeV
@@ -283,53 +285,54 @@ if True:
         , ('cleaning_l1dBetaAbsIso', 'F'), ('cleaning_l2dBetaAbsIso', 'F')
         , ('cleaning_l1dBetaRelIso', 'F'), ('cleaning_l2dBetaRelIso', 'F')
         , ('cleaning_metPtBeforeCleaning', 'F'), ('cleaning_metPhiBeforeCleaning', 'F')
-        ]
+    ]
     event_level_var_names += var_names_cleaning
 
     var_names_event = [
-		('cutflow', 'I'), ('random', 'I')
+        ('cutflow', 'I'), ('random', 'I')
 
-		, ('crossSection', 'F'), ('numSimEvents', 'F')
+        , ('crossSection', 'F'), ('numSimEvents', 'F')
 
-		, ('weight_fastSimBug', 'F')
-		, ('weight_PU_FastFull', 'F'), ('weight_PU_FastFull_rebin', 'F')
-		, ('weight_PU_SigBkg', 'F'), ('weight_PU_SigBkg_rebin', 'F')
+        , ('weight_fastSimBug', 'F')
+        , ('weight_PU_FastFull', 'F'), ('weight_PU_FastFull_rebin', 'F')
+        , ('weight_PU_SigBkg', 'F'), ('weight_PU_SigBkg_rebin', 'F')
 
-		, ('n_pv', 'I'), ('rho', 'F')
+        , ('n_pv', 'I'), ('rho', 'F')
 
-		, ('met_pt', 'F'), ('met_phi', 'F')
-		, ('met_ptNoFastSimCorr', 'F'), ('met_phiNoFastSimCorr', 'F')
-		
-		, ('ht', 'F'), ('ht5', 'F'), ('htMiss', 'F')
-		
-		, ('n_genJet', 'I')
+        , ('met_pt', 'F'), ('met_phi', 'F')
+        , ('met_ptNoFastSimCorr', 'F'), ('met_phiNoFastSimCorr', 'F')
 
-		, ('badJets_n', 'I'), ('badJets_minEta', 'F'), ('badJets_nForEventVeto', 'I')
-		, ('badJets_lepVeto_n', 'I'), ('badJets_lepVeto_minEta', 'F'), ('badJets_lepVeto_nForEventVeto', 'I')
-		
-		, ('hasISRJet', 'I'), ('leadingJet_pt', 'F'), ('leadingJet_eta', 'F'), ('leadingJet_phi', 'F')
-		,('JetMetdeltaPhi1', 'F'),('JetMetdeltaPhi2', 'F'),('JetMetdeltaPhi3', 'F'),('JetMetdeltaPhi4', 'F')
-		,('JetPt1', 'F'),('JetPt2', 'F'),('JetPt3', 'F'),('JetPt4', 'F')
-		,('JetEta1', 'F'),('JetEta2', 'F'),('JetEta3', 'F'),('JetEta4', 'F')
-		, ('n_jet', 'I')
-		, ('n_jet_15', 'I'), ('n_jet_30', 'I'), ('n_jet_50', 'I'), ('n_jet_100', 'I'), ('n_jet_200', 'I')
+        , ('ht', 'F'), ('ht5', 'F'), ('htMiss', 'F')
 
-		, ('n_jet_30_btagloose', 'I'), ('n_jet_15_btagloose', 'I')
-		, ('n_jet_30_btagmedium', 'I'), ('n_jet_15_btagmedium', 'I')
-		, ('n_jet_30_btagtight', 'I'), ('n_jet_15_btagtight', 'I')
-		
-		, ('mtMetLeadingJet', 'F')
-		, ('dphiminMetJets', 'F')
-		
-		, ('n_photon', 'I'), ('n_photon_iso', 'I')
-		, ('n_pfLepton', 'I'), ('n_pfLepton_iso', 'I')
-		, ('n_electron', 'I'), ('n_electron_iso', 'I')
-		, ('n_muon', 'I'), ('n_muon_iso', 'I')
-		, ('n_lepton', 'I'), ('n_lepton_iso', 'I')
-		, ('n_tau', 'I'), ('n_tau_vloose', 'I'), ('n_tau_loose', 'I'), ('n_tau_medium', 'I'), ('n_tau_tight', 'I'), ('n_tau_vtight', 'I'), ('n_tau_vvtight', 'I')
-		, ('n_tau_20', 'I'), ('n_tau_20_vloose', 'I'), ('n_tau_20_loose', 'I'), ('n_tau_20_medium', 'I'), ('n_tau_20_tight', 'I'), ('n_tau_20_vtight', 'I'), ('n_tau_20_vvtight', 'I')
-		, ('n_track_total', 'I'), ('n_track_basic', 'I'), ('n_track', 'I')
-		]
+        , ('n_genJet', 'I')
+
+        , ('badJets_n', 'I'), ('badJets_minEta', 'F'), ('badJets_nForEventVeto', 'I')
+        , ('badJets_lepVeto_n', 'I'), ('badJets_lepVeto_minEta', 'F'), ('badJets_lepVeto_nForEventVeto', 'I')
+
+        , ('hasISRJet', 'I'), ('leadingJet_pt', 'F'), ('leadingJet_eta', 'F'), ('leadingJet_phi', 'F')
+        ,('JetMetdeltaPhi1', 'F'),('JetMetdeltaPhi2', 'F'),('JetMetdeltaPhi3', 'F'),('JetMetdeltaPhi4', 'F')
+        ,('JetPt1', 'F'),('JetPt2', 'F'),('JetPt3', 'F'),('JetPt4', 'F')
+        ,('JetEta1', 'F'),('JetEta2', 'F'),('JetEta3', 'F'),('JetEta4', 'F')
+        , ('n_jet', 'I')
+        , ('n_jet_15', 'I'), ('n_jet_30', 'I'), ('n_jet_50', 'I'), ('n_jet_100', 'I'), ('n_jet_200', 'I')
+
+        , ('n_jet_30_btagloose', 'I'), ('n_jet_15_btagloose', 'I')
+        , ('n_jet_30_btagmedium', 'I'), ('n_jet_15_btagmedium', 'I')
+        , ('n_jet_30_btagtight', 'I'), ('n_jet_15_btagtight', 'I')
+
+        , ('mtMetLeadingJet', 'F')
+        , ('dphiminMetJets', 'F')
+
+        , ('n_photon', 'I'), ('n_photon_iso', 'I')
+        , ('n_pfLepton', 'I'), ('n_pfLepton_iso', 'I')
+        , ('n_electron', 'I'), ('n_electron_iso', 'I')
+        , ('n_muon', 'I'), ('n_muon_iso', 'I')
+        , ('n_lepton', 'I'), ('n_lepton_iso', 'I')
+        , ('n_tau', 'I'), ('n_tau_vloose', 'I'), ('n_tau_loose', 'I'), ('n_tau_medium', 'I'), ('n_tau_tight', 'I'), ('n_tau_vtight', 'I'), ('n_tau_vvtight', 'I')
+        , ('n_tau_20', 'I'), ('n_tau_20_vloose', 'I'), ('n_tau_20_loose', 'I'), ('n_tau_20_medium', 'I'), ('n_tau_20_tight', 'I'), ('n_tau_20_vtight', 'I'), ('n_tau_20_vvtight', 'I')
+        , ('n_track_total', 'I'), ('n_track_basic', 'I'), ('n_track', 'I')
+        , ('numSVs', 'I')
+        ]
     event_level_var_names += var_names_event
 
     var_names_data = [
@@ -1115,6 +1118,15 @@ label_btag = ('pfCombinedSecondaryVertexV2BJetTags')
 handle_jets = Handle('std::vector<reco::PFJet>')
 label_jets = ('ak4PFJetsCHS')
 
+handle_sv = Handle("std::vector<reco::VertexCompositeCandidate>")
+label_sv = ('SecondaryVerticesFromLooseTracks','Kshort', 'SVS')
+
+handle_dca = Handle("std::vector<float>")
+label_dca = ('SecondaryVerticesFromLooseTracks','DcaKshort', 'SVS')
+
+handle_mva = Handle("std::vector<float>")
+label_mva = ('TrackTag1', 'mvaScore', 'SVS')
+
 
 runs = {}
 lastlumi = -1
@@ -1313,6 +1325,14 @@ for f in options.inputFiles:
         tracks = handle_tracks.product()
         if not len(tracks) > 0: continue
 
+        if not 'skipSVs' in options.tag:
+            event.getByLabel(label_sv, handle_sv)
+            event.getByLabel(label_dca, handle_dca)
+            event.getByLabel(label_mva, handle_mva)
+            secondaryVertices = handle_sv.product()
+            dcas = handle_dca.product()
+            mvaScores = handle_mva.product()
+
         # ########################################################################################### veto
 
         cutflow = 2
@@ -1416,6 +1436,7 @@ for f in options.inputFiles:
         electrons = handle_electrons.product()
         muons = handle_muons.product()
         taus = handle_taus.product()
+        
 
         event.getByLabel(label_taudiscriminatorDM, handle_taudiscriminatorDM)
         taudiscriminatorDM = handle_taudiscriminatorDM.product()
@@ -3139,6 +3160,16 @@ for f in options.inputFiles:
         etafirsttrack = tracks[0].eta()
 
 
+        '''
+        ###############################################################################################
+        # get sv-level info
+        ###############################################################################################
+        '''
+        event_level_var_array['numSVs'][0] = secondaryVertices.size()
+                
+        for j, secondary in enumerate(secondaryVertices):
+            print ""
+        
         '''
         ###############################################################################################
         # get track-level info
