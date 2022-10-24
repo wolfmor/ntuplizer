@@ -287,47 +287,49 @@ if True:
     event_level_var_names += var_names_cleaning
 
     var_names_event = [
-        ('cutflow', 'I'), ('random', 'I')
+		('cutflow', 'I'), ('random', 'I')
 
-        , ('crossSection', 'F'), ('numSimEvents', 'F')
+		, ('crossSection', 'F'), ('numSimEvents', 'F')
 
-        , ('weight_fastSimBug', 'F')
-        , ('weight_PU_FastFull', 'F'), ('weight_PU_FastFull_rebin', 'F')
-        , ('weight_PU_SigBkg', 'F'), ('weight_PU_SigBkg_rebin', 'F')
+		, ('weight_fastSimBug', 'F')
+		, ('weight_PU_FastFull', 'F'), ('weight_PU_FastFull_rebin', 'F')
+		, ('weight_PU_SigBkg', 'F'), ('weight_PU_SigBkg_rebin', 'F')
 
-        , ('n_pv', 'I'), ('rho', 'F')
+		, ('n_pv', 'I'), ('rho', 'F')
 
-        , ('met_pt', 'F'), ('met_phi', 'F')
-        , ('met_ptNoFastSimCorr', 'F'), ('met_phiNoFastSimCorr', 'F')
-        
-        , ('ht', 'F'), ('ht5', 'F'), ('htMiss', 'F')
-        
-        , ('n_genJet', 'I')
+		, ('met_pt', 'F'), ('met_phi', 'F')
+		, ('met_ptNoFastSimCorr', 'F'), ('met_phiNoFastSimCorr', 'F')
+		
+		, ('ht', 'F'), ('ht5', 'F'), ('htMiss', 'F')
+		
+		, ('n_genJet', 'I')
 
-        , ('badJets_n', 'I'), ('badJets_minEta', 'F'), ('badJets_nForEventVeto', 'I')
-        , ('badJets_lepVeto_n', 'I'), ('badJets_lepVeto_minEta', 'F'), ('badJets_lepVeto_nForEventVeto', 'I')
-        
-        , ('leadingJet_pt', 'F'), ('leadingJet_eta', 'F'), ('leadingJet_phi', 'F')
-        
-        , ('n_jet', 'I')
-        , ('n_jet_15', 'I'), ('n_jet_30', 'I'), ('n_jet_50', 'I'), ('n_jet_100', 'I'), ('n_jet_200', 'I')
+		, ('badJets_n', 'I'), ('badJets_minEta', 'F'), ('badJets_nForEventVeto', 'I')
+		, ('badJets_lepVeto_n', 'I'), ('badJets_lepVeto_minEta', 'F'), ('badJets_lepVeto_nForEventVeto', 'I')
+		
+		, ('hasISRJet', 'I'), ('leadingJet_pt', 'F'), ('leadingJet_eta', 'F'), ('leadingJet_phi', 'F')
+		,('JetMetdeltaPhi1', 'F'),('JetMetdeltaPhi2', 'F'),('JetMetdeltaPhi3', 'F'),('JetMetdeltaPhi4', 'F')
+		,('JetPt1', 'F'),('JetPt2', 'F'),('JetPt3', 'F'),('JetPt4', 'F')
+		,('JetEta1', 'F'),('JetEta2', 'F'),('JetEta3', 'F'),('JetEta4', 'F')
+		, ('n_jet', 'I')
+		, ('n_jet_15', 'I'), ('n_jet_30', 'I'), ('n_jet_50', 'I'), ('n_jet_100', 'I'), ('n_jet_200', 'I')
 
-        , ('n_jet_30_btagloose', 'I'), ('n_jet_15_btagloose', 'I')
-        , ('n_jet_30_btagmedium', 'I'), ('n_jet_15_btagmedium', 'I')
-        , ('n_jet_30_btagtight', 'I'), ('n_jet_15_btagtight', 'I')
-        
-        , ('mtMetLeadingJet', 'F')
-        , ('dphiminMetJets', 'F')
-        
-        , ('n_photon', 'I'), ('n_photon_iso', 'I')
-        , ('n_pfLepton', 'I'), ('n_pfLepton_iso', 'I')
-        , ('n_electron', 'I'), ('n_electron_iso', 'I')
-        , ('n_muon', 'I'), ('n_muon_iso', 'I')
-        , ('n_lepton', 'I'), ('n_lepton_iso', 'I')
-        , ('n_tau', 'I'), ('n_tau_vloose', 'I'), ('n_tau_loose', 'I'), ('n_tau_medium', 'I'), ('n_tau_tight', 'I'), ('n_tau_vtight', 'I'), ('n_tau_vvtight', 'I')
-        , ('n_tau_20', 'I'), ('n_tau_20_vloose', 'I'), ('n_tau_20_loose', 'I'), ('n_tau_20_medium', 'I'), ('n_tau_20_tight', 'I'), ('n_tau_20_vtight', 'I'), ('n_tau_20_vvtight', 'I')
-        , ('n_track_total', 'I'), ('n_track_basic', 'I'), ('n_track', 'I')
-        ]
+		, ('n_jet_30_btagloose', 'I'), ('n_jet_15_btagloose', 'I')
+		, ('n_jet_30_btagmedium', 'I'), ('n_jet_15_btagmedium', 'I')
+		, ('n_jet_30_btagtight', 'I'), ('n_jet_15_btagtight', 'I')
+		
+		, ('mtMetLeadingJet', 'F')
+		, ('dphiminMetJets', 'F')
+		
+		, ('n_photon', 'I'), ('n_photon_iso', 'I')
+		, ('n_pfLepton', 'I'), ('n_pfLepton_iso', 'I')
+		, ('n_electron', 'I'), ('n_electron_iso', 'I')
+		, ('n_muon', 'I'), ('n_muon_iso', 'I')
+		, ('n_lepton', 'I'), ('n_lepton_iso', 'I')
+		, ('n_tau', 'I'), ('n_tau_vloose', 'I'), ('n_tau_loose', 'I'), ('n_tau_medium', 'I'), ('n_tau_tight', 'I'), ('n_tau_vtight', 'I'), ('n_tau_vvtight', 'I')
+		, ('n_tau_20', 'I'), ('n_tau_20_vloose', 'I'), ('n_tau_20_loose', 'I'), ('n_tau_20_medium', 'I'), ('n_tau_20_tight', 'I'), ('n_tau_20_vtight', 'I'), ('n_tau_20_vvtight', 'I')
+		, ('n_track_total', 'I'), ('n_track_basic', 'I'), ('n_track', 'I')
+		]
     event_level_var_names += var_names_event
 
     var_names_data = [
@@ -1809,6 +1811,28 @@ for f in options.inputFiles:
         event_level_var_array['n_pv'][0] = n_pv
         event_level_var_array['rho'][0] = rho
 
+        hasISRJet = False
+        passedMet = False
+
+        deltaPhi1 = 999  
+        deltaPhi2 = 999
+        deltaPhi3 = 999
+        deltaPhi4 = 999
+
+        minPt1 = -1
+        minPt2 = -1
+        minPt3 = -1
+        minPt4 = -1
+
+        eta1 = 999
+        eta2 = 999
+        eta3 = 999
+        eta4 = 999
+
+        lJet1 = None
+        lJet2 = None
+        lJet3 = None
+        lJet4 = None
 
         numjets = len(jets)
         numjets15 = 0
@@ -1822,6 +1846,25 @@ for f in options.inputFiles:
         idxhighestptjet = 0
         for ijet, jet in enumerate(jets):
 
+            pt = jet.pt()
+            eta = fabs(jet.eta())
+            if ((eta < 2.5) and (pt >100) ): hasISRJet = True
+            
+            if (pt > 30): 
+                if (pt > minPt1):
+                    minPt1 = pt
+                    lJet1 = jet
+                    eta1 = eta
+                elif (pt > minPt2):
+                    minPt2 = pt
+                    lJet2 = jet
+                elif (pt > minPt3):
+                    minPt3 = pt
+                    lJet3 = jet
+                elif (pt > minPt4):
+                    minPt4 = pt
+                    lJet4 = jet
+                    
             if abs(jet.eta()) < 2.4 and jet.pt() > 30: ht += jet.pt()
             if abs(jet.eta()) < 5. and jet.pt() > 30:
                 ht5 += jet.pt()
@@ -1837,6 +1880,7 @@ for f in options.inputFiles:
 
             if jetpt > jets[idxhighestptjet].pt(): idxhighestptjet = ijet
 
+        event_level_var_array['hasISRJet'][0] = hasISRJet
         if len(jets) > 0:
             event_level_var_array['leadingJet_pt'][0] = jets[idxhighestptjet].pt()
             event_level_var_array['leadingJet_eta'][0] = jets[idxhighestptjet].eta()
@@ -1845,6 +1889,28 @@ for f in options.inputFiles:
             event_level_var_array['leadingJet_pt'][0] = -1
             event_level_var_array['leadingJet_eta'][0] = -1
             event_level_var_array['leadingJet_phi'][0] = -1
+                        
+            
+        if (not(minPt1 == -1)): deltaPhi1 = deltaPhi(met.phi(),lJet1.phi())
+        if (not(minPt2 == -1)): deltaPhi2 = deltaPhi(met.phi(),lJet2.phi())
+        if (not(minPt3 == -1)): deltaPhi3 = deltaPhi(met.phi(),lJet3.phi())
+        if (not(minPt4 == -1)): deltaPhi4 = deltaPhi(met.phi(),lJet4.phi())
+
+        event_level_var_array['JetMetdeltaPhi1'][0] = deltaPhi1
+        event_level_var_array['JetMetdeltaPhi2'][0] = deltaPhi2
+        event_level_var_array['JetMetdeltaPhi3'][0] = deltaPhi3
+        event_level_var_array['JetMetdeltaPhi4'][0] = deltaPhi4
+
+        event_level_var_array['JetPt1'][0] = minPt1
+        event_level_var_array['JetPt2'][0] = minPt2
+        event_level_var_array['JetPt3'][0] = minPt3
+        event_level_var_array['JetPt4'][0] = minPt4
+
+        event_level_var_array['JetEta1'][0] = eta1
+        event_level_var_array['JetEta2'][0] = eta1
+        event_level_var_array['JetEta3'][0] = eta1
+        event_level_var_array['JetEta4'][0] = eta1
+
         event_level_var_array['n_jet'][0] = numjets
         event_level_var_array['n_jet_15'][0] = numjets15
         event_level_var_array['n_jet_30'][0] = numjets30
@@ -2345,67 +2411,67 @@ for f in options.inputFiles:
                 n2daughters += findDaughters(gp)
                 
                 leptons[0],leptons[1] = findLeptons(gp)
-                if not leptons[0] == None and not leptons[1]==None: 			
+                if not leptons[0] == None and not leptons[1]==None: 
 
-					#hCutflow.Fill(2)
-					##if leptonID == 2: hCutflow_signal.Fill(3)
-					chiN2_var_array['leptonID'][igp] = leptons[0].pdgId()
-					TLV_l1 = TLorentzVector()
-					TLV_l1.SetPxPyPzE(leptons[0].px(),leptons[0].py(),leptons[0].pz(),leptons[0].energy())
-					TLV_l2 = TLorentzVector()
-					TLV_l2.SetPxPyPzE(leptons[1].px(),leptons[1].py(),leptons[1].pz(),leptons[1].energy())
-				
-					v_chi02 = TVector3(gp.vx(), gp.vy(), gp.vz())
-					v_chi01 = TVector3(gp.daughter(0).vx(), gp.daughter(0).vy(), gp.daughter(0).vz())
-					v_normal = v_chi01-v_chi02
-					normalvector = v_normal.Unit()
-					
-			
-					ptZstar = leptons[0].pt()+leptons[1].pt()
-					mZstar = sqrt((TLV_l1+TLV_l2)*(TLV_l1+TLV_l2))
-					v_pZstar = TVector3(leptons[0].px()+leptons[1].px(), leptons[0].py()+leptons[1].py(), leptons[0].pz()+leptons[1].pz())
-					mtransverse2 = mZstar*mZstar+ ((v_pZstar.Cross(normalvector))*(v_pZstar.Cross(normalvector)))
-					mtransverse2_paper = 2*(leptons[0].pt())*(leptons[1].pt())*(1-cos(TLV_l1.Angle(TLV_l2.Vect())))
-					
-					chiN2_var_array['leptonBoost'][igp] = TLV_l1.Gamma()
-					chiN2_var_array['leptonBoost'][igp] = TLV_l2.Gamma()
-					if TLV_l1.Pt() > TLV_l2.Pt():
-						chiN2_var_array['lepton_High_pt'][igp] = TLV_l1.Pt()
-						chiN2_var_array['lepton_High_eta'][igp] = TLV_l1.Eta()
-						chiN2_var_array['lepton_Low_pt'][igp] = TLV_l2.Pt()
-						chiN2_var_array['lepton_Low_eta'][igp] = TLV_l2.Eta()
-					else:
-						chiN2_var_array['lepton_High_pt'][igp] = TLV_l2.Pt()
-						chiN2_var_array['lepton_High_eta'][igp] = TLV_l2.Eta()
-						chiN2_var_array['lepton_Low_pt'][igp] = TLV_l1.Pt()
-						chiN2_var_array['lepton_Low_eta'][igp] = TLV_l1.Eta()
-					
-					
-					chiN2_var_array['ZstarBoost'][igp] = (TLV_l1+TLV_l2).Gamma()
+                    #hCutflow.Fill(2)
+                    ##if leptonID == 2: hCutflow_signal.Fill(3)
+                    chiN2_var_array['leptonID'][igp] = leptons[0].pdgId()
+                    TLV_l1 = TLorentzVector()
+                    TLV_l1.SetPxPyPzE(leptons[0].px(),leptons[0].py(),leptons[0].pz(),leptons[0].energy())
+                    TLV_l2 = TLorentzVector()
+                    TLV_l2.SetPxPyPzE(leptons[1].px(),leptons[1].py(),leptons[1].pz(),leptons[1].energy())
+                
+                    v_chi02 = TVector3(gp.vx(), gp.vy(), gp.vz())
+                    v_chi01 = TVector3(gp.daughter(0).vx(), gp.daughter(0).vy(), gp.daughter(0).vz())
+                    v_normal = v_chi01-v_chi02
+                    normalvector = v_normal.Unit()
+                    
+            
+                    ptZstar = leptons[0].pt()+leptons[1].pt()
+                    mZstar = sqrt((TLV_l1+TLV_l2)*(TLV_l1+TLV_l2))
+                    v_pZstar = TVector3(leptons[0].px()+leptons[1].px(), leptons[0].py()+leptons[1].py(), leptons[0].pz()+leptons[1].pz())
+                    mtransverse2 = mZstar*mZstar+ ((v_pZstar.Cross(normalvector))*(v_pZstar.Cross(normalvector)))
+                    mtransverse2_paper = 2*(leptons[0].pt())*(leptons[1].pt())*(1-cos(TLV_l1.Angle(TLV_l2.Vect())))
+                    
+                    chiN2_var_array['leptonBoost'][igp] = TLV_l1.Gamma()
+                    chiN2_var_array['leptonBoost'][igp] = TLV_l2.Gamma()
+                    if TLV_l1.Pt() > TLV_l2.Pt():
+                        chiN2_var_array['lepton_High_pt'][igp] = TLV_l1.Pt()
+                        chiN2_var_array['lepton_High_eta'][igp] = TLV_l1.Eta()
+                        chiN2_var_array['lepton_Low_pt'][igp] = TLV_l2.Pt()
+                        chiN2_var_array['lepton_Low_eta'][igp] = TLV_l2.Eta()
+                    else:
+                        chiN2_var_array['lepton_High_pt'][igp] = TLV_l2.Pt()
+                        chiN2_var_array['lepton_High_eta'][igp] = TLV_l2.Eta()
+                        chiN2_var_array['lepton_Low_pt'][igp] = TLV_l1.Pt()
+                        chiN2_var_array['lepton_Low_eta'][igp] = TLV_l1.Eta()
+                    
+                    
+                    chiN2_var_array['ZstarBoost'][igp] = (TLV_l1+TLV_l2).Gamma()
 
-					chiN2_var_array['mZstar'][igp] = mZstar
-					chiN2_var_array['ptZstar'][igp] = ptZstar
-					chiN2_var_array['abspZstar'][igp] = v_pZstar.Mag()
-					chiN2_var_array['absnormalVector'][igp] = normalvector.Mag()
-					chiN2_var_array['mtransverse2'][igp] = mtransverse2
-					chiN2_var_array['mtransverse2_paper'][igp] = mtransverse2_paper
-					chiN2_var_array['beta'][igp] = v_pZstar.Angle(normalvector)	
+                    chiN2_var_array['mZstar'][igp] = mZstar
+                    chiN2_var_array['ptZstar'][igp] = ptZstar
+                    chiN2_var_array['abspZstar'][igp] = v_pZstar.Mag()
+                    chiN2_var_array['absnormalVector'][igp] = normalvector.Mag()
+                    chiN2_var_array['mtransverse2'][igp] = mtransverse2
+                    chiN2_var_array['mtransverse2_paper'][igp] = mtransverse2_paper
+                    chiN2_var_array['beta'][igp] = v_pZstar.Angle(normalvector)	
 
-					TLV_theChi01 = TLorentzVector()
-					TLV_theChi01.SetPxPyPzE(gp.daughter(0).px(), gp.daughter(0).py(), gp.daughter(0).pz(), gp.daughter(0).energy())
-					chiN2_var_array['Chi01Boost'][igp] = TLV_theChi01.Gamma()
-					TLV_theChi02 = TLorentzVector()
-					TLV_theChi02.SetPxPyPzE(gp.px(), gp.py(), gp.pz(), gp.energy())			
-					chiN2_var_array['Chi02Boost'][igp] = TLV_theChi02.Gamma()
-												
-					PVSV = TVector3(gp.daughter(0).vx()-pv_pos.x(), gp.daughter(0).vy()-pv_pos.y(), gp.daughter(0).vz()-pv_pos.z())		
-					chiN2_var_array['Chi0sToPV_eta'][igp] = PVSV.Eta()
-					chiN2_var_array['Chi0sToPV_phi'][igp] = PVSV.Phi()					
-					summedLeptons = TLV_l1+TLV_l2
-					chiN2_var_array['deltaEtaChi0sToLeptons'][igp] = summedLeptons.Eta()-PVSV.Eta()
-					chiN2_var_array['absdeltaEtaChi0sToLeptons'][igp] = abs(summedLeptons.Eta()-PVSV.Eta()) #TODO> remove abs version, do that bz hnd later
-					chiN2_var_array['deltaPhiChi0sToLeptons'][igp] = deltaPhi(summedLeptons.Phi(), PVSV.Phi())
-	
+                    TLV_theChi01 = TLorentzVector()
+                    TLV_theChi01.SetPxPyPzE(gp.daughter(0).px(), gp.daughter(0).py(), gp.daughter(0).pz(), gp.daughter(0).energy())
+                    chiN2_var_array['Chi01Boost'][igp] = TLV_theChi01.Gamma()
+                    TLV_theChi02 = TLorentzVector()
+                    TLV_theChi02.SetPxPyPzE(gp.px(), gp.py(), gp.pz(), gp.energy())			
+                    chiN2_var_array['Chi02Boost'][igp] = TLV_theChi02.Gamma()
+                                                
+                    PVSV = TVector3(gp.daughter(0).vx()-pv_pos.x(), gp.daughter(0).vy()-pv_pos.y(), gp.daughter(0).vz()-pv_pos.z())		
+                    chiN2_var_array['Chi0sToPV_eta'][igp] = PVSV.Eta()
+                    chiN2_var_array['Chi0sToPV_phi'][igp] = PVSV.Phi()					
+                    summedLeptons = TLV_l1+TLV_l2
+                    chiN2_var_array['deltaEtaChi0sToLeptons'][igp] = summedLeptons.Eta()-PVSV.Eta()
+                    chiN2_var_array['absdeltaEtaChi0sToLeptons'][igp] = abs(summedLeptons.Eta()-PVSV.Eta()) #TODO> remove abs version, do that bz hnd later
+                    chiN2_var_array['deltaPhiChi0sToLeptons'][igp] = deltaPhi(summedLeptons.Phi(), PVSV.Phi())
+
 
             for igp, gp in enumerate(N1s):
 				chiN1_var_array['chiN1_pt'][igp] = gp.pt()
