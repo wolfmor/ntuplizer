@@ -28,6 +28,7 @@ pmssm -> save pMSSM IDs
 Signal -> save Signal information, if signal files is in inputFiles
 
 skipSVs -> skip collections from SV building, do not save sv information 
+max50SVs -> save only 50 svs per event
 
 DATASETNAME -> save GEN info accordingly (e.g. Signal...)
 
@@ -331,7 +332,7 @@ if True:
         , ('n_tau', 'I'), ('n_tau_vloose', 'I'), ('n_tau_loose', 'I'), ('n_tau_medium', 'I'), ('n_tau_tight', 'I'), ('n_tau_vtight', 'I'), ('n_tau_vvtight', 'I')
         , ('n_tau_20', 'I'), ('n_tau_20_vloose', 'I'), ('n_tau_20_loose', 'I'), ('n_tau_20_medium', 'I'), ('n_tau_20_tight', 'I'), ('n_tau_20_vtight', 'I'), ('n_tau_20_vvtight', 'I')
         , ('n_track_total', 'I'), ('n_track_basic', 'I'), ('n_track', 'I')
-        , ('numSVs', 'I')
+        , ('numSVs', 'I'), ('n_sv_total', 'I'), ('n_sv', 'I'),
         ]
     event_level_var_names += var_names_event
 
@@ -826,6 +827,99 @@ if True:
     for n in track_level_var_names:
         track_level_var_array[n[0]] = array('f', nMaxTracksPerEvent*[0.])
         tEvent.Branch(nice_string(n[0]), track_level_var_array[n[0]], nice_string(n[0]) + '[n_track]/F')
+
+        
+    SV_level_var_names = [
+    ('isSignal','I'),
+    ('vtxDCA','F'), ('log10vtxChi2','F'), ('vtxChi2Ndof','F'), ('vtxVx','F'), ('vtxVy','F'), ('vtxVz','F'), 
+    ('log10vtxdxy','F'), ('log10vtxdz','F'), ('vtxdx','F'), ('vtxdy','F'), ('vtxdz','F'), 
+    ('vtxiso','F'), ('vtxdrmin','F'), ('vtxnumneighbours','I'),
+    ('PVVtxEta','F'), ('PVVtxPhi','F'),	
+    ('deltaEtaPVVtxToTrack_Low','F'), ('deltaEtaPVVtxToTrack_High','F'), 
+    ('deltaEtaPVVtxToTrackSum','F'),('absdeltaEtaPVVtxToTrackSum','F'),
+    ('deltaPhiPVVtxToTrack_High','F'),('deltaPhiPVVtxToTrack_Low','F'), ('deltaPhiPVVtxToTrackSum','F'),
+    ('deltaEtaPVVtxToMET','F'),('absdeltaEtaPVVtxToMET','F'),
+    ('deltaPhiPVVtxToMET','F'),('absdeltaPhiPVVtxToMET','F'),
+    ('deltaM','F'), ('deltaPhi','F'), ('deltaR','F'), ('deltaEta','F'), ('invMass','F'), 
+    ('deltaInnerPos','F'), ('sumCharge','I'), ('vectorSumPt','D'),
+    ('vectorSumPxy','D'), ('sumPt','F'),
+
+
+    ### muon related stuff
+    ('muonMatched_Low','F'), ('muonMatched_High','F'),	
+    ('numberOfChambers_Low','F'), ('numberOfChambers_High','F'),
+    ('numberOfMatchedStations_Low','F'), ('numberOfMatchedStations_High','F'),
+    ('numberOfSegments_Low','F'), ('numberOfSegments_High','F'),
+    ('isGlobalMuon_Low','F'), ('isGlobalMuon_High','F'),	
+    ('isGoodMuon_Low','F'), ('isGoodMuon_High','F'),
+    ('isTrackerMuon_Low','F'), ('isTrackerMuon_High','F'),
+    ('normalizedChi2Muon_Low','F'), ('normalizedChi2Muon_High','F'),
+    ('trackerLayersWithMeasurementMuon_Low','F'), ('trackerLayersWithMeasurementMuon_High','F'),
+    ('pixelLayersWithMeasurementMuon_Low','F'), ('pixelLayersWithMeasurementMuon_High','F'),
+    ('isSoftMuon_Low','F'), ('isSoftMuon_High','F'),
+    ('dxyPVMuon_Low','F'), ('dxyPVMuon_High','F'),
+    ('dzPVMuon_Low','F'), ('dzPVMuon_High','F'),
+
+
+    ('pt_Low','F'), ('eta_Low','F'),
+    ('log10PttrackerrorPttrack_Low','F'), ('log10dxy_Low','F'), 
+    ('log10dxyerrorDxy_Low','F'), ('log10dzerrorDz_Low','F'),
+    ('log10dz_Low','F'), ('nvalidhits_Low','I'), ('absChi2_Low','F'),
+    ('mvaSingle_Low','F'), ('quality_Low','I'), ('trackiso_Low','F'), 
+    ('trackdrmin_Low','F'), ('tracknumneighbours_Low','I'),('trackisoLoose_Low','F'), 
+    ('trackdrminLoose_Low','F'), ('tracknumneighboursLoose_Low','I'),
+    ('pt_High','F'), ('eta_High','F'), ('isLow_High','I'), ('isHigh_High','I'), 
+    ('log10PttrackerrorPttrack_High','F'), ('log10dxy_High','F'), 
+    ('log10dxyerrorDxy_High','F'), ('log10dzerrorDz_High','F'),
+    ('log10dz_High','F'), ('nvalidhits_High','I'), ('absChi2_High','F'),
+    ('mvaSingle_High','F'), ('quality_High','I'), ('trackiso_High','F'), 
+    ('trackdrmin_High','F'), ('tracknumneighbours_High','I'),('trackisoLoose_High','F'), 
+    ('trackdrminLoose_High','F'), ('tracknumneighboursLoose_High','I'),
+    ('jetdrmin_Low','F'),('jetrelpt_Low','F'),('jetnum_Low','F'), 
+    ('jetdrmin_High','F'), ('jetrelpt_High','F'), ('jetnum_High','F'), 
+
+    ('IPsignificance_Low','F'),('IPxyz_Low','F'), ('IPxy_Low','F'),  ('IPz_Low','F'), 
+    ('log10IPsignificance_Low','F'),('log10IPxyz_Low','F'), ('log10IPxy_Low','F'),  ('log10IPz_Low','F'), 
+
+    ('IPsignificance_High','F'),('IPxyz_High','F'), ('IPxy_High','F'),  ('IPz_High','F'), 
+    ('log10IPsignificance_High','F'),('log10IPxyz_High','F'), ('log10IPxy_High','F'),  ('log10IPz_High','F'), 
+
+    ('IPsignificancePU_Low','F'),('IPxyzPU_Low','F'), ('IPxyPU_Low','F'),  ('IPzPU_Low','F'), 
+    ('log10IPsignificancePU_Low','F'),('log10IPxyzPU_Low','F'), ('log10IPxyPU_Low','F'),  ('log10IPzPU_Low','F'), 
+
+    ('IPsignificancePU_High','F'),('IPxyzPU_High','F'), ('IPxyPU_High','F'),  ('IPzPU_High','F'), 
+    ('log10IPsignificancePU_High','F'),('log10IPxyzPU_High','F'), ('log10IPxyPU_High','F'),  ('log10IPzPU_High','F'), 
+
+    ('hasTrackMatch_Low', 'F'),('hasTrackMatch_High', 'F'), #ToDo move to gen SV set of variables
+    ('hasGenMatch_Low', 'F'),('hasGenMatch_High', 'F'), 
+    ('hasGenMatchWithSameMother', 'F'),
+    ('events_hasGenMatchWithSameMother1', 'F'),
+    ('events_hasGenMatchWithSameMotherm1', 'F'),
+    ('pdgID_Low', 'F'), ('pdgID_High', 'F'),
+    ('pdgIDMother_Low', 'F'), ('pdgIDMother_High', 'F'),
+    ('numDaughtersOfMother_Low', 'F'), ('numDaughtersOfMother_High', 'F'),
+    ('hasEWancestor_Low', 'F'),('hasEWancestor_High', 'F'),
+
+    ('mZstar_reco_muon', 'F'),('mZstar_reco_electron', 'F'),('abspZstar_reco', 'F'),('absnormalVector_reco', 'F'),
+    ('beta_reco', 'F'), # angle from normal Vector to pZstar
+    ('theta_reco', 'F'), # angle from normal Vector to pZstar
+    ('error_mtransverse2_reco_muon', 'F'),
+    ('mtransverse2_reco_muon', 'F'),('mtransverse2_reco_electron', 'F'),
+    ('mtransverse2_hybrid', 'F'),('ptZstar_reco', 'F'),
+
+    # BDT scores
+    ('score', 'F'),
+    ('deltaPhiMetSumPt', 'F'),('deltaEtaLeadingJetSumPt', 'F'),('deltaPhiLeadingJetSumPt', 'F'),
+    #('deltaPhiMetSumPt', 'F'),('Met', 'F'), 
+    ]	
+
+    SV_level_var_array = {}
+    for n in SV_level_var_names:
+        if 'max50SVs' in options.tag: SV_level_var_array[n[0]] = array('f', 51*[0.])
+        else: SV_level_var_array[n[0]] = array('f', 500*[0.])
+        tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv]/F')
+
+
 
 
     # cutflow histos
@@ -3165,11 +3259,19 @@ for f in options.inputFiles:
         # get sv-level info
         ###############################################################################################
         '''
+        
+        numsvsfinalpreselection = 0
+        
+        
         event_level_var_array['numSVs'][0] = secondaryVertices.size()
+        event_level_var_array['n_sv_total'][0] = len(secondaryVertices)
                 
         for j, secondary in enumerate(secondaryVertices):
-            print ""
+           if j==12: print "looing at svs"
+           
+           numsvsfinalpreselection +=1
         
+        event_level_var_array['n_sv'][0] = numsvsfinalpreselection
         '''
         ###############################################################################################
         # get track-level info
