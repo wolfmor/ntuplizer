@@ -10,6 +10,7 @@ python plantTrees.py inputFiles="file1, file2,..." tag="tag1 tag2 ..."
 
 minimal exapmle: 
 
+python plantTrees.py inputFiles="/nfs/dust/cms/user/tewsalex/CMSSW_10_5_0/src/rootfiles/edmForDeveloping_DeltaM1p54_MChi115.root" tag="test, local, era16_07Aug17"
 
 ----------------------------------------------------------------------
 
@@ -24,6 +25,7 @@ fastsim -> FastSim correction for MET/JEC
 data -> check trigger flags and runnum/lumisec, save json file
 cleanleptons -> perform DY cleaning
 pmssm -> save pMSSM IDs
+Signal -> save Signal information, if signal files is in inputFiles
 
 DATASETNAME -> save GEN info accordingly (e.g. Signal...)
 
@@ -58,6 +60,11 @@ ROOT.gROOT.SetStyle('Plain') # white background
 ROOT.gSystem.Load('libFWCoreFWLite.so')
 ROOT.gSystem.Load('libDataFormatsFWLite.so')
 ROOT.FWLiteEnabler.enable()
+
+from ROOT import gROOT, gSystem, FWLiteEnabler, TFile, TH1F, TMath, TLorentzVector, TH2F, TTree, TVector3, TRandom, TCanvas, TLegend, TColor, TEfficiency, Math, TMVA
+from math import ceil, log10, fabs, sqrt, acos, cos, asin, degrees, sin, pi
+import random
+import re
 
 from DataFormats.FWLite import Events, Lumis, Handle
 from FWCore.ParameterSet.VarParsing import VarParsing
@@ -439,7 +446,6 @@ if True:
         event_level_var_array[t_hlt] = array('i', [0])
         tEvent.Branch(t_hlt, event_level_var_array[t_hlt], t_hlt + '/I')
 
-
     var_names_chiC1 = [
         ('chiC1_pt', 'F'), ('chiC1_eta', 'F'), ('chiC1_phi', 'F')
         , ('chiC1_decaylengthXYZ', 'F'), ('chiC1_decaylengthXY', 'F'), ('chiC1_chidecaylengthZ', 'F')
@@ -461,8 +467,11 @@ if True:
 
     var_names_chiN2 = [
         ('chiN2_pt', 'F'), ('chiN2_eta', 'F'), ('chiN2_phi', 'F')
+        ,('chiN2_mass', 'F')
         , ('chiN2_decaylengthXYZ', 'F'), ('chiN2_decaylengthXY', 'F'), ('chiN2_chidecaylengthZ', 'F')
         , ('chiN2_log10(decaylengthXYZ)', 'F'), ('chiN2_log10(decaylengthXY)', 'F'), ('chiN2_log10(chidecaylengthZ)', 'F')
+
+		,('chi02_pz', 'F')
         ]
     
     chiN2_var_array = {}
@@ -470,9 +479,40 @@ if True:
         chiN2_var_array[n[0]] = array('f', 10*[0.])
         tEvent.Branch(nice_string(n[0]), chiN2_var_array[n[0]], nice_string(n[0]) + '[n_chiN2]/F')
         
+    var_names_chiN2ToObjects = [
+		('deltaEtaChi0sToLeptons','F'), ('absdeltaEtaChi0sToLeptons','F'), ('deltaPhiChi0sToLeptons','F'), 
+		('Chi0sToPV_phi','F'), ('Chi0sToPV_eta','F'),
+	
+		('mZstar', 'F'),('abspZstar', 'F'),('absnormalVector', 'F'),
+		('beta', 'F'), # angle from normal Vector to pZstar
+		('ZstarBoost', 'F'),('Chi01Boost', 'F'),('Chi02Boost', 'F'),
+		('num', 'F'),('hasSignalSV', 'F'),
+		('mtransverse2', 'F'),('mtransverse2_paper', 'F'),('ptZstar', 'F')
+        ]
+
+    for n in var_names_chiN2ToObjects:
+        chiN2_var_array[n[0]] = array('f', 10*[0.])
+        tEvent.Branch(nice_string(n[0]), chiN2_var_array[n[0]], nice_string(n[0]) + '[n_chiN2]/F')
+        
+        
+    var_names_chiN2Leptons = [
+		('leptonID', 'I'),
+		('leptonBoost', 'F'),
+		('lepton_Low_eta', 'F'),('lepton_High_eta', 'F'),
+		('lepton_Low_pt', 'F'),('lepton_High_pt', 'F') 
+		]
+
+    for n in var_names_chiN2Leptons:
+        chiN2_var_array[n[0]] = array('f', 10*[0.])
+        tEvent.Branch(nice_string(n[0]), chiN2_var_array[n[0]], nice_string(n[0]) + '[n_chiN2]/F')
+        
         
     var_names_chiN1 = [
         ('chiN1_pt', 'F'), ('chiN1_eta', 'F'), ('chiN1_phi', 'F')
+       ,('chiN1_mass', 'F')
+               
+        ,('chi01_vx', 'F'),('chi01_vy', 'F'),('chi01_vz', 'F')
+		,('chi01_dx', 'F'),('chi01_dy', 'F'),('chi01_dz', 'F')
         ]
     
     chiN1_var_array = {}
@@ -2171,7 +2211,7 @@ for f in options.inputFiles:
         if 'Signal' in options.tag:
 
             chipmmFILE = float(re.search(r'mChipm(.*?)GeV', f).group(1))
-            deltamFILE = float(re.search(r'dm(.*?)GeV', f).group(1).replace('p', '.'))
+            deltamFILE = float(re.search(r'_dm(.*?)GeV', f).group(1).replace('p', '.'))
             try:
                 mstopFILE = float(re.search(r'stopstop_(.*?)GeV', f).group(1))
             except AttributeError:
@@ -2187,6 +2227,7 @@ for f in options.inputFiles:
 
             c1daughters = []
             n2daughters = []
+            leptons = [ None, None]
 
             for igp, gp in enumerate(C1s):
 
@@ -2266,7 +2307,6 @@ for f in options.inputFiles:
                 chiC1_var_array['chiC1_hasPion'][igp] = hasPion
                 chiC1_var_array['chiC1_hasMatchedTrackPion'][igp] = hasMatchedTrackPion
 
-
             for igp, gp in enumerate(N2s):
 
                 chiN2mGEN = round(gp.mass(), 2)
@@ -2276,6 +2316,9 @@ for f in options.inputFiles:
                 chiN2_var_array['chiN2_pt'][igp] = gp.pt()
                 chiN2_var_array['chiN2_eta'][igp] = gp.eta()
                 chiN2_var_array['chiN2_phi'][igp] = gp.phi()
+                
+                chiN2_var_array['chi02_pz'][igp] = gp.pz()
+
 
                 chiN2_decaylengthXYZ = ROOT.TMath.Sqrt(pow(gp.vx() - gp.daughter(0).vx(), 2)
                                                        + pow(gp.vy() - gp.daughter(0).vy(), 2)
@@ -2300,13 +2343,81 @@ for f in options.inputFiles:
                     chiN2_var_array['chiN2_log10(chidecaylengthZ)'][igp] = -10.
 
                 n2daughters += findDaughters(gp)
+                
+                leptons[0],leptons[1] = findLeptons(gp)
+                if not leptons[0] == None and not leptons[1]==None: 			
 
+					#hCutflow.Fill(2)
+					##if leptonID == 2: hCutflow_signal.Fill(3)
+					chiN2_var_array['leptonID'][igp] = leptons[0].pdgId()
+					TLV_l1 = TLorentzVector()
+					TLV_l1.SetPxPyPzE(leptons[0].px(),leptons[0].py(),leptons[0].pz(),leptons[0].energy())
+					TLV_l2 = TLorentzVector()
+					TLV_l2.SetPxPyPzE(leptons[1].px(),leptons[1].py(),leptons[1].pz(),leptons[1].energy())
+				
+					v_chi02 = TVector3(gp.vx(), gp.vy(), gp.vz())
+					v_chi01 = TVector3(gp.daughter(0).vx(), gp.daughter(0).vy(), gp.daughter(0).vz())
+					v_normal = v_chi01-v_chi02
+					normalvector = v_normal.Unit()
+					
+			
+					ptZstar = leptons[0].pt()+leptons[1].pt()
+					mZstar = sqrt((TLV_l1+TLV_l2)*(TLV_l1+TLV_l2))
+					v_pZstar = TVector3(leptons[0].px()+leptons[1].px(), leptons[0].py()+leptons[1].py(), leptons[0].pz()+leptons[1].pz())
+					mtransverse2 = mZstar*mZstar+ ((v_pZstar.Cross(normalvector))*(v_pZstar.Cross(normalvector)))
+					mtransverse2_paper = 2*(leptons[0].pt())*(leptons[1].pt())*(1-cos(TLV_l1.Angle(TLV_l2.Vect())))
+					
+					chiN2_var_array['leptonBoost'][igp] = TLV_l1.Gamma()
+					chiN2_var_array['leptonBoost'][igp] = TLV_l2.Gamma()
+					if TLV_l1.Pt() > TLV_l2.Pt():
+						chiN2_var_array['lepton_High_pt'][igp] = TLV_l1.Pt()
+						chiN2_var_array['lepton_High_eta'][igp] = TLV_l1.Eta()
+						chiN2_var_array['lepton_Low_pt'][igp] = TLV_l2.Pt()
+						chiN2_var_array['lepton_Low_eta'][igp] = TLV_l2.Eta()
+					else:
+						chiN2_var_array['lepton_High_pt'][igp] = TLV_l2.Pt()
+						chiN2_var_array['lepton_High_eta'][igp] = TLV_l2.Eta()
+						chiN2_var_array['lepton_Low_pt'][igp] = TLV_l1.Pt()
+						chiN2_var_array['lepton_Low_eta'][igp] = TLV_l1.Eta()
+					
+					
+					chiN2_var_array['ZstarBoost'][igp] = (TLV_l1+TLV_l2).Gamma()
+
+					chiN2_var_array['mZstar'][igp] = mZstar
+					chiN2_var_array['ptZstar'][igp] = ptZstar
+					chiN2_var_array['abspZstar'][igp] = v_pZstar.Mag()
+					chiN2_var_array['absnormalVector'][igp] = normalvector.Mag()
+					chiN2_var_array['mtransverse2'][igp] = mtransverse2
+					chiN2_var_array['mtransverse2_paper'][igp] = mtransverse2_paper
+					chiN2_var_array['beta'][igp] = v_pZstar.Angle(normalvector)	
+
+					TLV_theChi01 = TLorentzVector()
+					TLV_theChi01.SetPxPyPzE(gp.daughter(0).px(), gp.daughter(0).py(), gp.daughter(0).pz(), gp.daughter(0).energy())
+					chiN2_var_array['Chi01Boost'][igp] = TLV_theChi01.Gamma()
+					TLV_theChi02 = TLorentzVector()
+					TLV_theChi02.SetPxPyPzE(gp.px(), gp.py(), gp.pz(), gp.energy())			
+					chiN2_var_array['Chi02Boost'][igp] = TLV_theChi02.Gamma()
+												
+					PVSV = TVector3(gp.daughter(0).vx()-pv_pos.x(), gp.daughter(0).vy()-pv_pos.y(), gp.daughter(0).vz()-pv_pos.z())		
+					chiN2_var_array['Chi0sToPV_eta'][igp] = PVSV.Eta()
+					chiN2_var_array['Chi0sToPV_phi'][igp] = PVSV.Phi()					
+					summedLeptons = TLV_l1+TLV_l2
+					chiN2_var_array['deltaEtaChi0sToLeptons'][igp] = summedLeptons.Eta()-PVSV.Eta()
+					chiN2_var_array['absdeltaEtaChi0sToLeptons'][igp] = abs(summedLeptons.Eta()-PVSV.Eta()) #TODO> remove abs version, do that bz hnd later
+					chiN2_var_array['deltaPhiChi0sToLeptons'][igp] = deltaPhi(summedLeptons.Phi(), PVSV.Phi())
+	
 
             for igp, gp in enumerate(N1s):
-                chiN1_var_array['chiN1_pt'][igp] = gp.pt()
-                chiN1_var_array['chiN1_eta'][igp] = gp.eta()
-                chiN1_var_array['chiN1_phi'][igp] = gp.phi()
-
+				chiN1_var_array['chiN1_pt'][igp] = gp.pt()
+				chiN1_var_array['chiN1_eta'][igp] = gp.eta()
+				chiN1_var_array['chiN1_phi'][igp] = gp.phi()
+				
+				chiN1_var_array['chi01_vx'][igp] = gp.vx()
+				chiN1_var_array['chi01_vy'][igp] = gp.vy()
+				chiN1_var_array['chi01_vz'][igp] = gp.vz()
+				chiN1_var_array['chi01_dx'][igp] = abs(gp.vx()-pv_pos.x())
+				chiN1_var_array['chi01_dy'][igp] = abs(gp.vy()-pv_pos.y())
+				chiN1_var_array['chi01_dz'][igp] = abs(gp.vz()-pv_pos.z())
 
             chipmnumdaughters = len(c1daughters)
             chiN2numdaughters = len(n2daughters)
@@ -2320,7 +2431,7 @@ for f in options.inputFiles:
                 chidaughter_var_array['chiDaughter_phi'][ichid] = chid.phi()
 
                 chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 0
-
+                
                 if chid.charge() != 0:
 
                     idxchid, dxyzminchid, _, drminchid = findMatch_track_new(chid, tracks)
