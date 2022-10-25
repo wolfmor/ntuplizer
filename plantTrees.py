@@ -21,6 +21,8 @@ local -> don't open file via xrootd
 redirinfn -> use infn redirector for xrootd
 redirfnal -> use fnal redirector for xrootd
 
+debug -> Do some helpful printouts for debugging
+
 fastsim -> FastSim correction for MET/JEC
 data -> check trigger flags and runnum/lumisec, save json file
 cleanleptons -> perform DY cleaning
@@ -73,6 +75,7 @@ from DataFormats.FWLite import Events, Lumis, Handle
 from FWCore.ParameterSet.VarParsing import VarParsing
 
 from commons import *
+from commons_Alex import findMatch_tracktrack_new, findMinDr_track, calcIso_vtx, matchToMuon, calcIso_track, calcIso_jet, findMinDr_ancestors, findMatch_ancestor_new, findMinDr
 
 
 def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet):
@@ -830,87 +833,87 @@ if True:
 
         
     SV_level_var_names = [
-    ('isSignal','I'),
-    ('vtxDCA','F'), ('log10vtxChi2','F'), ('vtxChi2Ndof','F'), ('vtxVx','F'), ('vtxVy','F'), ('vtxVz','F'), 
-    ('log10vtxdxy','F'), ('log10vtxdz','F'), ('vtxdx','F'), ('vtxdy','F'), ('vtxdz','F'), 
-    ('vtxiso','F'), ('vtxdrmin','F'), ('vtxnumneighbours','I'),
-    ('PVVtxEta','F'), ('PVVtxPhi','F'),	
-    ('deltaEtaPVVtxToTrack_Low','F'), ('deltaEtaPVVtxToTrack_High','F'), 
-    ('deltaEtaPVVtxToTrackSum','F'),('absdeltaEtaPVVtxToTrackSum','F'),
-    ('deltaPhiPVVtxToTrack_High','F'),('deltaPhiPVVtxToTrack_Low','F'), ('deltaPhiPVVtxToTrackSum','F'),
-    ('deltaEtaPVVtxToMET','F'),('absdeltaEtaPVVtxToMET','F'),
-    ('deltaPhiPVVtxToMET','F'),('absdeltaPhiPVVtxToMET','F'),
-    ('deltaM','F'), ('deltaPhi','F'), ('deltaR','F'), ('deltaEta','F'), ('invMass','F'), 
-    ('deltaInnerPos','F'), ('sumCharge','I'), ('vectorSumPt','D'),
-    ('vectorSumPxy','D'), ('sumPt','F'),
+        ('isSignal','I'),
+        ('log10vtxChi2','F'), ('vtxChi2Ndof','F'), ('vtxVx','F'), ('vtxVy','F'), ('vtxVz','F'), 
+        ('log10vtxdxy','F'), ('log10vtxdz','F'), ('vtxdx','F'), ('vtxdy','F'), ('vtxdz','F'), 
+        ('vtxiso','F'), ('vtxdrmin','F'), ('vtxnumneighbours','I'),
+        ('PVVtxEta','F'), ('PVVtxPhi','F'),	
+        ('deltaEtaPVVtxToTrack_Low','F'), ('deltaEtaPVVtxToTrack_High','F'), 
+        ('deltaEtaPVVtxToTrackSum','F'),('absdeltaEtaPVVtxToTrackSum','F'),
+        ('deltaPhiPVVtxToTrack_High','F'),('deltaPhiPVVtxToTrack_Low','F'), ('deltaPhiPVVtxToTrackSum','F'),
+        ('deltaEtaPVVtxToMET','F'),('absdeltaEtaPVVtxToMET','F'),
+        ('deltaPhiPVVtxToMET','F'),('absdeltaPhiPVVtxToMET','F'),
+        ('deltaM','F'), ('deltaPhi','F'), ('deltaR','F'), ('deltaEta','F'), ('invMass','F'), 
+        ('deltaInnerPos','F'), ('sumCharge','I'), ('vectorSumPt','D'),
+        ('vectorSumPxy','D'), ('sumPt','F'),
 
 
-    ### muon related stuff
-    ('muonMatched_Low','F'), ('muonMatched_High','F'),	
-    ('numberOfChambers_Low','F'), ('numberOfChambers_High','F'),
-    ('numberOfMatchedStations_Low','F'), ('numberOfMatchedStations_High','F'),
-    ('numberOfSegments_Low','F'), ('numberOfSegments_High','F'),
-    ('isGlobalMuon_Low','F'), ('isGlobalMuon_High','F'),	
-    ('isGoodMuon_Low','F'), ('isGoodMuon_High','F'),
-    ('isTrackerMuon_Low','F'), ('isTrackerMuon_High','F'),
-    ('normalizedChi2Muon_Low','F'), ('normalizedChi2Muon_High','F'),
-    ('trackerLayersWithMeasurementMuon_Low','F'), ('trackerLayersWithMeasurementMuon_High','F'),
-    ('pixelLayersWithMeasurementMuon_Low','F'), ('pixelLayersWithMeasurementMuon_High','F'),
-    ('isSoftMuon_Low','F'), ('isSoftMuon_High','F'),
-    ('dxyPVMuon_Low','F'), ('dxyPVMuon_High','F'),
-    ('dzPVMuon_Low','F'), ('dzPVMuon_High','F'),
+        ### muon related stuff
+        ('muonMatched_Low','F'), ('muonMatched_High','F'),	
+        ('numberOfChambers_Low','F'), ('numberOfChambers_High','F'),
+        ('numberOfMatchedStations_Low','F'), ('numberOfMatchedStations_High','F'),
+        ('numberOfSegments_Low','F'), ('numberOfSegments_High','F'),
+        ('isGlobalMuon_Low','F'), ('isGlobalMuon_High','F'),	
+        ('isGoodMuon_Low','F'), ('isGoodMuon_High','F'),
+        ('isTrackerMuon_Low','F'), ('isTrackerMuon_High','F'),
+        ('normalizedChi2Muon_Low','F'), ('normalizedChi2Muon_High','F'),
+        ('trackerLayersWithMeasurementMuon_Low','F'), ('trackerLayersWithMeasurementMuon_High','F'),
+        ('pixelLayersWithMeasurementMuon_Low','F'), ('pixelLayersWithMeasurementMuon_High','F'),
+        ('isSoftMuon_Low','F'), ('isSoftMuon_High','F'),
+        ('dxyPVMuon_Low','F'), ('dxyPVMuon_High','F'),
+        ('dzPVMuon_Low','F'), ('dzPVMuon_High','F'),
 
 
-    ('pt_Low','F'), ('eta_Low','F'),
-    ('log10PttrackerrorPttrack_Low','F'), ('log10dxy_Low','F'), 
-    ('log10dxyerrorDxy_Low','F'), ('log10dzerrorDz_Low','F'),
-    ('log10dz_Low','F'), ('nvalidhits_Low','I'), ('absChi2_Low','F'),
-    ('mvaSingle_Low','F'), ('quality_Low','I'), ('trackiso_Low','F'), 
-    ('trackdrmin_Low','F'), ('tracknumneighbours_Low','I'),('trackisoLoose_Low','F'), 
-    ('trackdrminLoose_Low','F'), ('tracknumneighboursLoose_Low','I'),
-    ('pt_High','F'), ('eta_High','F'), ('isLow_High','I'), ('isHigh_High','I'), 
-    ('log10PttrackerrorPttrack_High','F'), ('log10dxy_High','F'), 
-    ('log10dxyerrorDxy_High','F'), ('log10dzerrorDz_High','F'),
-    ('log10dz_High','F'), ('nvalidhits_High','I'), ('absChi2_High','F'),
-    ('mvaSingle_High','F'), ('quality_High','I'), ('trackiso_High','F'), 
-    ('trackdrmin_High','F'), ('tracknumneighbours_High','I'),('trackisoLoose_High','F'), 
-    ('trackdrminLoose_High','F'), ('tracknumneighboursLoose_High','I'),
-    ('jetdrmin_Low','F'),('jetrelpt_Low','F'),('jetnum_Low','F'), 
-    ('jetdrmin_High','F'), ('jetrelpt_High','F'), ('jetnum_High','F'), 
+        ('pt_Low','F'), ('eta_Low','F'),
+        ('log10PttrackerrorPttrack_Low','F'), ('log10dxy_Low','F'), 
+        ('log10dxyerrorDxy_Low','F'), ('log10dzerrorDz_Low','F'),
+        ('log10dz_Low','F'), ('nvalidhits_Low','I'), ('absChi2_Low','F'),
+        ('mvaSingle_Low','F'), ('quality_Low','I'), ('trackiso_Low','F'), 
+        ('trackdrmin_Low','F'), ('tracknumneighbours_Low','I'),('trackisoLoose_Low','F'), 
+        ('trackdrminLoose_Low','F'), ('tracknumneighboursLoose_Low','I'),
+        ('pt_High','F'), ('eta_High','F'), ('isLow_High','I'), ('isHigh_High','I'), 
+        ('log10PttrackerrorPttrack_High','F'), ('log10dxy_High','F'), 
+        ('log10dxyerrorDxy_High','F'), ('log10dzerrorDz_High','F'),
+        ('log10dz_High','F'), ('nvalidhits_High','I'), ('absChi2_High','F'),
+        ('mvaSingle_High','F'), ('quality_High','I'), ('trackiso_High','F'), 
+        ('trackdrmin_High','F'), ('tracknumneighbours_High','I'),('trackisoLoose_High','F'), 
+        ('trackdrminLoose_High','F'), ('tracknumneighboursLoose_High','I'),
+        ('jetdrmin_Low','F'),('jetrelpt_Low','F'),('jetnum_Low','F'), 
+        ('jetdrmin_High','F'), ('jetrelpt_High','F'), ('jetnum_High','F'), 
 
-    ('IPsignificance_Low','F'),('IPxyz_Low','F'), ('IPxy_Low','F'),  ('IPz_Low','F'), 
-    ('log10IPsignificance_Low','F'),('log10IPxyz_Low','F'), ('log10IPxy_Low','F'),  ('log10IPz_Low','F'), 
+        ('IPsignificance_Low','F'),('IPxyz_Low','F'), ('IPxy_Low','F'),  ('IPz_Low','F'), 
+        ('log10IPsignificance_Low','F'),('log10IPxyz_Low','F'), ('log10IPxy_Low','F'),  ('log10IPz_Low','F'), 
 
-    ('IPsignificance_High','F'),('IPxyz_High','F'), ('IPxy_High','F'),  ('IPz_High','F'), 
-    ('log10IPsignificance_High','F'),('log10IPxyz_High','F'), ('log10IPxy_High','F'),  ('log10IPz_High','F'), 
+        ('IPsignificance_High','F'),('IPxyz_High','F'), ('IPxy_High','F'),  ('IPz_High','F'), 
+        ('log10IPsignificance_High','F'),('log10IPxyz_High','F'), ('log10IPxy_High','F'),  ('log10IPz_High','F'), 
 
-    ('IPsignificancePU_Low','F'),('IPxyzPU_Low','F'), ('IPxyPU_Low','F'),  ('IPzPU_Low','F'), 
-    ('log10IPsignificancePU_Low','F'),('log10IPxyzPU_Low','F'), ('log10IPxyPU_Low','F'),  ('log10IPzPU_Low','F'), 
+        ('IPsignificancePU_Low','F'),('IPxyzPU_Low','F'), ('IPxyPU_Low','F'),  ('IPzPU_Low','F'), 
+        ('log10IPsignificancePU_Low','F'),('log10IPxyzPU_Low','F'), ('log10IPxyPU_Low','F'),  ('log10IPzPU_Low','F'), 
 
-    ('IPsignificancePU_High','F'),('IPxyzPU_High','F'), ('IPxyPU_High','F'),  ('IPzPU_High','F'), 
-    ('log10IPsignificancePU_High','F'),('log10IPxyzPU_High','F'), ('log10IPxyPU_High','F'),  ('log10IPzPU_High','F'), 
+        ('IPsignificancePU_High','F'),('IPxyzPU_High','F'), ('IPxyPU_High','F'),  ('IPzPU_High','F'), 
+        ('log10IPsignificancePU_High','F'),('log10IPxyzPU_High','F'), ('log10IPxyPU_High','F'),  ('log10IPzPU_High','F'), 
 
-    ('hasTrackMatch_Low', 'F'),('hasTrackMatch_High', 'F'), #ToDo move to gen SV set of variables
-    ('hasGenMatch_Low', 'F'),('hasGenMatch_High', 'F'), 
-    ('hasGenMatchWithSameMother', 'F'),
-    ('events_hasGenMatchWithSameMother1', 'F'),
-    ('events_hasGenMatchWithSameMotherm1', 'F'),
-    ('pdgID_Low', 'F'), ('pdgID_High', 'F'),
-    ('pdgIDMother_Low', 'F'), ('pdgIDMother_High', 'F'),
-    ('numDaughtersOfMother_Low', 'F'), ('numDaughtersOfMother_High', 'F'),
-    ('hasEWancestor_Low', 'F'),('hasEWancestor_High', 'F'),
+        ('hasTrackMatch_Low', 'F'),('hasTrackMatch_High', 'F'), #ToDo move to gen SV set of variables
+        ('hasGenMatch_Low', 'F'),('hasGenMatch_High', 'F'), 
+        ('hasGenMatchWithSameMother', 'F'),
+        ('events_hasGenMatchWithSameMother1', 'F'),
+        ('events_hasGenMatchWithSameMotherm1', 'F'),
+        ('pdgID_Low', 'F'), ('pdgID_High', 'F'),
+        ('pdgIDMother_Low', 'F'), ('pdgIDMother_High', 'F'),
+        ('numDaughtersOfMother_Low', 'F'), ('numDaughtersOfMother_High', 'F'),
+        ('hasEWancestor_Low', 'F'),('hasEWancestor_High', 'F'),
 
-    ('mZstar_reco_muon', 'F'),('mZstar_reco_electron', 'F'),('abspZstar_reco', 'F'),('absnormalVector_reco', 'F'),
-    ('beta_reco', 'F'), # angle from normal Vector to pZstar
-    ('theta_reco', 'F'), # angle from normal Vector to pZstar
-    ('error_mtransverse2_reco_muon', 'F'),
-    ('mtransverse2_reco_muon', 'F'),('mtransverse2_reco_electron', 'F'),
-    ('mtransverse2_hybrid', 'F'),('ptZstar_reco', 'F'),
+        ('mZstar_reco_muon', 'F'),('mZstar_reco_electron', 'F'),('abspZstar_reco', 'F'),('absnormalVector_reco', 'F'),
+        ('beta_reco', 'F'), # angle from normal Vector to pZstar
+        ('theta_reco', 'F'), # angle from normal Vector to pZstar
+        ('error_mtransverse2_reco_muon', 'F'),
+        ('mtransverse2_reco_muon', 'F'),('mtransverse2_reco_electron', 'F'),
+        ('mtransverse2_hybrid', 'F'),('ptZstar_reco', 'F'),
 
-    # BDT scores
-    ('score', 'F'),
-    ('deltaPhiMetSumPt', 'F'),('deltaEtaLeadingJetSumPt', 'F'),('deltaPhiLeadingJetSumPt', 'F'),
-    #('deltaPhiMetSumPt', 'F'),('Met', 'F'), 
+        # BDT scores
+        ('score', 'F'),
+        ('deltaPhiMetSumPt', 'F'),('deltaEtaLeadingJetSumPt', 'F'),('deltaPhiLeadingJetSumPt', 'F'),
+        #('deltaPhiMetSumPt', 'F'),('Met', 'F'), 
     ]	
 
     SV_level_var_array = {}
@@ -919,7 +922,19 @@ if True:
         else: SV_level_var_array[n[0]] = array('f', 500*[0.])
         tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv]/F')
 
-
+    var_names_sv_resolution = [
+        ('res_vx', 'F'),('res_vy', 'F'),('res_vz', 'F'),
+        ('res_dx', 'F'),('res_dy', 'F'),('res_dz', 'F'),
+        ('res_PVx', 'F'),('res_PVy', 'F'),('res_PVz', 'F'),
+        ('res_deltaEta','F'), ('res_deltaPhi','F'), 
+        ('res_phi','F'), ('res_eta','F'), 
+        ('res_ncrossn','F'),('res_alphan','F'),('res_mtransverse2','F'),
+        ('res_theta','F'),('gen_theta','F'),('reco_theta','F'),('res_mtransverse','F')
+    ]
+    for n in var_names_sv_resolution:
+        if 'max50SVs' in options.tag: SV_level_var_array[n[0]] = array('f', 51*[0.])
+        else: SV_level_var_array[n[0]] = array('f', 500*[0.])
+        tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv]/F')
 
 
     # cutflow histos
@@ -1221,6 +1236,9 @@ label_dca = ('SecondaryVerticesFromLooseTracks','DcaKshort', 'SVS')
 handle_mva = Handle("std::vector<float>")
 label_mva = ('TrackTag1', 'mvaScore', 'SVS')
 
+handle_selected_tracks = Handle("std::vector<reco::Track>")
+label_selected_tracks = ('TrackTag1' , 'selectedTracks', 'SVS')
+
 
 runs = {}
 lastlumi = -1
@@ -1396,6 +1414,9 @@ for f in options.inputFiles:
         chipmnumdaughters = 0
         chiN2numdaughters = 0
         numchidaughters = 0
+        
+        theChi01 = None
+        theChi02 = None
 
         '''
         ###############################################################################################
@@ -1423,9 +1444,12 @@ for f in options.inputFiles:
             event.getByLabel(label_sv, handle_sv)
             event.getByLabel(label_dca, handle_dca)
             event.getByLabel(label_mva, handle_mva)
+            event.getByLabel(label_selected_tracks, handle_selected_tracks)
+            
             secondaryVertices = handle_sv.product()
             dcas = handle_dca.product()
             mvaScores = handle_mva.product()
+            selctedTracks = handle_selected_tracks.product()
 
         # ########################################################################################### veto
 
@@ -2406,9 +2430,15 @@ for f in options.inputFiles:
             numN2 = len(N2s)
             numN1 = len(N1s)
 
+            if len(N2s) == 1: 
+                theChi02 = N2s[0]
+                if len(N1s) == 1: theChi01 = N1s[0]
+                
             c1daughters = []
             n2daughters = []
-            leptons = [ None, None]
+            
+            leptons = [None, None]
+            signalIdx = -1
 
             for igp, gp in enumerate(C1s):
 
@@ -2488,6 +2518,9 @@ for f in options.inputFiles:
                 chiC1_var_array['chiC1_hasPion'][igp] = hasPion
                 chiC1_var_array['chiC1_hasMatchedTrackPion'][igp] = hasMatchedTrackPion
 
+            signalTrkIdx = [-1, -1]
+            signalTrk = [None, None]
+            
             for igp, gp in enumerate(N2s):
 
                 chiN2mGEN = round(gp.mass(), 2)
@@ -2528,8 +2561,7 @@ for f in options.inputFiles:
                 leptons[0],leptons[1] = findLeptons(gp)
                 if not leptons[0] == None and not leptons[1]==None: 
 
-                    #hCutflow.Fill(2)
-                    ##if leptonID == 2: hCutflow_signal.Fill(3)
+
                     chiN2_var_array['leptonID'][igp] = leptons[0].pdgId()
                     TLV_l1 = TLorentzVector()
                     TLV_l1.SetPxPyPzE(leptons[0].px(),leptons[0].py(),leptons[0].pz(),leptons[0].energy())
@@ -2587,6 +2619,40 @@ for f in options.inputFiles:
                     chiN2_var_array['absdeltaEtaChi0sToLeptons'][igp] = abs(summedLeptons.Eta()-PVSV.Eta()) #TODO> remove abs version, do that bz hnd later
                     chiN2_var_array['deltaPhiChi0sToLeptons'][igp] = deltaPhi(summedLeptons.Phi(), PVSV.Phi())
 
+                    #####################
+                    ### Match gen leptons to any tracks
+                    #####################
+
+                    idxTrk = [-1 ,-1]
+                    drminTrk = [999,999]
+                    dxyzminTrk = [999,999]
+                    tminTrk = [-1, -1]
+
+                    idxTrkClassic = [-1 ,-1]
+                    drminTrkClassic = [999,999]	
+
+                        
+                    for ilepton, lepton in enumerate(leptons):
+                        
+                        idxTrk[ilepton], dxyzminTrk[ilepton], tminTrk[ilepton], drminTrk[ilepton] = findMatch_track_new(lepton, tracks)
+                        _, idxTrkClassic[ilepton], drminTrkClassic[ilepton], _ = findMinDr(lepton, tracks, 20.)
+                                
+                    if  ((drminTrkClassic[0]<0.04) and (drminTrkClassic[1]<0.04)):	
+                        for i, idx in enumerate(idxTrkClassic):
+                            if 'debug' in options.tag : print i, idx, tracks.size()
+                            signalTrk[i] = tracks[idx]
+                            signalTrkIdx[i] = idx
+
+
+                    elif  ((dxyzminTrk[0]<0.04 and drminTrk[0]<0.04) and (dxyzminTrk[1]<0.04 and drminTrk[1]<0.04)):
+                        for i, idx in enumerate(idxTrk):
+                            signalTrk[i] = tracks[idx]
+                            signalTrkIdx[i] = idx
+
+                    else: 
+                        print "SV has no machting tracks"  ### todo: proper error handlling
+                        
+                        
 
             for igp, gp in enumerate(N1s):
 				chiN1_var_array['chiN1_pt'][igp] = gp.pt()
@@ -3261,17 +3327,531 @@ for f in options.inputFiles:
         '''
         
         numsvsfinalpreselection = 0
-        
-        
+
         event_level_var_array['numSVs'][0] = secondaryVertices.size()
         event_level_var_array['n_sv_total'][0] = len(secondaryVertices)
                 
-        for j, secondary in enumerate(secondaryVertices):
-           if j==12: print "looing at svs"
-           
-           numsvsfinalpreselection +=1
+        for nSV, secondary in enumerate(secondaryVertices):
+            
+            isSignal = 0
+            proceed = False	
+            
+            
+            idxHelical = [-1,-1]
+            drmin = [999,999]
+            dxyzmin = [999,999]
+            tmin = [0,0]
+            
+            ClassicIdx = [-1,-1]
+            ClassicDrmin = [999,999]
+            dxyzmin = [999,999]
+            tmin = [0,0]
+            
+            matchingTrk = [None, None]
+            matchingTrkIdx = [None, None]
+            
+            ### find matching tracks
+            if True: 
+
+                for k in range(secondary.numberOfDaughters()):
+                    
+                    if 'debug' in options.tag: print "SV no. ", j, "daughter no. ", k, " charge ", secondary.daughter(k).charge()
+                    
+                    idxHelical[k], dxyzmin[k], tmin[k], drmin[k] = findMatch_tracktrack_new(secondary.daughter(k), selctedTracks)
+                    _, ClassicIdx[k], ClassicDrmin[k], _ = findMinDr_track(secondary.daughter(k), selctedTracks, 20.)	
+                            
+                    if ((ClassicDrmin[0]<0.02) and (ClassicDrmin[1]<0.02)):
+                        
+                        for i, idx in enumerate(ClassicIdx):
+                            matchingTrk[i] = selctedTracks[idx]
+                            matchingTrkIdx[i] = idx 
+                            
+                            
+                        if 'Signal' in options.tag:
+                            if ClassicIdx[0] in signalTrkIdx and ClassicIdx[1] in signalTrkIdx:
+                                if 'debug' in options.tag:print '---------------------'
+                                if 'debug' in options.tag:print 'is Signal SV'
+                                if 'debug' in options.tag:print '---------------------'
+                                isSignal = 1
+                                hasSignalSV = 1
+                                signalIdx = nSV
+
+                            else:
+                                if 'debug' in options.tag:print '---------------------'
+                                if 'debug' in options.tag:print 'is Back SV'
+                                if 'debug' in options.tag:print '---------------------'
+
+
+                    elif ((dxyzmin[0]<0.04 and drmin[0]<0.02) and (dxyzmin[1]<0.04 and drmin[1]<0.02)):
+                        for i, idx in enumerate(idxHelical):
+                            matchingTrk[i] = selctedTracks[idx]
+                            matchingTrkIdx[i] = idx 
+                        
+                        if 'Signal' in options.tag:
+                            if idxHelical[0] in signalTrkIdx and idxHelical[1] in signalTrkIdx:
+                                if 'debug' in options.tag:print '---------------------'
+                                if 'debug' in options.tag:print 'is Signal SV'
+                                if 'debug' in options.tag:print '---------------------'
+                                isSignal = 1
+                                hasSignalSV = 1
+                                signalIdx = nSV
+
+                            else:
+                                if 'debug' in options.tag:print '---------------------'
+                                if 'debug' in options.tag:print 'is Back SV'
+                                if 'debug' in options.tag:print '---------------------'
+
+            
+
+
+            ######################################
+            #### "filling tree on SV level"
+            ######################################
+            if None in matchingTrk: 
+                if matchingTrk[0] == matchingTrk[1]: 
+                    SV_level_var_array['hasTrackMatch_Low'][nSV] = 0
+                    SV_level_var_array['hasTrackMatch_High'][nSV] = 0
+                else: 
+                    SV_level_var_array['hasTrackMatch_Low'][nSV] = 0
+                    SV_level_var_array['hasTrackMatch_High'][nSV] = 1
+                
+                continue
+                
+            SV_level_var_array['hasTrackMatch_Low'][nSV] = 1
+            SV_level_var_array['hasTrackMatch_High'][nSV] = 1
+            
+            if 'debug' in options.tag: print "filling tree on SV level, nSV", nSV
+            TLV1 = TLorentzVector()
+            TLV1.SetPxPyPzE(matchingTrk[0].px(),matchingTrk[0].py(),matchingTrk[0].pz(),matchingTrk[0].pt()*TMath.CosH(matchingTrk[0].eta()))
+            TLV2 = TLorentzVector()
+            TLV2.SetPxPyPzE(matchingTrk[1].px(),matchingTrk[1].py(),matchingTrk[1].pz(),matchingTrk[1].pt()*TMath.CosH(matchingTrk[1].eta()))
+            
+            PVVtx = TVector3(secondary.vx()-pv_pos.x(), secondary.vy()-pv_pos.y(), secondary.vz()-pv_pos.z())
+            summedTracks = TLV1+TLV2
+            
+            if matchingTrk[0].pt() == min(matchingTrk[0].pt(), matchingTrk[1].pt()):
+                trackLow = matchingTrk[0]
+                idxLow = matchingTrkIdx[0]
+                trackHigh = matchingTrk[1]
+                idxHigh = matchingTrkIdx[1]
+            else:
+                trackLow = matchingTrk[1]
+                idxLow = matchingTrkIdx[1]
+                trackHigh = matchingTrk[0]
+                idxHigh = matchingTrkIdx[0]
+                                
+            SV_level_var_array['deltaPhiMetSumPt'][nSV] = deltaPhi(summedTracks.Phi(), met.phi())
+
+            if lJet1 == None: SV_level_var_array['deltaPhiLeadingJetSumPt'][nSV] = -999
+            else: 
+                SV_level_var_array['deltaPhiLeadingJetSumPt'][nSV] = deltaPhi(summedTracks.Phi(),lJet1.phi())
+            if lJet1 == None: SV_level_var_array['deltaEtaLeadingJetSumPt'][nSV]= -999
+            else:
+                SV_level_var_array['deltaEtaLeadingJetSumPt'][nSV]= summedTracks.Eta()-lJet1.eta()
+                        
+            SV_level_var_array['isSignal'][nSV] = isSignal
+            SV_level_var_array['log10vtxChi2'][nSV] = log10(secondary.vertexChi2())
+            SV_level_var_array['vtxChi2Ndof'][nSV] = log10(secondary.vertexNormalizedChi2())
+            SV_level_var_array['vtxVx'][nSV] = secondary.vx()
+            SV_level_var_array['vtxVy'][nSV] = secondary.vy()
+            SV_level_var_array['vtxVz'][nSV] = secondary.vz()
+            SV_level_var_array['vtxdx'][nSV] = abs(secondary.vx()-pv_pos.x())
+            SV_level_var_array['vtxdy'][nSV] = abs(secondary.vy()-pv_pos.y())
+            SV_level_var_array['vtxdz'][nSV] = abs(secondary.vz()-pv_pos.z())
+            SV_level_var_array['log10vtxdxy'][nSV] = log10(sqrt(pow((secondary.vx()-pv_pos.x()),2)+pow((secondary.vy()-pv_pos.y()),2))+0.00001)
+            SV_level_var_array['log10vtxdz'][nSV] = log10(sqrt(pow((secondary.vz()-pv_pos.z()),2))+0.00001)
+            SV_level_var_array['deltaEtaPVVtxToTrack_High'][nSV] = abs(trackHigh.eta()-PVVtx.Eta())
+            SV_level_var_array['deltaEtaPVVtxToTrack_Low'][nSV] = abs(trackLow.eta()-PVVtx.Eta())
+            SV_level_var_array['deltaEtaPVVtxToTrackSum'][nSV] = summedTracks.Eta()-PVVtx.Eta()
+            SV_level_var_array['absdeltaEtaPVVtxToTrackSum'][nSV] = abs(summedTracks.Eta()-PVVtx.Eta())
+            SV_level_var_array['deltaPhiPVVtxToTrack_High'][nSV] = deltaPhi(trackHigh.phi(), PVVtx.Phi())
+            SV_level_var_array['deltaPhiPVVtxToTrack_Low'][nSV] = deltaPhi(trackLow.phi(), PVVtx.Phi())
+            SV_level_var_array['deltaPhiPVVtxToTrackSum'][nSV] = deltaPhi(summedTracks.Phi(), PVVtx.Phi())
+            SV_level_var_array['PVVtxEta'][nSV] = PVVtx.Eta()
+            SV_level_var_array['PVVtxPhi'][nSV] = PVVtx.Phi()
+            SV_level_var_array['vtxiso'][nSV] , SV_level_var_array['vtxdrmin'][nSV], SV_level_var_array['vtxnumneighbours'][nSV] = calcIso_vtx(secondary, secondaryVertices)	
+            SV_level_var_array['deltaEtaPVVtxToMET'][nSV] = met.eta()-PVVtx.Eta()
+            SV_level_var_array['absdeltaEtaPVVtxToMET'][nSV] = abs(met.eta()-PVVtx.Eta())
+            SV_level_var_array['deltaPhiPVVtxToMET'][nSV] = met.phi()-PVVtx.Phi()
+            SV_level_var_array['absdeltaPhiPVVtxToMET'][nSV] = abs(met.phi()-PVVtx.Phi())
+
+            v_normal_reco = TVector3(secondary.vx()-pv_pos.x(),secondary.vy()-pv_pos.y(),secondary.vz()-pv_pos.z())
+            normalvector_reco = v_normal_reco.Unit()
+            
+            ptZstar_reco = TLV1.Pt()+TLV2.Pt()
+            v_pZstar_reco = TVector3(TLV1.Px()+TLV2.Px(), TLV1.Py()+TLV2.Py(), TLV1.Pz()+TLV2.Pz())
+
+            SV_level_var_array['ptZstar_reco'][nSV] = ptZstar_reco
+            SV_level_var_array['abspZstar_reco'][nSV] = v_pZstar_reco.Mag()
+            SV_level_var_array['absnormalVector_reco'][nSV] = normalvector_reco.Mag()
+            SV_level_var_array['beta_reco'][nSV] = v_pZstar_reco.Angle(normalvector_reco)
+                            
+            muonmass2 = 0.1056 *0.1056
+            electronmass2 = 0.0005* 0.0005
+            pionmass2 = 0.1396*0.1396
+            
+            ZstarP4_muoncase = TLorentzVector()
+            ZstarP4_electroncase = TLorentzVector()
+
+            track1E_muoncase =TMath.Sqrt(pow(TLV1.Px(),2)+pow(TLV1.Py(),2)+pow(TLV1.Pz(),2) + muonmass2)
+            track2E_muoncase =TMath.Sqrt(pow(TLV2.Px(),2)+pow(TLV2.Py(),2)+pow(TLV2.Pz(),2) + muonmass2)
+
+            ZstarETot_muoncase = track1E_muoncase + track2E_muoncase
+            ZstarP4_muoncase.SetPxPyPzE(TLV1.Px()+TLV2.Px(), TLV1.Py()+TLV2.Py(), TLV1.Pz()+TLV2.Pz(), ZstarETot_muoncase)			
+            mZstar_reco_muoncase = sqrt(ZstarP4_muoncase*ZstarP4_muoncase)
+            mtransverse2_reco_muoncase = mZstar_reco_muoncase*mZstar_reco_muoncase + ((v_pZstar_reco.Cross(normalvector_reco))*(v_pZstar_reco.Cross(normalvector_reco)))
+
+            SV_level_var_array['mZstar_reco_muon'][nSV] = mZstar_reco_muoncase
+            SV_level_var_array['mtransverse2_reco_muon'][nSV] = mtransverse2_reco_muoncase
+            theta = asin((v_pZstar_reco.Cross(normalvector_reco)).Mag()/(v_pZstar_reco.Mag()))
+            SV_level_var_array['theta_reco'][nSV] = degrees(theta)
+            SV_level_var_array['error_mtransverse2_reco_muon'][nSV] = pow(mZstar_reco_muoncase*mZstar_reco_muoncase+pow(v_pZstar_reco.Mag(),2)*pow(sin(theta),2),-1/2)*sin(theta)*cos(theta)*pow(v_pZstar_reco.Mag(),2)
+ 
+            track1E_electroncase =TMath.Sqrt(pow(TLV1.Px(),2)+pow(TLV1.Py(),2)+pow(TLV1.Pz(),2) + muonmass2)
+            track2E_electroncase =TMath.Sqrt(pow(TLV2.Px(),2)+pow(TLV2.Py(),2)+pow(TLV2.Pz(),2) + muonmass2)
+
+            ZstarETot_electroncase = track1E_electroncase + track2E_electroncase
+            ZstarP4_electroncase.SetPxPyPzE(TLV1.Px()+TLV2.Px(), TLV1.Py()+TLV2.Py(), TLV1.Pz()+TLV2.Pz(), ZstarETot_electroncase)			
+            mZstar_reco_electroncase = sqrt(ZstarP4_electroncase*ZstarP4_electroncase)
+            mtransverse2_reco_electroncase = mZstar_reco_electroncase*mZstar_reco_electroncase + ((v_pZstar_reco.Cross(normalvector_reco))*(v_pZstar_reco.Cross(normalvector_reco)))
+            
+            SV_level_var_array['mZstar_reco_electron'][nSV] = mZstar_reco_electroncase
+            SV_level_var_array['mtransverse2_reco_electron'][nSV] = mtransverse2_reco_electroncase
+            
+            ip_Low = IPcalculator(trackLow, primaryvertices[0])
+            ip_High = IPcalculator(trackHigh, primaryvertices[0])
+            SV_level_var_array['IPsignificance_Low'][nSV] = ip_Low.getIPsignificance()
+            SV_level_var_array['IPxyz_Low'][nSV] = ip_Low.getIP()
+            SV_level_var_array['IPxy_Low'][nSV] = ip_Low.getDxy()
+            SV_level_var_array['IPz_Low'][nSV] = ip_Low.getDz()
+            SV_level_var_array['log10IPsignificance_Low'][nSV] = log10(ip_Low.getIPsignificance())
+            SV_level_var_array['log10IPxyz_Low'][nSV] = log10(ip_Low.getIP())
+            SV_level_var_array['log10IPxy_Low'][nSV] = log10( ip_Low.getDxy())
+            SV_level_var_array['log10IPz_Low'][nSV] = log10(ip_Low.getDz())
+
+            SV_level_var_array['IPsignificance_High'][nSV] = ip_High.getIPsignificance()
+            SV_level_var_array['IPxyz_High'][nSV] = ip_High.getIP()
+            SV_level_var_array['IPxy_High'][nSV] = ip_High.getDxy()
+            SV_level_var_array['IPz_High'][nSV] = ip_High.getDz()
+            SV_level_var_array['log10IPsignificance_High'][nSV] = log10(ip_High.getIPsignificance())
+            SV_level_var_array['log10IPxyz_High'][nSV] = log10(ip_High.getIP())
+            SV_level_var_array['log10IPxy_High'][nSV] = log10(ip_High.getDxy())
+            SV_level_var_array['log10IPz_High'][nSV] = log10(ip_High.getDz())
+
+            
+            minipPU_Low = None
+            minivPU_Low= -1
+            minIPsignificancePU_Low = 999
+            
+            minipPU_High = None
+            minivPU_High= -1
+            minIPsignificancePU_High = 999
+            
+            for iv, v in enumerate(primaryvertices[1:]):
+                thisipPU_Low = IPcalculator(trackLow, v)
+                thisIPsignificancePU_Low = thisipPU_Low.getIPsignificance()
+                if thisIPsignificancePU_Low < minIPsignificancePU_Low:
+                    minipPU_Low = thisipPU_Low
+                    minivPU_Low = iv
+                    minIPsignificancePU_Low = thisIPsignificancePU_Low
+                    
+                thisipPU_High = IPcalculator(trackHigh, v)
+                thisIPsignificancePU_High = thisipPU_High.getIPsignificance()
+                if thisIPsignificancePU_High < minIPsignificancePU_High:
+                    minipPU_High = thisipPU_High
+                    minivPU_High = iv
+                    minIPsignificancePU_High = thisIPsignificancePU_High
+            if not minivPU_Low == -1:
+                #SV_level_var_array['idxpvPU'][nSV] = minivPU+1
+                SV_level_var_array['IPsignificancePU_Low'][nSV] = minipPU_Low.getIPsignificance()
+                SV_level_var_array['IPxyzPU_Low'][nSV] = minipPU_Low.getIP()
+                SV_level_var_array['IPxyPU_Low'][nSV] = minipPU_Low.getDxy()
+                SV_level_var_array['IPzPU_Low'][nSV] = minipPU_Low.getDz()
+                SV_level_var_array['log10IPsignificancePU_Low'][nSV] = log10(minipPU_Low.getIPsignificance())
+                SV_level_var_array['log10IPxyzPU_Low'][nSV] = log10(minipPU_Low.getIP())
+                SV_level_var_array['log10IPxyPU_Low'][nSV] = log10(minipPU_Low.getDxy())
+                SV_level_var_array['log10IPzPU_Low'][nSV] = log10(minipPU_Low.getDz())
+
+            
+            if not minivPU_High == -1:
+                #SV_level_var_array['idxpvPU'][nSV] = minivPU+1
+                SV_level_var_array['IPsignificancePU_High'][nSV] = minipPU_High.getIPsignificance()
+                SV_level_var_array['IPxyzPU_High'][nSV] = minipPU_High.getIP()
+                SV_level_var_array['IPxyPU_High'][nSV] = minipPU_High.getDxy()
+                SV_level_var_array['IPzPU_High'][nSV] = minipPU_High.getDz()
+                SV_level_var_array['log10IPsignificancePU_High'][nSV] = log10(minipPU_High.getIPsignificance())
+                SV_level_var_array['log10IPxyzPU_High'][nSV] = log10(minipPU_High.getIP())
+                SV_level_var_array['log10IPxyPU_High'][nSV] = log10(minipPU_High.getDxy())
+                SV_level_var_array['log10IPzPU_High'][nSV] = log10(minipPU_High.getDz())
+
+            
+            mounMatch_Low, mounDR_Low = matchToMuon(trackLow, muons)
+            if mounDR_Low < 0.01 : 
+                SV_level_var_array['muonMatched_Low'][nSV] = 1
+                SV_level_var_array['numberOfChambers_Low'][nSV] = muons[mounMatch_Low].numberOfChambers()
+                SV_level_var_array['numberOfMatchedStations_Low'][nSV] = muons[mounMatch_Low].numberOfMatchedStations()
+                #SV_level_var_array['numberOfSegments_Low'][nSV] = muons[mounMatch_Low].numberOfSegments()
+                SV_level_var_array['isGlobalMuon_Low'][nSV] = muons[mounMatch_Low].isGlobalMuon()
+
+                
+                if muons[mounMatch_Low].isTrackerMuon() and not muons[mounMatch_Low].innerTrack()==None:
+                    
+                    SV_level_var_array['isTrackerMuon_Low'][nSV] = 1
+                    SV_level_var_array['normalizedChi2Muon_Low'][nSV] = muons[mounMatch_Low].innerTrack().normalizedChi2()
+                    SV_level_var_array['trackerLayersWithMeasurementMuon_Low'][nSV] = muons[mounMatch_Low].innerTrack().hitPattern().trackerLayersWithMeasurement()
+                    SV_level_var_array['pixelLayersWithMeasurementMuon_Low'][nSV] = muons[mounMatch_Low].innerTrack().hitPattern().pixelLayersWithMeasurement()
+                    SV_level_var_array['dxyPVMuon_Low'][nSV] = abs(muons[mounMatch_Low].innerTrack().dxy(pv_pos))
+                    SV_level_var_array['dzPVMuon_Low'][nSV] = abs(muons[mounMatch_Low].innerTrack().dz(pv_pos))	
+                    if ((muons[mounMatch_Low].innerTrack().hitPattern().trackerLayersWithMeasurement() > 10) and (muons[mounMatch_Low].innerTrack().hitPattern().pixelLayersWithMeasurement() > 2) and (muons[mounMatch_Low].innerTrack().normalizedChi2() < 1.8) and  (abs(muons[mounMatch_Low].innerTrack().dxy(pv_pos)) < 3) and (abs(muons[mounMatch_Low].innerTrack().dz(pv_pos)) < 20)):							
+                        SV_level_var_array['isSoftMuon_Low'][nSV] = 1
+                        hasSoftMuon = 1	
+                    else: SV_level_var_array['isSoftMuon_Low'][nSV] = 0
+                else: SV_level_var_array['isSoftMuon_Low'][nSV] = 0
+                                        
+            else: 
+                SV_level_var_array['muonMatched_Low'][nSV] = 0
+                SV_level_var_array['isSoftMuon_Low'][nSV] = 0
+
+            mounMatch_High, mounDR_High = matchToMuon(trackHigh, muons)
+            if mounDR_High < 0.01 : 
+                SV_level_var_array['muonMatched_High'][nSV] = 1
+                SV_level_var_array['numberOfChambers_High'][nSV] = muons[mounMatch_High].numberOfChambers()
+                SV_level_var_array['numberOfMatchedStations_High'][nSV] = muons[mounMatch_High].numberOfMatchedStations()
+                #SV_level_var_array['numberOfSegments_High'][nSV] = muons[mounMatch_High].numberOfSegments()
+                SV_level_var_array['isGlobalMuon_High'][nSV] = muons[mounMatch_High].isGlobalMuon()
+                #SV_level_var_array['isGoodMuon_High'][nSV] = muons[mounMatch_High].isGoodMuon()
+                
+                if muons[mounMatch_High].isTrackerMuon() and not muons[mounMatch_High].innerTrack()==None:
+
+                    SV_level_var_array['isTrackerMuon_High'][nSV] = 1
+                    SV_level_var_array['normalizedChi2Muon_High'][nSV] = muons[mounMatch_High].innerTrack().normalizedChi2()					
+                    SV_level_var_array['trackerLayersWithMeasurementMuon_High'][nSV] = muons[mounMatch_High].innerTrack().hitPattern().trackerLayersWithMeasurement()
+                    SV_level_var_array['pixelLayersWithMeasurementMuon_High'][nSV] = muons[mounMatch_High].innerTrack().hitPattern().pixelLayersWithMeasurement()	
+                    SV_level_var_array['dxyPVMuon_High'][nSV] = abs(muons[mounMatch_High].innerTrack().dxy(pv_pos))
+                    SV_level_var_array['dzPVMuon_High'][nSV] = abs(muons[mounMatch_High].innerTrack().dz(pv_pos))	
+                    if ((muons[mounMatch_High].innerTrack().hitPattern().trackerLayersWithMeasurement() > 10) and (muons[mounMatch_High].innerTrack().hitPattern().pixelLayersWithMeasurement() > 2) and (muons[mounMatch_High].innerTrack().normalizedChi2() < 1.8) and  (abs(muons[mounMatch_High].innerTrack().dxy(pv_pos)) < 3) and (abs(muons[mounMatch_High].innerTrack().dz(pv_pos)) < 20)):	
+                        SV_level_var_array['isSoftMuon_High'][nSV] = 1	
+                        hasSoftMuon = 1
+                    else: SV_level_var_array['isSoftMuon_High'][nSV] = 0
+                else: SV_level_var_array['isSoftMuon_High'][nSV] = 0
+                                        
+            else: 
+                SV_level_var_array['muonMatched_High'][nSV] = 0
+                SV_level_var_array['isSoftMuon_High'][nSV] = 0
+                
+            SV_level_var_array['eta_Low'][nSV] = trackLow.eta()
+            SV_level_var_array['pt_Low'][nSV] = trackLow.pt()
+            SV_level_var_array['log10PttrackerrorPttrack_Low'][nSV] =log10(fabs((trackLow.ptError())/(trackLow.pt())))
+            SV_level_var_array['log10dxy_Low'][nSV] = log10(fabs(trackLow.dxy(pv_pos)))
+            SV_level_var_array['log10dz_Low'][nSV] = log10(fabs(trackLow.dz(pv_pos)))
+            SV_level_var_array['log10dxyerrorDxy_Low'][nSV] = log10(fabs(trackLow.dxyError()/trackLow.dxy()))
+            SV_level_var_array['log10dzerrorDz_Low'][nSV] = log10(fabs(trackLow.dzError()/trackLow.dz()))
+            SV_level_var_array['nvalidhits_Low'][nSV] = trackLow.numberOfValidHits()
+            SV_level_var_array['absChi2_Low'][nSV] = abs(trackLow.normalizedChi2())
+            SV_level_var_array['mvaSingle_Low'][nSV] = mvaScores[idxLow]
+            SV_level_var_array['quality_Low'][nSV] = 10
+            for i in range(8):
+                if trackLow.quality(i): SV_level_var_array['quality_Low'][nSV] = i
+            SV_level_var_array['trackiso_Low'][nSV] , SV_level_var_array['trackdrmin_Low'][nSV], SV_level_var_array['tracknumneighbours_Low'][nSV] = calcIso_track(trackLow,tracks, pv_pos, False)
+            SV_level_var_array['trackisoLoose_Low'][nSV] , SV_level_var_array['trackdrminLoose_Low'][nSV], SV_level_var_array['tracknumneighboursLoose_Low'][nSV] = calcIso_track(trackLow,tracks, pv_pos, True)
+
+            
+            SV_level_var_array['eta_High'][nSV] = trackHigh.eta()
+            SV_level_var_array['pt_High'][nSV] = trackHigh.pt()
+            SV_level_var_array['log10PttrackerrorPttrack_High'][nSV] =log10(fabs((trackHigh.ptError())/(trackHigh.pt())))
+            SV_level_var_array['log10dxy_High'][nSV] = log10(fabs(trackHigh.dxy(pv_pos)))
+            SV_level_var_array['log10dxyerrorDxy_High'][nSV] = log10(fabs(trackHigh.dxyError()/trackHigh.dxy()))
+            SV_level_var_array['log10dzerrorDz_High'][nSV] = log10(fabs(trackHigh.dzError()/trackHigh.dz()))
+            SV_level_var_array['log10dz_High'][nSV] = log10(fabs(trackHigh.dz(pv_pos)))
+            SV_level_var_array['nvalidhits_High'][nSV] = trackHigh.numberOfValidHits()
+            SV_level_var_array['absChi2_High'][nSV] = abs(trackHigh.normalizedChi2())
+            SV_level_var_array['mvaSingle_High'][nSV] = mvaScores[idxHigh]
+            SV_level_var_array['quality_High'][nSV] = 10
+
+            for i in range(8):
+                if trackHigh.quality(i): SV_level_var_array['quality_High'][nSV] = i
+            SV_level_var_array['trackiso_High'][nSV] , SV_level_var_array['trackdrmin_High'][nSV], SV_level_var_array['tracknumneighbours_High'][nSV] = calcIso_track(trackHigh,tracks, pv_pos, False)
+            SV_level_var_array['trackisoLoose_High'][nSV] , SV_level_var_array['trackdrminLoose_High'][nSV], SV_level_var_array['tracknumneighboursLoose_High'][nSV] = calcIso_track(trackHigh,tracks, pv_pos, True)
+            
+            SV_level_var_array['jetrelpt_High'][nSV], SV_level_var_array['jetdrmin_High'][nSV], SV_level_var_array['jetnum_High'][nSV] = calcIso_jet(trackHigh,jets, pv_pos, False)
+            SV_level_var_array['jetrelpt_Low'][nSV], SV_level_var_array['jetdrmin_Low'][nSV], SV_level_var_array['jetnum_Low'][nSV]  = calcIso_jet(trackLow,jets, pv_pos, False)
+
+            SV_level_var_array['deltaPhi'][nSV] = abs(TLV1.DeltaPhi(TLV2))
+            SV_level_var_array['deltaR'][nSV] = TLV1.DeltaR(TLV2)
+            SV_level_var_array['deltaEta'][nSV] = abs(matchingTrk[0].eta()-matchingTrk[1].eta())
+            SV_level_var_array['invMass'][nSV] = (TLV1+TLV2).M()
+            SV_level_var_array['sumCharge'][nSV] = (trackLow.charge()+trackHigh.charge())
+            SV_level_var_array['vectorSumPt'][nSV] = (TLV1+TLV2).Pt()
+            SV_level_var_array['vectorSumPxy'][nSV] = sqrt(pow((TLV1+TLV2).Px(),2)+pow((TLV1+TLV2).Py(),2))            
+
+            ######################################
+            #### "gen match of SV constituent for background SVs"
+            ######################################
+            if 'Signal' in options.tag:
+
+                idxGP = [-1,-1]
+                pdgIds = [-1, -1]
+                pdgIdsMother = [-1, -1]
+                drminGP = [-1, -1]
+                tlvMother = [None, None]
+                hasEWancestors = [-1, -1]
+                hasEWancestors_new = [-1, -1]
+                #relatives = [[], []]
+                numDaughtersOfMother = [-1, -1]
+                
+                idxGP_new = [-1,-1]
+                pdgIds_new = [-1, -1]
+                pdgIdsMother_new = [-1, -1]
+                drminGP_new = [-1, -1]
+                dxyzmin = [-1, -1]
+                tlvMother_new = [None, None]
+                #relatives_new = [[], []]
+                numDaughtersOfMother_new = [-1, -1]
+                ignoreIndices = []
+                
+                if not isSignal and  j != signalIdx:
+                    
+                    if secondary.numberOfDaughters()> 2: continue
+                    
+                    ### first element is always high PT track	
+                    ### if 1st is higher in pt put first at first position
+                    if secondary.daughter(0).pt() > secondary.daughter(1).pt():
+                                idxGP[0],  pdgIds[0], pdgIdsMother[0], drminGP[0], tlvMother[0], hasEWancestors[0], numDaughtersOfMother[0] = findMinDr_ancestors(secondary.daughter(0),genparticles, ignoreIndices)
+                                if drminGP[0] < 0.01 and idxGP[0] not in ignoreIndices: ignoreIndices.append(idxGP[0])
+                                idxGP_new[0], dxyzmin[0], pdgIds_new[0], pdgIdsMother_new[0], drminGP_new[0], tlvMother_new[0], hasEWancestors_new[0], numDaughtersOfMother_new[0]= findMatch_ancestor_new(secondary.daughter(0),genparticles, ignoreIndices)
+                                if dxyzmin[0] < 0.03 and drminGP_new[0] < 0.01 and idxGP_new[0] not in ignoreIndices: ignoreIndices.append(idxGP_new[0])
+                                
+                                idxGP[1],  pdgIds[1], pdgIdsMother[1], drminGP[1], tlvMother[1], hasEWancestors[1], numDaughtersOfMother[1]  = findMinDr_ancestors(secondary.daughter(1),genparticles,  ignoreIndices)
+                                idxGP_new[1], dxyzmin[1], pdgIds_new[1], pdgIdsMother_new[1], drminGP_new[1], tlvMother_new[1], hasEWancestors_new[1], numDaughtersOfMother_new[1]= findMatch_ancestor_new(secondary.daughter(1),genparticles, ignoreIndices)
+     
+                    ### else if 2nd is higher inpt, put 2nd at 1st position
+                    else:
+                        idxGP[1],  pdgIds[1], pdgIdsMother[1], drminGP[1] , tlvMother[1], hasEWancestors[1], numDaughtersOfMother[1] = findMinDr_ancestors(secondary.daughter(0),genparticles, ignoreIndices)
+                        if drminGP[1] < 0.01 and idxGP[1] not in ignoreIndices: ignoreIndices.append(idxGP[1])
+                        idxGP_new[1], dxyzmin[1], pdgIds_new[1], pdgIdsMother_new[1], drminGP_new[1] , tlvMother_new[1], hasEWancestors_new[1], numDaughtersOfMother_new[1] = findMatch_ancestor_new(secondary.daughter(0),genparticles, ignoreIndices)
+                        if dxyzmin[1] < 0.03 and drminGP_new[1] < 0.01 and idxGP_new[1] not in ignoreIndices: ignoreIndices.append(idxGP_new[1])	
+                                                    
+                        idxGP[0],  pdgIds[0], pdgIdsMother[0], drminGP[0] , tlvMother[0], hasEWancestors[0], numDaughtersOfMother[0] = findMinDr_ancestors(secondary.daughter(1),genparticles, ignoreIndices)		
+                        idxGP_new[0], dxyzmin[0], pdgIds_new[0], pdgIdsMother_new[0], drminGP_new[0] , tlvMother_new[0], hasEWancestors_new[0], numDaughtersOfMother_new[0] = findMatch_ancestor_new(secondary.daughter(1),genparticles, ignoreIndices)		
+
+                        
+
+                if (drminGP[0] < -1 or (dxyzmin[0] < -1 and drminGP_new[0]<-1)): SV_level_var_array['hasGenMatch_High'][nSV] = -1 #higher Pt is signal
+                elif (drminGP[0] < 0.01 or (dxyzmin[0] < 0.03 and drminGP_new[0]<0.01)): SV_level_var_array['hasGenMatch_High'][nSV] = 1 #higherPt is gen matched (alwazs first value in dR [x,x]
+                else: SV_level_var_array['hasGenMatch_High'][nSV] = 0 #higher pt is not gen matched
+                   
+                if (drminGP[1] < -1 or (dxyzmin[1] < -1 and drminGP_new[1]<-1)): SV_level_var_array['hasGenMatch_Low'][nSV] = -1
+                elif (drminGP[1] < 0.01 or (dxyzmin[1] < 0.03 and drminGP_new[1]<0.01)): SV_level_var_array['hasGenMatch_Low'][nSV] = 1
+                else: SV_level_var_array['hasGenMatch_Low'][nSV] = 0
+                
+                SV_level_var_array['numDaughtersOfMother_Low'][nSV] = abs(numDaughtersOfMother[1])
+                SV_level_var_array['numDaughtersOfMother_High'][nSV] = abs(numDaughtersOfMother[0])
+            
+                if SV_level_var_array['hasGenMatch_High'][nSV] == 1 and SV_level_var_array['hasGenMatch_Low'][nSV] == 1:#both have matching gen
+                    if (pdgIdsMother[0] != -1) and (pdgIdsMother[0] == pdgIdsMother[1]) and (drminGP[0] < 0.01 and drminGP[1] < 0.01): 			
+                        if (abs(tlvMother[0].Eta()-tlvMother[1].Eta()) < 0.001):
+                            if (abs(tlvMother[0].Pt()-tlvMother[1].Pt()) < 0.001):
+                                SV_level_var_array['events_hasGenMatchWithSameMother1'][nSV] = ievent
+                                SV_level_var_array['hasGenMatchWithSameMother'][nSV] = 1	
+                                SV_level_var_array['pdgIDMother_Low'][nSV] = abs(pdgIdsMother[1])
+                                SV_level_var_array['pdgIDMother_High'][nSV] = abs(pdgIdsMother[0])
+                                SV_level_var_array['pdgID_Low'][nSV] = abs(pdgIds[1])
+                                SV_level_var_array['pdgID_High'][nSV] = abs(pdgIds[0])
+
+                            else: 
+                                SV_level_var_array['hasGenMatchWithSameMother'][nSV] = 0	
+                                SV_level_var_array['pdgIDMother_Low'][nSV] = abs(pdgIdsMother[1])
+                                SV_level_var_array['pdgIDMother_High'][nSV] = abs(pdgIdsMother[0])
+                                SV_level_var_array['pdgID_Low'][nSV] = abs(pdgIds[1])
+                                SV_level_var_array['pdgID_High'][nSV] = abs(pdgIds[0])
+
+                        else: 
+                            SV_level_var_array['hasGenMatchWithSameMother'][nSV] = 0	
+                            SV_level_var_array['pdgIDMother_Low'][nSV] = abs(pdgIdsMother[1])
+                            SV_level_var_array['pdgIDMother_High'][nSV] = abs(pdgIdsMother[0])						
+                            SV_level_var_array['pdgID_Low'][nSV] = abs(pdgIds[1])
+                            SV_level_var_array['pdgID_High'][nSV] = abs(pdgIds[0])
+
+                    elif (pdgIdsMother_new[0] != -1) and (pdgIdsMother_new[0]== pdgIdsMother_new[1]) and (dxyzmin[0] < 0.03 and drminGP_new[0]<0.01) and (dxyzmin[1] < 0.03 and drminGP_new[1]<0.01): 
+                        #if (tlvMother[0].Charge()== tlvMother[1].Charge()) or (tlvMother_new[0].Charge()== tlvMother_new[1].Charge()): 					
+                        if (abs(tlvMother_new[0].Eta()-tlvMother_new[1].Eta()) < 0.001):
+                            if (abs(tlvMother_new[0].Pt()-tlvMother_new[1].Pt()) < 0.001):
+                                SV_level_var_array['events_hasGenMatchWithSameMother1'][nSV] = ievent
+                                SV_level_var_array['hasGenMatchWithSameMother'][nSV] = 1	
+                                SV_level_var_array['pdgIDMother_Low'][nSV] = abs(pdgIdsMother_new[0])
+                                SV_level_var_array['pdgIDMother_High'][nSV] = abs(pdgIdsMother_new[0])
+                                SV_level_var_array['pdgID_Low'][nSV] = abs(pdgIds_new[1])
+                                SV_level_var_array['pdgID_High'][nSV] = abs(pdgIds_new[0])
+                                SV_level_var_array['numDaughtersOfMother_Low'][nSV] = abs(numDaughtersOfMother_new[1])
+ 
+                            else: 
+                                SV_level_var_array['hasGenMatchWithSameMother'][nSV] = 0	
+                                SV_level_var_array['pdgIDMother_Low'][nSV] = abs(pdgIdsMother_new[1])
+                                SV_level_var_array['pdgIDMother_High'][nSV] = abs(pdgIdsMother_new[0])
+                                SV_level_var_array['pdgID_Low'][nSV] = abs(pdgIds_new[1])
+                                SV_level_var_array['pdgID_High'][nSV] = abs(pdgIds_new[0])
+
+                        else: 
+                            SV_level_var_array['hasGenMatchWithSameMother'][nSV] = 0	
+                            SV_level_var_array['pdgIDMother_Low'][nSV] = abs(pdgIdsMother_new[1])
+                            SV_level_var_array['pdgIDMother_High'][nSV] = abs(pdgIdsMother_new[0])
+                            SV_level_var_array['pdgID_Low'][nSV] = abs(pdgIds_new[1])
+                            SV_level_var_array['pdgID_High'][nSV] = abs(pdgIds_new[0])
+
+                    elif (((pdgIdsMother[0] == -1) or (pdgIdsMother[1] == -1)) and (drminGP[0] < 0.01 and drminGP[1] < 0.01)): 
+                        SV_level_var_array['events_hasGenMatchWithSameMotherm1'][nSV] = ievent
+                        SV_level_var_array['hasGenMatchWithSameMother'][nSV] = -1 #signal SV
+                        SV_level_var_array['pdgID_Low'][nSV] = abs(pdgIds[1])
+                        SV_level_var_array['pdgID_High'][nSV] = abs(pdgIds[0])
+                        
+                    elif (((pdgIdsMother_new[0] == -1) or (pdgIdsMother_new[1] == -1)) and  ((dxyzmin[0] < 0.03 and drminGP_new[0]<0.01) and (dxyzmin[1] < 0.03 and drminGP_new[1]<0.01))): 
+                        SV_level_var_array['events_hasGenMatchWithSameMotherm1'][nSV] = ievent
+                        SV_level_var_array['hasGenMatchWithSameMother'][nSV] = -1 #signal SV
+                        SV_level_var_array['pdgID_Low'][nSV] = abs(pdgIds_new[1])
+                        SV_level_var_array['pdgID_High'][nSV] = abs(pdgIds_new[0])
+                        #exit
+
+                    else: 
+                        SV_level_var_array['hasGenMatchWithSameMother'][nSV] = 0
+                        SV_level_var_array['pdgIDMother_Low'][nSV] = abs(pdgIdsMother[1])
+                        SV_level_var_array['pdgIDMother_High'][nSV] = abs(pdgIdsMother[0])	
+                        SV_level_var_array['pdgID_Low'][nSV] = abs(pdgIds[1])
+                        SV_level_var_array['pdgID_High'][nSV] = abs(pdgIds[0])
+
+                SV_level_var_array['hasEWancestor_Low'][nSV] = hasEWancestors[1]+hasEWancestors_new[1]
+                SV_level_var_array['hasEWancestor_High'][nSV] = hasEWancestors[0]+hasEWancestors_new[0]
+
+                if not leptons[0] == None and not leptons[1]==None and not theChi01 == None and not theChi02 == None:
+                    SV_level_var_array['mtransverse2_hybrid'][nSV] = mZstar_reco_muoncase*mZstar_reco_muoncase + ((v_pZstar_reco.Cross(normalvector))*(v_pZstar_reco.Cross(normalvector)))
+                    if isSignal and  nSV == signalIdx:
+                        event_level_var_array['res_vx'][0] = secondary.vx() - theChi01.vx()
+                        event_level_var_array['res_vy'][0] = secondary.vy() - theChi01.vy()
+                        event_level_var_array['res_vz'][0] = secondary.vz() - theChi01.vz()
+                        event_level_var_array['res_PVx'][0] = (pv_pos.x() - theChi02.vx())
+                        event_level_var_array['res_PVy'][0] = (pv_pos.y() - theChi02.vy())
+                        event_level_var_array['res_PVz'][0] = (pv_pos.z() - theChi02.vz())
+                        event_level_var_array['res_dx'][0] = (secondary.vx() - pv_pos.x()) - (theChi01.vx() - theChi02.vx())
+                        event_level_var_array['res_dy'][0] = (secondary.vy() - pv_pos.x()) - (theChi01.vy() - theChi02.vx())
+                        event_level_var_array['res_dz'][0] = (secondary.vz() - pv_pos.x()) - (theChi01.vz() - theChi02.vx())
+                        event_level_var_array['res_theta'][0] = (degrees(asin((v_pZstar_reco.Cross(normalvector_reco)).Mag()/(v_pZstar_reco.Mag()))))-(degrees(asin((v_pZstar.Cross(normalvector)).Mag()/(v_pZstar.Mag()))))
+                        event_level_var_array['gen_theta'][0] = (degrees(asin((v_pZstar.Cross(normalvector)).Mag()/(v_pZstar.Mag()))))
+                        event_level_var_array['reco_theta'][0] = (degrees(asin((v_pZstar_reco.Cross(normalvector_reco)).Mag()/(v_pZstar_reco.Mag()))))
+                        event_level_var_array['res_deltaEta'][0] = (summedLeptons.Eta()-PVSV.Eta()) - (summedTracks.Eta()-PVVtx.Eta())
+                        event_level_var_array['res_deltaPhi'][0] = deltaPhi(summedLeptons.Phi(), PVSV.Phi()) - deltaPhi(summedTracks.Phi(), PVVtx.Phi())
+                        event_level_var_array['res_eta'][0] = - PVVtx.Eta()
+                        event_level_var_array['res_phi'][0] = - PVVtx.Phi()
+                        event_level_var_array['res_ncrossn'][0] = (normalvector.Cross(normalvector_reco)).Mag()
+                        event_level_var_array['res_alphan'][0] = asin((normalvector.Cross(normalvector_reco).Mag()))
+                        event_level_var_array['res_mtransverse2'][0] = mtransverse2 - mtransverse2_reco_muoncase
+                        event_level_var_array['res_mtransverse'][0] = sqrt(mtransverse2)- sqrt(mtransverse2_reco_muoncase)
+
+            numsvsfinalpreselection += 1
         
         event_level_var_array['n_sv'][0] = numsvsfinalpreselection
+
+
+
+            
         '''
         ###############################################################################################
         # get track-level info
