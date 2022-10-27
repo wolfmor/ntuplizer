@@ -10,7 +10,7 @@ python plantTrees.py inputFiles="file1, file2,..." tag="tag1 tag2 ..."
 
 minimal example: 
 python plantTrees.py inputFiles="/nfs/dust/cms/user/tewsalex/CMSSW_10_5_0/src/rootfiles/forDeveloping_slimmededm_mChipm115GeV_dm0p77GeV_pu35_v1.root" tag="test, local, era16_07Aug17 Signal skipSVs"
-
+python plantTrees.py inputFiles="/nfs/dust/cms/user/tewsalex/rootfiles/edmfiles/ZJetsToNuNu_Zpt-200toInf_0of1.root" tag="test, local, era16_07Aug17"
 ----------------------------------------------------------------------
 
 tags:
@@ -1142,10 +1142,15 @@ if True:
 if 'pmssm' in options.tag:
     handle_lumis = Handle('GenLumiInfoHeader')
 
-if 'fastsim' not in options.tag:
+if 'fastsim' not in options.tag and 'skipSVs' not in options.tag:
 
     handle_trigger_hlt = Handle('edm::TriggerResults')
     label_trigger_hlt = ('TriggerResults', '', 'SVS')
+    
+elif 'fastsim' not in options.tag:
+
+    handle_trigger_hlt = Handle('edm::TriggerResults')
+    label_trigger_hlt = ('TriggerResults', '', 'HLT')
 
 if 'data' in options.tag:
 
