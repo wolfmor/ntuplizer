@@ -10,7 +10,7 @@ python plantTrees.py inputFiles="file1, file2,..." tag="tag1 tag2 ..."
 
 minimal example: 
 python plantTrees.py inputFiles="/nfs/dust/cms/user/tewsalex/CMSSW_10_5_0/src/rootfiles/forDeveloping_slimmededm_mChipm115GeV_dm0p77GeV_pu35_v1.root" tag="test, local, era16_07Aug17 Signal skipSVs"
-python plantTrees.py inputFiles="/nfs/dust/cms/user/tewsalex/rootfiles/edmfiles/ZJetsToNuNu_Zpt-200toInf_0of1.root" tag="test, local, era16_07Aug17"
+python plantTrees.py inputFiles="/nfs/dust/cms/user/wolfmor/testsamples/ZJetsToNuNu_Zpt-200toInf/B044CEA0-F8C9-E611-8F67-0CC47AD990C4.root" tag="test, local, era16_07Aug17"
 ----------------------------------------------------------------------
 
 tags:
@@ -73,6 +73,7 @@ import re
 from DataFormats.FWLite import Events, Lumis, Handle
 from FWCore.ParameterSet.VarParsing import VarParsing
 
+from DataFormats.Candidate import VertexCompositeCandidate
 from commons import *
 from commons_Alex import findMatch_tracktrack_new, findMinDr_track, calcIso_vtx, matchToMuon, calcIso_track, calcIso_jet, findMinDr_ancestors, findMatch_ancestor_new, findMinDr
 
@@ -185,22 +186,6 @@ class DataJEC:
         return JECMap['jecAK4']
 
 
-nMaxTracksPerEvent = 10000
-
-# TODO: check if saveoutputfile and if test
-saveOutputFile = True
-isTest = False
-nEventsTest = 100  # number of events that are analyzed in case of test
-printevery = 100
-
-# TODO: check thresholds for "new" matching
-matchingDrThreshold = 0.05
-matchingDxyzThreshold = 0.2
-
-# TODO: check met threshold for event selection
-metthreshold = 200
-metthresholdtrackgenmatch = 200  # only relevant if "genmatch(all)tracks" in options.tag
-
 
 '''
 ###############################################################################################
@@ -210,6 +195,26 @@ metthresholdtrackgenmatch = 200  # only relevant if "genmatch(all)tracks" in opt
 
 options = VarParsing('python')
 options.parseArguments()
+
+
+
+nMaxTracksPerEvent = 10000
+
+# TODO: check if saveoutputfile
+saveOutputFile = True
+
+if 'test' in options.tag: isTest = True
+else: isTest = False
+nEventsTest = 100 # number of events that are analyzed in case of test
+printevery = 100
+
+# TODO: check thresholds for "new" matching
+matchingDrThreshold = 0.05
+matchingDxyzThreshold = 0.2
+
+# TODO: check met threshold for event selection
+metthreshold = 200
+metthresholdtrackgenmatch = 200  # only relevant if "genmatch(all)tracks" in options.tag
 
 
 '''
@@ -993,11 +998,13 @@ if True:
 
 '''
 ###############################################################################################
-# define... stuff
+# define... stuff and local variables
 ###############################################################################################
 '''
 
 if True:
+
+
 
     jettype = 'AK4PFchs'
 
@@ -1141,11 +1148,6 @@ if True:
 
 if 'pmssm' in options.tag:
     handle_lumis = Handle('GenLumiInfoHeader')
-
-if 'fastsim' not in options.tag and 'skipSVs' not in options.tag:
-
-    handle_trigger_hlt = Handle('edm::TriggerResults')
-    label_trigger_hlt = ('TriggerResults', '', 'SVS')
     
 elif 'fastsim' not in options.tag:
 
@@ -1248,10 +1250,117 @@ runs = {}
 lastlumi = -1
 lastrun = -1
 
+
+
+'''
+###############################################################################################
+# Read file with secondary vertices
+###############################################################################################
+'''
+if not 'skipSVs' in options.tag:
+    localpath = '/nfs/dust/cms/user/tewsalex/CMSSW_10_2_18/src/'
+    vertexfiles = [None]*len(options.inputFiles)
+    vertices = np.array([None]*len(options.inputFiles))
+
+    for ifile, f in enumerate(options.inputFiles):
+        
+        vertexfile = localpath+f.split("/")[-2]+"_"+f.split("/")[-1]
+        vertexfiles[ifile] = vertexfile
+
+    print ''
+    print 'n input filesn with vertices: ' + str(len(vertexfiles))
+
+    for ifile, f in enumerate(vertexfiles):
+        print ''
+        print f
+        
+        if 'local' in options.tag:
+
+            fname = f.strip()
+            fin = ROOT.TFile.Open(fname)
+
+        else:
+
+            redir = 'cms-xrd-global.cern.ch'
+            if 'redirinfn' in options.tag: redir = 'xrootd-cms.infn.it'
+            if 'redirfnal' in options.tag: redir = 'cmsxrootd.fnal.gov'
+
+            fname = 'root://' + redir + '/' + f.strip()
+            fin = ROOT.TFile.Open(fname)
+
+            retry = 1
+            while not fin or fin.IsZombie() or not fin.IsOpen():
+
+                print 'retry open file ', retry
+
+                retry += 1
+                if retry > 5: break
+
+                fin = ROOT.TFile.Open('root://' + redir + '/' + f.strip())
+
+        events = Events(fin)
+        nevents = events.size()
+        
+        vertices[ifile] = [None]*nevents
+        print '### with ' + str(nevents) + ' events'
+        print '### printing every ' + str(printevery) + '. event'
+
+        if saveOutputFile: fout.cd()
+
+        nEventsPerFile = 0
+
+        phifirsttrack = 0
+        etafirsttrack = 0
+
+        if 'pmssm' in options.tag:
+            lumis = Lumis(fname)
+            pMSSMname = ''
+            pMSSMid1 = -1
+            pMSSMid2 = -1
+
+        # event loop
+        for ievent, event in enumerate(events):
+
+            if isTest and ievent >= nEventsTest:
+                print 'nEventsTest boundary'
+                break
+
+            if 'local' not in options.tag:
+                if fin.IsZombie() or not fin.IsOpen():
+                    print 'file not usable'
+                    sys.exit(1)
+
+            if saveOutputFile and ievent % 100 == 0: fout.Write('', ROOT.TObject.kWriteDelete)
+
+            if ievent % printevery == 0: print 'analyzing event %d of %d' % (ievent, nevents)
+            
+            event.getByLabel(label_sv, handle_sv)
+            event.getByLabel(label_dca, handle_dca)
+            event.getByLabel(label_mva, handle_mva)
+            event.getByLabel(label_selected_tracks, handle_selected_tracks)
+            
+            secondaryVertices = handle_sv.product()
+            dcas = handle_dca.product()
+            mvaScores = handle_mva.product()
+            selctedTracks = handle_selected_tracks.product()
+            
+            vertices[ifile][ievent] = [None]*len(secondaryVertices)
+            
+            for nSV, secondary in enumerate(secondaryVertices):
+                
+                 (reco::VertexCompositeCandidate) fwliteSV = (reco::VertexCompositeCandidate) secondary
+                 vertices[ifile][ievent][nSV] = fwliteSV
+                
+            nEventsPerFile += 1
+                
+
+
+
+# ########################################################################################### start with AOD files here
 print ''
 print 'n input files: ' + str(len(options.inputFiles))
 
-for f in options.inputFiles:
+for ifile, f in enumerate(options.inputFiles):
 
     print ''
     print f
@@ -1321,7 +1430,7 @@ for f in options.inputFiles:
 
     for ievent, event in enumerate(events):
 
-        if isTest and nEventsPerFile >= nEventsTest:
+        if isTest and ievent >= nEventsTest:
             print 'nEventsTest boundary'
             break
 
@@ -1443,17 +1552,6 @@ for f in options.inputFiles:
         event.getByLabel(label_tracks, handle_tracks)
         tracks = handle_tracks.product()
         if not len(tracks) > 0: continue
-
-        if not 'skipSVs' in options.tag:
-            event.getByLabel(label_sv, handle_sv)
-            event.getByLabel(label_dca, handle_dca)
-            event.getByLabel(label_mva, handle_mva)
-            event.getByLabel(label_selected_tracks, handle_selected_tracks)
-            
-            secondaryVertices = handle_sv.product()
-            dcas = handle_dca.product()
-            mvaScores = handle_mva.product()
-            selctedTracks = handle_selected_tracks.product()
 
         # ########################################################################################### veto
 
@@ -3333,10 +3431,17 @@ for f in options.inputFiles:
         numsvsfinalpreselection = 0
 
         if not 'skipSVs' in options.tag: 
-            event_level_var_array['numSVs'][0] = secondaryVertices.size()
+            
+            secondaryVertices = vertices[ifile][ievent]
+
+            
+            #event_level_var_array['numSVs'][0] = secondaryVertices.size()
             event_level_var_array['n_sv_total'][0] = len(secondaryVertices)
                 
             for nSV, secondary in enumerate(secondaryVertices):
+                
+                print nSV, secondary
+                continue
                 
                 isSignal = 0
                 proceed = False	
@@ -3355,8 +3460,20 @@ for f in options.inputFiles:
                 matchingTrk = [None, None]
                 matchingTrkIdx = [None, None]
                 
+                SV_level_var_array['isSignal'][nSV] = isSignal
+                SV_level_var_array['log10vtxChi2'][nSV] = log10(secondary.vertexChi2())
+                SV_level_var_array['vtxChi2Ndof'][nSV] = log10(secondary.vertexNormalizedChi2())
+                SV_level_var_array['vtxVx'][nSV] = secondary.vx()
+                SV_level_var_array['vtxVy'][nSV] = secondary.vy()
+                SV_level_var_array['vtxVz'][nSV] = secondary.vz()
+                SV_level_var_array['vtxdx'][nSV] = abs(secondary.vx()-pv_pos.x())
+                SV_level_var_array['vtxdy'][nSV] = abs(secondary.vy()-pv_pos.y())
+                SV_level_var_array['vtxdz'][nSV] = abs(secondary.vz()-pv_pos.z())
+                SV_level_var_array['log10vtxdxy'][nSV] = log10(sqrt(pow((secondary.vx()-pv_pos.x()),2)+pow((secondary.vy()-pv_pos.y()),2))+0.00001)
+                SV_level_var_array['log10vtxdz'][nSV] = log10(sqrt(pow((secondary.vz()-pv_pos.z()),2))+0.00001)
+                
                 ### find matching tracks
-                if True: 
+                if False: 
 
                     for k in range(secondary.numberOfDaughters()):
                         
@@ -3454,17 +3571,7 @@ for f in options.inputFiles:
                 else:
                     SV_level_var_array['deltaEtaLeadingJetSumPt'][nSV]= summedTracks.Eta()-lJet1.eta()
                             
-                SV_level_var_array['isSignal'][nSV] = isSignal
-                SV_level_var_array['log10vtxChi2'][nSV] = log10(secondary.vertexChi2())
-                SV_level_var_array['vtxChi2Ndof'][nSV] = log10(secondary.vertexNormalizedChi2())
-                SV_level_var_array['vtxVx'][nSV] = secondary.vx()
-                SV_level_var_array['vtxVy'][nSV] = secondary.vy()
-                SV_level_var_array['vtxVz'][nSV] = secondary.vz()
-                SV_level_var_array['vtxdx'][nSV] = abs(secondary.vx()-pv_pos.x())
-                SV_level_var_array['vtxdy'][nSV] = abs(secondary.vy()-pv_pos.y())
-                SV_level_var_array['vtxdz'][nSV] = abs(secondary.vz()-pv_pos.z())
-                SV_level_var_array['log10vtxdxy'][nSV] = log10(sqrt(pow((secondary.vx()-pv_pos.x()),2)+pow((secondary.vy()-pv_pos.y()),2))+0.00001)
-                SV_level_var_array['log10vtxdz'][nSV] = log10(sqrt(pow((secondary.vz()-pv_pos.z()),2))+0.00001)
+
                 SV_level_var_array['deltaEtaPVVtxToTrack_High'][nSV] = abs(trackHigh.eta()-PVVtx.Eta())
                 SV_level_var_array['deltaEtaPVVtxToTrack_Low'][nSV] = abs(trackLow.eta()-PVVtx.Eta())
                 SV_level_var_array['deltaEtaPVVtxToTrackSum'][nSV] = summedTracks.Eta()-PVVtx.Eta()
