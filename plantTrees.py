@@ -9,7 +9,7 @@ Runs over AOD files and writes file with histos and tree.
 python plantTrees.py inputFiles="file1, file2,..." tag="tag1 tag2 ..."
 
 minimal example: 
-python plantTrees.py inputFiles="/nfs/dust/cms/user/tewsalex/CMSSW_10_5_0/src/rootfiles/forDeveloping_slimmededm_mChipm115GeV_dm0p77GeV_pu35_v1.root" tag="test, local, era16_07Aug17 Signal skipSVs"
+python plantTrees.py inputFiles="/pnfs/desy.de/cms/tier2/store/user/sbein/CommonSamples/RadiativeMu_2016Fast/v2/higgsino94x_susyall_mChipm115GeV_dm0p77GeV_pu35_part22of25.root" tag="test, local, era16_07Aug17, Signal, skipSVs"
 python plantTrees.py inputFiles="/nfs/dust/cms/user/wolfmor/testsamples/ZJetsToNuNu_Zpt-200toInf/B044CEA0-F8C9-E611-8F67-0CC47AD990C4.root" tag="test, local, era16_07Aug17"
 ----------------------------------------------------------------------
 
@@ -66,17 +66,19 @@ ROOT.gSystem.Load('libDataFormatsFWLite.so')
 ROOT.FWLiteEnabler.enable()
 
 from ROOT import gROOT, gSystem, FWLiteEnabler, TFile, TH1F, TMath, TLorentzVector, TH2F, TTree, TVector3, TRandom, TCanvas, TLegend, TColor, TEfficiency, Math, TMVA
-from math import ceil, log10, fabs, sqrt, acos, cos, asin, degrees, sin, pi
+from math import ceil,  fabs, sqrt, acos, cos, asin, degrees, sin, pi
 import random
 import re
+import sys
 
 from DataFormats.FWLite import Events, Lumis, Handle
 from FWCore.ParameterSet.VarParsing import VarParsing
 
-from DataFormats.Candidate import VertexCompositeCandidate
+from DataFormats.Candidate import *
+#from DataFormats.Candidate import VertexCompositeCandidate
 from commons import *
 from commons_Alex import findMatch_tracktrack_new, findMinDr_track, calcIso_vtx, matchToMuon, calcIso_track, calcIso_jet, findMinDr_ancestors, findMatch_ancestor_new, findMinDr
-
+from copy import copy, deepcopy
 
 def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet):
     """DY cleaning: replace leptons with "neutrinos" and update collections: clean jets, tracks, pfcands and adapt MET.
@@ -206,7 +208,7 @@ saveOutputFile = True
 if 'test' in options.tag: isTest = True
 else: isTest = False
 nEventsTest = 100 # number of events that are analyzed in case of test
-printevery = 100
+printevery = 1
 
 # TODO: check thresholds for "new" matching
 matchingDrThreshold = 0.05
@@ -838,6 +840,8 @@ if True:
         
     SV_level_var_names = [
         ('isSignal','I'),
+        ('vtxDCA','I'),
+        ('numberofdaughters','I'),
         ('log10vtxChi2','F'), ('vtxChi2Ndof','F'), ('vtxVx','F'), ('vtxVy','F'), ('vtxVz','F'), 
         ('log10vtxdxy','F'), ('log10vtxdz','F'), ('vtxdx','F'), ('vtxdy','F'), ('vtxdz','F'), 
         ('vtxiso','F'), ('vtxdrmin','F'), ('vtxnumneighbours','I'),
@@ -926,6 +930,12 @@ if True:
         else: SV_level_var_array[n[0]] = array('f', 500*[0.])
         tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv]/F')
 
+    sv_vars = {}
+    for n in SV_level_var_names:
+        if 'max50SVs' in options.tag: sv_vars[n[0]] = array('f', 51*[0.])
+        else: sv_vars[n[0]] = array('f', 500*[0.])    
+    
+    
     var_names_sv_resolution = [
         ('res_vx', 'F'),('res_vy', 'F'),('res_vz', 'F'),
         ('res_dx', 'F'),('res_dy', 'F'),('res_dz', 'F'),
@@ -1242,8 +1252,8 @@ label_dca = ('SecondaryVerticesFromLooseTracks','DcaKshort', 'SVS')
 handle_mva = Handle("std::vector<float>")
 label_mva = ('TrackTag1', 'mvaScore', 'SVS')
 
-handle_selected_tracks = Handle("std::vector<reco::Track>")
-label_selected_tracks = ('TrackTag1' , 'selectedTracks', 'SVS')
+handle_selected_tracks = Handle("std::vector<int>")
+label_selected_tracks = ('TrackTag1' , 'selectedTrackIDs', 'SVS')
 
 
 runs = {}
@@ -1251,33 +1261,35 @@ lastlumi = -1
 lastrun = -1
 
 
-
 '''
 ###############################################################################################
-# Read file with secondary vertices
+# start with SV files
 ###############################################################################################
 '''
+    
 if not 'skipSVs' in options.tag:
+    
     localpath = '/nfs/dust/cms/user/tewsalex/CMSSW_10_2_18/src/'
-    vertexfiles = [None]*len(options.inputFiles)
-    vertices = np.array([None]*len(options.inputFiles))
 
+    filesWithSV = np.array([None]*len(options.inputFiles))
+    filesWithTrackID = np.array([None]*len(options.inputFiles))
+    filesWithDCA = np.array([None]*len(options.inputFiles))
+    filesWithMVA = np.array([None]*len(options.inputFiles))
+    
     for ifile, f in enumerate(options.inputFiles):
         
         vertexfile = localpath+f.split("/")[-2]+"_"+f.split("/")[-1]
-        vertexfiles[ifile] = vertexfile
 
-    print ''
-    print 'n input filesn with vertices: ' + str(len(vertexfiles))
-
-    for ifile, f in enumerate(vertexfiles):
-        print ''
-        print f
-        
+        '''
+        ###############################################################################################
+        # get sv-level info
+        ###############################################################################################
+        '''
         if 'local' in options.tag:
 
-            fname = f.strip()
-            fin = ROOT.TFile.Open(fname)
+            v_fname = vertexfile.strip()
+            v_fin = ROOT.TFile.Open(v_fname)
+            print vertexfile
 
         else:
 
@@ -1285,78 +1297,89 @@ if not 'skipSVs' in options.tag:
             if 'redirinfn' in options.tag: redir = 'xrootd-cms.infn.it'
             if 'redirfnal' in options.tag: redir = 'cmsxrootd.fnal.gov'
 
-            fname = 'root://' + redir + '/' + f.strip()
-            fin = ROOT.TFile.Open(fname)
+            v_fname = 'root://' + redir + '/' + vertexfile.strip()
+            v_fin = ROOT.TFile.Open(v_fname)
 
             retry = 1
-            while not fin or fin.IsZombie() or not fin.IsOpen():
+            while not v_fin or v_fin.IsZombie() or not v_fin.IsOpen():
 
                 print 'retry open file ', retry
 
                 retry += 1
                 if retry > 5: break
 
-                fin = ROOT.TFile.Open('root://' + redir + '/' + f.strip())
+                v_fin = ROOT.TFile.Open('root://' + redir + '/' + vertexfile.strip())
 
-        events = Events(fin)
-        nevents = events.size()
-        
-        vertices[ifile] = [None]*nevents
-        print '### with ' + str(nevents) + ' events'
-        print '### printing every ' + str(printevery) + '. event'
+        v_events = Events(v_fin)
+        v_nevents = v_events.size()
+        filesWithSV[ifile] = np.array([None]*v_events.size())
+        filesWithTrackID[ifile] = np.array([None]*v_events.size())
+        filesWithDCA[ifile] = np.array([None]*v_events.size())
+        filesWithMVA[ifile] = np.array([None]*v_events.size())
 
-        if saveOutputFile: fout.cd()
-
-        nEventsPerFile = 0
-
-        phifirsttrack = 0
-        etafirsttrack = 0
-
-        if 'pmssm' in options.tag:
-            lumis = Lumis(fname)
-            pMSSMname = ''
-            pMSSMid1 = -1
-            pMSSMid2 = -1
-
-        # event loop
-        for ievent, event in enumerate(events):
-
-            if isTest and ievent >= nEventsTest:
+        for v_ievent, v_event in enumerate(v_events):
+            
+            if isTest and v_ievent >= nEventsTest:
                 print 'nEventsTest boundary'
                 break
+                               
+            ### get collections for same event
+            v_event.getByLabel(label_sv, handle_sv)
+            v_event.getByLabel(label_dca, handle_dca)
+            v_event.getByLabel(label_mva, handle_mva)
+            v_event.getByLabel(label_selected_tracks, handle_selected_tracks)
 
-            if 'local' not in options.tag:
-                if fin.IsZombie() or not fin.IsOpen():
-                    print 'file not usable'
-                    sys.exit(1)
-
-            if saveOutputFile and ievent % 100 == 0: fout.Write('', ROOT.TObject.kWriteDelete)
-
-            if ievent % printevery == 0: print 'analyzing event %d of %d' % (ievent, nevents)
-            
-            event.getByLabel(label_sv, handle_sv)
-            event.getByLabel(label_dca, handle_dca)
-            event.getByLabel(label_mva, handle_mva)
-            event.getByLabel(label_selected_tracks, handle_selected_tracks)
-            
             secondaryVertices = handle_sv.product()
             dcas = handle_dca.product()
             mvaScores = handle_mva.product()
-            selctedTracks = handle_selected_tracks.product()
+            selectedTrackIDs = handle_selected_tracks.product()
+
+            filesWithSV[ifile][v_ievent] = np.array([None]*secondaryVertices.size())
+            filesWithTrackID[ifile][v_ievent] = np.array([-1.]*selectedTrackIDs.size())
+            filesWithDCA[ifile][v_ievent] = np.array([-1.]*dcas.size())
+            filesWithMVA[ifile][v_ievent] = np.array([-1.]*mvaScores.size())
             
-            vertices[ifile][ievent] = [None]*len(secondaryVertices)
+            dca = 0.0
             
             for nSV, secondary in enumerate(secondaryVertices):
                 
-                 (reco::VertexCompositeCandidate) fwliteSV = (reco::VertexCompositeCandidate) secondary
-                 vertices[ifile][ievent][nSV] = fwliteSV
+                filesWithSV[ifile][v_ievent][nSV] = deepcopy(secondary)
+                dca = float(dcas[nSV])
+                filesWithDCA[ifile][v_ievent][nSV] = dca
+                #print "file ", ifile, "event ", v_ievent, "SV", nSV,  "dca", dca, filesWithDCA[ifile][v_ievent][nSV]
                 
-            nEventsPerFile += 1
+            for idx, index in enumerate(selectedTrackIDs):
                 
+                filesWithTrackID[ifile][v_ievent][idx] = index
+                filesWithMVA[ifile][v_ievent][idx] = mvaScores[idx]
+                #print "file ", ifile, "event ", v_ievent, "selected track", idx, "track ID ", index, filesWithTrackID[ifile][v_ievent][idx]
+
+    print "----------Finished loop over SV files----------------"
 
 
+if 'debug' in options.tag:
+    for ifile , afile in enumerate(filesWithSV):
+        #print 'File loop ', ifile, afile
+        for ievent, event in enumerate(filesWithSV[ifile]):
+            
+            if isTest and ievent >= nEventsTest:
+                print 'nEventsTest boundary'
+                break
+            #print 'Event loop', ievent, event
+            
+            #for isv, sv in enumerate(filesWithSV[ifile][ievent]):
+                #print 'file', ifile, 'event', ievent, 'SV loop', isv, sv.vx()
+                
+            for isv, sv in enumerate(filesWithDCA[ifile][ievent]):
+                print 'file', ifile, 'event', ievent, 'DCA loop', isv, ' DCA', sv
+#sys.exit()
+'''
+###############################################################################################
+# start with AOD files 
+###############################################################################################
+'''
 
-# ########################################################################################### start with AOD files here
+print "----------Start loop over AOD files----------------"
 print ''
 print 'n input files: ' + str(len(options.inputFiles))
 
@@ -1421,6 +1444,7 @@ for ifile, f in enumerate(options.inputFiles):
         pMSSMname = ''
         pMSSMid1 = -1
         pMSSMid2 = -1
+        
 
     '''
     ###############################################################################################
@@ -1429,7 +1453,7 @@ for ifile, f in enumerate(options.inputFiles):
     '''
 
     for ievent, event in enumerate(events):
-
+            
         if isTest and ievent >= nEventsTest:
             print 'nEventsTest boundary'
             break
@@ -1688,22 +1712,24 @@ for ifile, f in enumerate(options.inputFiles):
         event.getByLabel(label_taudiscriminatorMuonRej, handle_taudiscriminatorMuonRej)
         taudiscriminatorMuonRej = handle_taudiscriminatorMuonRej.product()
 
-        tauswithdiscriminators = [
-            (tau, taudiscriminatorDM.value(itau)
-                , taudiscriminatorMVAraw.value(itau)
-                , taudiscriminatorMVA_VLoose.value(itau)
-                , taudiscriminatorMVA_Loose.value(itau)
-                , taudiscriminatorMVA_Medium.value(itau)
-                , taudiscriminatorMVA_Tight.value(itau)
-                , taudiscriminatorMVA_VTight.value(itau)
-                , taudiscriminatorMVA_VVTight.value(itau)
-                , taudiscriminatorElectronRej.value(itau)
-                , taudiscriminatorMuonRej.value(itau)
-                , taudiscriminatorDM.key(itau).get().pt()
-                , taudiscriminatorMVAraw.key(itau).get().pt()
-                , taudiscriminatorMVA_VLoose.key(itau).get().pt())
-            for itau, tau in enumerate(taus)
-        ]
+### ask Moritz
+        tauswithdiscriminators = []
+        # tauswithdiscriminators = [
+            # (tau, taudiscriminatorDM.value(itau)
+                # , taudiscriminatorMVAraw.value(itau)
+                # , taudiscriminatorMVA_VLoose.value(itau)
+                # , taudiscriminatorMVA_Loose.value(itau)
+                # , taudiscriminatorMVA_Medium.value(itau)
+                # , taudiscriminatorMVA_Tight.value(itau)
+                # , taudiscriminatorMVA_VTight.value(itau)
+                # , taudiscriminatorMVA_VVTight.value(itau)
+                # , taudiscriminatorElectronRej.value(itau)
+                # , taudiscriminatorMuonRej.value(itau)
+                # , taudiscriminatorDM.key(itau).get().pt()
+                # , taudiscriminatorMVAraw.key(itau).get().pt()
+                # , taudiscriminatorMVA_VLoose.key(itau).get().pt())
+            # for itau, tau in enumerate(taus)
+        # ]
 
         # first dummy entry needed for jitted jet iso calculation function
         btagvalues = [(-2., 0., 0.)]
@@ -2231,8 +2257,9 @@ for ifile, f in enumerate(options.inputFiles):
         cutflow = 8
         hCutflow.Fill(cutflow)
 
-
-        chpfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_chpf(p, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.)])
+        ## ask Moritz
+        #chpfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_chpf(p, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.)])
+        chpfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_pf(p, pt_threshold=0.)])
         pfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_pf(p, pt_threshold=0.)])
         jetsforiso15 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets if passesPreselection_iso_jet(j, pt_threshold=15.)])
 
@@ -2772,14 +2799,14 @@ for ifile, f in enumerate(options.inputFiles):
             chiN2numdaughters = len(n2daughters)
             numchidaughters = chipmnumdaughters + chiN2numdaughters
             for ichid, chid in enumerate(c1daughters + n2daughters):
+                ### ask Moritz
+                #chidaughter_var_array['chiDaughter_pdgIdMother'][ichid] = chid.mother(0).pdgId()
+                #chidaughter_var_array['chiDaughter_pdgId'][ichid] = chid.pdgId()
+                #chidaughter_var_array['chiDaughter_pt'][ichid] = chid.pt()
+                #chidaughter_var_array['chiDaughter_eta'][ichid] = chid.eta()
+                #chidaughter_var_array['chiDaughter_phi'][ichid] = chid.phi()
 
-                chidaughter_var_array['chiDaughter_pdgIdMother'][ichid] = chid.mother(0).pdgId()
-                chidaughter_var_array['chiDaughter_pdgId'][ichid] = chid.pdgId()
-                chidaughter_var_array['chiDaughter_pt'][ichid] = chid.pt()
-                chidaughter_var_array['chiDaughter_eta'][ichid] = chid.eta()
-                chidaughter_var_array['chiDaughter_phi'][ichid] = chid.phi()
-
-                chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 0
+                #chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 0
                 
                 if chid.charge() != 0:
 
@@ -2788,7 +2815,7 @@ for ifile, f in enumerate(options.inputFiles):
                     if not idxchid == -1:
                         if drminchid < matchingDrThreshold and dxyzminchid < matchingDxyzThreshold:
                             susytracks[idxchid] = (chid.mother(0).pdgId(), chid.pdgId())
-                            chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 1
+                            #chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 1
 
 
             stops = [gp for gp in genparticles if gp.isLastCopy() and gp.pdgId() == 1000006]
@@ -3428,21 +3455,23 @@ for ifile, f in enumerate(options.inputFiles):
         ###############################################################################################
         '''
         
-        numsvsfinalpreselection = 0
 
-        if not 'skipSVs' in options.tag: 
+        if not 'skipSVs' in options.tag:
             
-            secondaryVertices = vertices[ifile][ievent]
+            numtrackspreselection = 0
+            n_selTracks = len(filesWithTrackID[ifile][ievent])
+            selectedTracks = np.array([None]*len(filesWithTrackID[ifile][ievent]))
+            
+            for idx, index in enumerate(filesWithTrackID[ifile][ievent]):
+                selectedTracks[idx]=deepcopy(tracks[int(index)])
 
+            numsvsfinalpreselection = 0  
             
-            #event_level_var_array['numSVs'][0] = secondaryVertices.size()
-            event_level_var_array['n_sv_total'][0] = len(secondaryVertices)
-                
-            for nSV, secondary in enumerate(secondaryVertices):
-                
-                print nSV, secondary
-                continue
-                
+            n_sv_total = len(filesWithSV[ifile][ievent]) 
+            numSVs = len(filesWithSV[ifile][ievent]) 
+
+            for nSV, secondary in enumerate(filesWithSV[ifile][ievent]):
+
                 isSignal = 0
                 proceed = False	
                 
@@ -3459,54 +3488,65 @@ for ifile, f in enumerate(options.inputFiles):
                 
                 matchingTrk = [None, None]
                 matchingTrkIdx = [None, None]
-                
+
                 SV_level_var_array['isSignal'][nSV] = isSignal
-                SV_level_var_array['log10vtxChi2'][nSV] = log10(secondary.vertexChi2())
-                SV_level_var_array['vtxChi2Ndof'][nSV] = log10(secondary.vertexNormalizedChi2())
+                SV_level_var_array['vtxDCA'][nSV] = filesWithDCA[ifile][ievent][nSV]
+                SV_level_var_array['log10vtxChi2'][nSV] = ROOT.TMath.Log10(secondary.vertexChi2())
+                SV_level_var_array['vtxChi2Ndof'][nSV] = ROOT.TMath.Log10(secondary.vertexNormalizedChi2())
                 SV_level_var_array['vtxVx'][nSV] = secondary.vx()
                 SV_level_var_array['vtxVy'][nSV] = secondary.vy()
                 SV_level_var_array['vtxVz'][nSV] = secondary.vz()
                 SV_level_var_array['vtxdx'][nSV] = abs(secondary.vx()-pv_pos.x())
                 SV_level_var_array['vtxdy'][nSV] = abs(secondary.vy()-pv_pos.y())
                 SV_level_var_array['vtxdz'][nSV] = abs(secondary.vz()-pv_pos.z())
-                SV_level_var_array['log10vtxdxy'][nSV] = log10(sqrt(pow((secondary.vx()-pv_pos.x()),2)+pow((secondary.vy()-pv_pos.y()),2))+0.00001)
-                SV_level_var_array['log10vtxdz'][nSV] = log10(sqrt(pow((secondary.vz()-pv_pos.z()),2))+0.00001)
+                SV_level_var_array['log10vtxdxy'][nSV] = ROOT.TMath.Log10(sqrt(pow((secondary.vx()-pv_pos.x()),2)+pow((secondary.vy()-pv_pos.y()),2))+0.00001)
+                SV_level_var_array['log10vtxdz'][nSV] = ROOT.TMath.Log10(sqrt(pow((secondary.vz()-pv_pos.z()),2))+0.00001)
+                SV_level_var_array['numberofdaughters'][nSV] = secondary.numberOfDaughters()
                 
                 ### find matching tracks
-                if False: 
 
-                    for k in range(secondary.numberOfDaughters()):
-                        
-                        if 'debug' in options.tag: print "SV no. ", j, "daughter no. ", k, " charge ", secondary.daughter(k).charge()
-                        
-                        idxHelical[k], dxyzmin[k], tmin[k], drmin[k] = findMatch_tracktrack_new(secondary.daughter(k), selctedTracks)
-                        _, ClassicIdx[k], ClassicDrmin[k], _ = findMinDr_track(secondary.daughter(k), selctedTracks, 20.)	
-                                
-                        if ((ClassicDrmin[0]<0.02) and (ClassicDrmin[1]<0.02)):
+                for k in range(secondary.numberOfDaughters()):
+                    
+                    if 'debug' in options.tag: print "SV no. ", nSV, "daughter no. ", k, " charge ", secondary.daughter(k).charge()
+                    
+                    idxHelical[k], dxyzmin[k], tmin[k], drmin[k] = findMatch_tracktrack_new(secondary.daughter(k), selectedTracks)
+                    _, ClassicIdx[k], ClassicDrmin[k], _ = findMinDr_track(secondary.daughter(k), selectedTracks, 20.)
+                    
+                    if 'debug' in options.tag: print "matching", idxHelical[k], dxyzmin[k], tmin[k], drmin[k]
+                    if 'debug' in options.tag: print "matching", ClassicIdx[k], ClassicDrmin[k]
+                    
                             
-                            for i, idx in enumerate(ClassicIdx):
-                                matchingTrk[i] = selctedTracks[idx]
-                                matchingTrkIdx[i] = idx 
-                                
-                                
-                            if 'signal' in options.tag:
-                                if ClassicIdx[0] in signalTrkIdx and ClassicIdx[1] in signalTrkIdx:
-                                    if 'debug' in options.tag:print '---------------------'
-                                    if 'debug' in options.tag:print 'is Signal SV'
-                                    if 'debug' in options.tag:print '---------------------'
-                                    isSignal = 1
-                                    hasSignalSV = 1
-                                    signalIdx = nSV
+                    if ((ClassicDrmin[0]<0.02) and (ClassicDrmin[1]<0.02)):
+                        
+                        
+                        if 'debug' in options.tag: print "classic match"
+                        
+                        for i, idx in enumerate(ClassicIdx):
+                            matchingTrk[i] = selectedTracks[idx]
+                            matchingTrkIdx[i] = idx 
+                            
+                            
+                        if 'signal' in options.tag:
+                            if ClassicIdx[0] in signalTrkIdx and ClassicIdx[1] in signalTrkIdx:
+                                if 'debug' in options.tag:print '---------------------'
+                                if 'debug' in options.tag:print 'is Signal SV'
+                                if 'debug' in options.tag:print '---------------------'
+                                isSignal = 1
+                                hasSignalSV = 1
+                                signalIdx = nSV
 
-                                else:
-                                    if 'debug' in options.tag:print '---------------------'
-                                    if 'debug' in options.tag:print 'is Back SV'
-                                    if 'debug' in options.tag:print '---------------------'
+                            else:
+                                if 'debug' in options.tag:print '---------------------'
+                                if 'debug' in options.tag:print 'is Back SV'
+                                if 'debug' in options.tag:print '---------------------'
 
 
                         elif ((dxyzmin[0]<0.04 and drmin[0]<0.02) and (dxyzmin[1]<0.04 and drmin[1]<0.02)):
+                            
+                            if 'debug' in options.tag: print "dxyz match"
+                            
                             for i, idx in enumerate(idxHelical):
-                                matchingTrk[i] = selctedTracks[idx]
+                                matchingTrk[i] = selectedTracks[idx]
                                 matchingTrkIdx[i] = idx 
                             
                             if 'signal' in options.tag:
@@ -3523,8 +3563,6 @@ for ifile, f in enumerate(options.inputFiles):
                                     if 'debug' in options.tag:print 'is Back SV'
                                     if 'debug' in options.tag:print '---------------------'
 
-                
-
 
                 ######################################
                 #### "filling tree on SV level"
@@ -3536,7 +3574,8 @@ for ifile, f in enumerate(options.inputFiles):
                     else: 
                         SV_level_var_array['hasTrackMatch_Low'][nSV] = 0
                         SV_level_var_array['hasTrackMatch_High'][nSV] = 1
-                    
+                        
+                    numsvsfinalpreselection += 1
                     continue
                     
                 SV_level_var_array['hasTrackMatch_Low'][nSV] = 1
@@ -3618,7 +3657,7 @@ for ifile, f in enumerate(options.inputFiles):
                 theta = asin((v_pZstar_reco.Cross(normalvector_reco)).Mag()/(v_pZstar_reco.Mag()))
                 SV_level_var_array['theta_reco'][nSV] = degrees(theta)
                 SV_level_var_array['error_mtransverse2_reco_muon'][nSV] = pow(mZstar_reco_muoncase*mZstar_reco_muoncase+pow(v_pZstar_reco.Mag(),2)*pow(sin(theta),2),-1/2)*sin(theta)*cos(theta)*pow(v_pZstar_reco.Mag(),2)
-     
+
                 track1E_electroncase =TMath.Sqrt(pow(TLV1.Px(),2)+pow(TLV1.Py(),2)+pow(TLV1.Pz(),2) + muonmass2)
                 track2E_electroncase =TMath.Sqrt(pow(TLV2.Px(),2)+pow(TLV2.Py(),2)+pow(TLV2.Pz(),2) + muonmass2)
 
@@ -3636,19 +3675,19 @@ for ifile, f in enumerate(options.inputFiles):
                 SV_level_var_array['IPxyz_Low'][nSV] = ip_Low.getIP()
                 SV_level_var_array['IPxy_Low'][nSV] = ip_Low.getDxy()
                 SV_level_var_array['IPz_Low'][nSV] = ip_Low.getDz()
-                SV_level_var_array['log10IPsignificance_Low'][nSV] = log10(ip_Low.getIPsignificance())
-                SV_level_var_array['log10IPxyz_Low'][nSV] = log10(ip_Low.getIP())
-                SV_level_var_array['log10IPxy_Low'][nSV] = log10( ip_Low.getDxy())
-                SV_level_var_array['log10IPz_Low'][nSV] = log10(ip_Low.getDz())
+                SV_level_var_array['log10IPsignificance_Low'][nSV] = ROOT.TMath.Log10(ip_Low.getIPsignificance())
+                SV_level_var_array['log10IPxyz_Low'][nSV] = ROOT.TMath.Log10(ip_Low.getIP())
+                SV_level_var_array['log10IPxy_Low'][nSV] = ROOT.TMath.Log10( ip_Low.getDxy())
+                SV_level_var_array['log10IPz_Low'][nSV] = ROOT.TMath.Log10(ip_Low.getDz())
 
                 SV_level_var_array['IPsignificance_High'][nSV] = ip_High.getIPsignificance()
                 SV_level_var_array['IPxyz_High'][nSV] = ip_High.getIP()
                 SV_level_var_array['IPxy_High'][nSV] = ip_High.getDxy()
                 SV_level_var_array['IPz_High'][nSV] = ip_High.getDz()
-                SV_level_var_array['log10IPsignificance_High'][nSV] = log10(ip_High.getIPsignificance())
-                SV_level_var_array['log10IPxyz_High'][nSV] = log10(ip_High.getIP())
-                SV_level_var_array['log10IPxy_High'][nSV] = log10(ip_High.getDxy())
-                SV_level_var_array['log10IPz_High'][nSV] = log10(ip_High.getDz())
+                SV_level_var_array['log10IPsignificance_High'][nSV] = ROOT.TMath.Log10(ip_High.getIPsignificance())
+                SV_level_var_array['log10IPxyz_High'][nSV] = ROOT.TMath.Log10(ip_High.getIP())
+                SV_level_var_array['log10IPxy_High'][nSV] = ROOT.TMath.Log10(ip_High.getDxy())
+                SV_level_var_array['log10IPz_High'][nSV] = ROOT.TMath.Log10(ip_High.getDz())
 
                 
                 minipPU_Low = None
@@ -3679,10 +3718,10 @@ for ifile, f in enumerate(options.inputFiles):
                     SV_level_var_array['IPxyzPU_Low'][nSV] = minipPU_Low.getIP()
                     SV_level_var_array['IPxyPU_Low'][nSV] = minipPU_Low.getDxy()
                     SV_level_var_array['IPzPU_Low'][nSV] = minipPU_Low.getDz()
-                    SV_level_var_array['log10IPsignificancePU_Low'][nSV] = log10(minipPU_Low.getIPsignificance())
-                    SV_level_var_array['log10IPxyzPU_Low'][nSV] = log10(minipPU_Low.getIP())
-                    SV_level_var_array['log10IPxyPU_Low'][nSV] = log10(minipPU_Low.getDxy())
-                    SV_level_var_array['log10IPzPU_Low'][nSV] = log10(minipPU_Low.getDz())
+                    SV_level_var_array['log10IPsignificancePU_Low'][nSV] = ROOT.TMath.Log10(minipPU_Low.getIPsignificance())
+                    SV_level_var_array['log10IPxyzPU_Low'][nSV] = ROOT.TMath.Log10(minipPU_Low.getIP())
+                    SV_level_var_array['log10IPxyPU_Low'][nSV] = ROOT.TMath.Log10(minipPU_Low.getDxy())
+                    SV_level_var_array['log10IPzPU_Low'][nSV] = ROOT.TMath.Log10(minipPU_Low.getDz())
 
                 
                 if not minivPU_High == -1:
@@ -3691,10 +3730,10 @@ for ifile, f in enumerate(options.inputFiles):
                     SV_level_var_array['IPxyzPU_High'][nSV] = minipPU_High.getIP()
                     SV_level_var_array['IPxyPU_High'][nSV] = minipPU_High.getDxy()
                     SV_level_var_array['IPzPU_High'][nSV] = minipPU_High.getDz()
-                    SV_level_var_array['log10IPsignificancePU_High'][nSV] = log10(minipPU_High.getIPsignificance())
-                    SV_level_var_array['log10IPxyzPU_High'][nSV] = log10(minipPU_High.getIP())
-                    SV_level_var_array['log10IPxyPU_High'][nSV] = log10(minipPU_High.getDxy())
-                    SV_level_var_array['log10IPzPU_High'][nSV] = log10(minipPU_High.getDz())
+                    SV_level_var_array['log10IPsignificancePU_High'][nSV] = ROOT.TMath.Log10(minipPU_High.getIPsignificance())
+                    SV_level_var_array['log10IPxyzPU_High'][nSV] = ROOT.TMath.Log10(minipPU_High.getIP())
+                    SV_level_var_array['log10IPxyPU_High'][nSV] = ROOT.TMath.Log10(minipPU_High.getDxy())
+                    SV_level_var_array['log10IPzPU_High'][nSV] = ROOT.TMath.Log10(minipPU_High.getDz())
 
                 
                 mounMatch_Low, mounDR_Low = matchToMuon(trackLow, muons)
@@ -3753,14 +3792,14 @@ for ifile, f in enumerate(options.inputFiles):
                     
                 SV_level_var_array['eta_Low'][nSV] = trackLow.eta()
                 SV_level_var_array['pt_Low'][nSV] = trackLow.pt()
-                SV_level_var_array['log10PttrackerrorPttrack_Low'][nSV] =log10(fabs((trackLow.ptError())/(trackLow.pt())))
-                SV_level_var_array['log10dxy_Low'][nSV] = log10(fabs(trackLow.dxy(pv_pos)))
-                SV_level_var_array['log10dz_Low'][nSV] = log10(fabs(trackLow.dz(pv_pos)))
-                SV_level_var_array['log10dxyerrorDxy_Low'][nSV] = log10(fabs(trackLow.dxyError()/trackLow.dxy()))
-                SV_level_var_array['log10dzerrorDz_Low'][nSV] = log10(fabs(trackLow.dzError()/trackLow.dz()))
+                SV_level_var_array['log10PttrackerrorPttrack_Low'][nSV] =ROOT.TMath.Log10(fabs((trackLow.ptError())/(trackLow.pt())))
+                SV_level_var_array['log10dxy_Low'][nSV] = ROOT.TMath.Log10(fabs(trackLow.dxy(pv_pos)))
+                SV_level_var_array['log10dz_Low'][nSV] = ROOT.TMath.Log10(fabs(trackLow.dz(pv_pos)))
+                SV_level_var_array['log10dxyerrorDxy_Low'][nSV] = ROOT.TMath.Log10(fabs(trackLow.dxyError()/trackLow.dxy()))
+                SV_level_var_array['log10dzerrorDz_Low'][nSV] = ROOT.TMath.Log10(fabs(trackLow.dzError()/trackLow.dz()))
                 SV_level_var_array['nvalidhits_Low'][nSV] = trackLow.numberOfValidHits()
                 SV_level_var_array['absChi2_Low'][nSV] = abs(trackLow.normalizedChi2())
-                SV_level_var_array['mvaSingle_Low'][nSV] = mvaScores[idxLow]
+                SV_level_var_array['mvaSingle_Low'][nSV] =filesWithMVA[ifile][ievent][idxLow]
                 SV_level_var_array['quality_Low'][nSV] = 10
                 for i in range(8):
                     if trackLow.quality(i): SV_level_var_array['quality_Low'][nSV] = i
@@ -3770,14 +3809,14 @@ for ifile, f in enumerate(options.inputFiles):
                 
                 SV_level_var_array['eta_High'][nSV] = trackHigh.eta()
                 SV_level_var_array['pt_High'][nSV] = trackHigh.pt()
-                SV_level_var_array['log10PttrackerrorPttrack_High'][nSV] =log10(fabs((trackHigh.ptError())/(trackHigh.pt())))
-                SV_level_var_array['log10dxy_High'][nSV] = log10(fabs(trackHigh.dxy(pv_pos)))
-                SV_level_var_array['log10dxyerrorDxy_High'][nSV] = log10(fabs(trackHigh.dxyError()/trackHigh.dxy()))
-                SV_level_var_array['log10dzerrorDz_High'][nSV] = log10(fabs(trackHigh.dzError()/trackHigh.dz()))
-                SV_level_var_array['log10dz_High'][nSV] = log10(fabs(trackHigh.dz(pv_pos)))
+                SV_level_var_array['log10PttrackerrorPttrack_High'][nSV] =ROOT.TMath.Log10(fabs((trackHigh.ptError())/(trackHigh.pt())))
+                SV_level_var_array['log10dxy_High'][nSV] = ROOT.TMath.Log10(fabs(trackHigh.dxy(pv_pos)))
+                SV_level_var_array['log10dxyerrorDxy_High'][nSV] = ROOT.TMath.Log10(fabs(trackHigh.dxyError()/trackHigh.dxy()))
+                SV_level_var_array['log10dzerrorDz_High'][nSV] = ROOT.TMath.Log10(fabs(trackHigh.dzError()/trackHigh.dz()))
+                SV_level_var_array['log10dz_High'][nSV] = ROOT.TMath.Log10(fabs(trackHigh.dz(pv_pos)))
                 SV_level_var_array['nvalidhits_High'][nSV] = trackHigh.numberOfValidHits()
                 SV_level_var_array['absChi2_High'][nSV] = abs(trackHigh.normalizedChi2())
-                SV_level_var_array['mvaSingle_High'][nSV] = mvaScores[idxHigh]
+                SV_level_var_array['mvaSingle_High'][nSV] = filesWithMVA[ifile][ievent][idxHigh]
                 SV_level_var_array['quality_High'][nSV] = 10
 
                 for i in range(8):
@@ -3821,7 +3860,7 @@ for ifile, f in enumerate(options.inputFiles):
                     numDaughtersOfMother_new = [-1, -1]
                     ignoreIndices = []
                     
-                    if not isSignal and  j != signalIdx:
+                    if not isSignal and  nSV != signalIdx:
                         
                         if secondary.numberOfDaughters()> 2: continue
                         
@@ -3835,7 +3874,7 @@ for ifile, f in enumerate(options.inputFiles):
                                     
                                     idxGP[1],  pdgIds[1], pdgIdsMother[1], drminGP[1], tlvMother[1], hasEWancestors[1], numDaughtersOfMother[1]  = findMinDr_ancestors(secondary.daughter(1),genparticles,  ignoreIndices)
                                     idxGP_new[1], dxyzmin[1], pdgIds_new[1], pdgIdsMother_new[1], drminGP_new[1], tlvMother_new[1], hasEWancestors_new[1], numDaughtersOfMother_new[1]= findMatch_ancestor_new(secondary.daughter(1),genparticles, ignoreIndices)
-         
+
                         ### else if 2nd is higher inpt, put 2nd at 1st position
                         else:
                             idxGP[1],  pdgIds[1], pdgIdsMother[1], drminGP[1] , tlvMother[1], hasEWancestors[1], numDaughtersOfMother[1] = findMinDr_ancestors(secondary.daughter(0),genparticles, ignoreIndices)
@@ -3895,7 +3934,7 @@ for ifile, f in enumerate(options.inputFiles):
                                     SV_level_var_array['pdgID_Low'][nSV] = abs(pdgIds_new[1])
                                     SV_level_var_array['pdgID_High'][nSV] = abs(pdgIds_new[0])
                                     SV_level_var_array['numDaughtersOfMother_Low'][nSV] = abs(numDaughtersOfMother_new[1])
-     
+
                                 else: 
                                     SV_level_var_array['hasGenMatchWithSameMother'][nSV] = 0	
                                     SV_level_var_array['pdgIDMother_Low'][nSV] = abs(pdgIdsMother_new[1])
@@ -3955,15 +3994,16 @@ for ifile, f in enumerate(options.inputFiles):
                             event_level_var_array['res_ncrossn'][0] = (normalvector.Cross(normalvector_reco)).Mag()
                             event_level_var_array['res_alphan'][0] = asin((normalvector.Cross(normalvector_reco).Mag()))
                             event_level_var_array['res_mtransverse2'][0] = mtransverse2 - mtransverse2_reco_muoncase
-                            event_level_var_array['res_mtransverse'][0] = sqrt(mtransverse2)- sqrt(mtransverse2_reco_muoncase)
+                            event_level_var_array['res_mtransverse'][0] = sqrt(mtransverse2)- sqrt(mtransverse2_reco_muoncase)    
+
+
 
                 numsvsfinalpreselection += 1
-            
-            event_level_var_array['n_sv'][0] = numsvsfinalpreselection
 
+        event_level_var_array['n_sv'][0] = numsvsfinalpreselection
+        event_level_var_array['numSVs'][0] = numSVs
+        event_level_var_array['n_sv_total'][0] = n_sv_total
 
-
-            
         '''
         ###############################################################################################
         # get track-level info
