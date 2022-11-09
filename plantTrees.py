@@ -231,6 +231,7 @@ if True:
         nameout = 'NTuple'
         if len(options.inputFiles) == 1: nameout = options.inputFiles[0].split('/')[-1].strip().replace('.root', '') + '_' + nameout
         if isTest: nameout += '_test'
+        if 'skipSVs' in options.tag: nameout += '_noSVs'
         fout = ROOT.TFile(nameout + '.root', 'recreate')
 
         fout.cd()
@@ -3454,21 +3455,18 @@ for ifile, f in enumerate(options.inputFiles):
         # get sv-level info
         ###############################################################################################
         '''
-        
+        numsvsfinalpreselection = 0  
+        n_sv_total = 0
+        numSVs = 0
 
         if not 'skipSVs' in options.tag:
-            
-            numtrackspreselection = 0
+            n_sv_total = len(filesWithSV[ifile][ievent]) 
+            numSVs = len(filesWithSV[ifile][ievent]) 
             n_selTracks = len(filesWithTrackID[ifile][ievent])
             selectedTracks = np.array([None]*len(filesWithTrackID[ifile][ievent]))
             
             for idx, index in enumerate(filesWithTrackID[ifile][ievent]):
                 selectedTracks[idx]=deepcopy(tracks[int(index)])
-
-            numsvsfinalpreselection = 0  
-            
-            n_sv_total = len(filesWithSV[ifile][ievent]) 
-            numSVs = len(filesWithSV[ifile][ievent]) 
 
             for nSV, secondary in enumerate(filesWithSV[ifile][ievent]):
 
