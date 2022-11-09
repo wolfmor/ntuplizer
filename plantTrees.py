@@ -1712,24 +1712,22 @@ for ifile, f in enumerate(options.inputFiles):
         event.getByLabel(label_taudiscriminatorMuonRej, handle_taudiscriminatorMuonRej)
         taudiscriminatorMuonRej = handle_taudiscriminatorMuonRej.product()
 
-### ask Moritz
-        tauswithdiscriminators = []
-        # tauswithdiscriminators = [
-            # (tau, taudiscriminatorDM.value(itau)
-                # , taudiscriminatorMVAraw.value(itau)
-                # , taudiscriminatorMVA_VLoose.value(itau)
-                # , taudiscriminatorMVA_Loose.value(itau)
-                # , taudiscriminatorMVA_Medium.value(itau)
-                # , taudiscriminatorMVA_Tight.value(itau)
-                # , taudiscriminatorMVA_VTight.value(itau)
-                # , taudiscriminatorMVA_VVTight.value(itau)
-                # , taudiscriminatorElectronRej.value(itau)
-                # , taudiscriminatorMuonRej.value(itau)
-                # , taudiscriminatorDM.key(itau).get().pt()
-                # , taudiscriminatorMVAraw.key(itau).get().pt()
-                # , taudiscriminatorMVA_VLoose.key(itau).get().pt())
-            # for itau, tau in enumerate(taus)
-        # ]
+        tauswithdiscriminators = [
+            (tau, taudiscriminatorDM.value(itau)
+                , taudiscriminatorMVAraw.value(itau)
+                , taudiscriminatorMVA_VLoose.value(itau)
+                , taudiscriminatorMVA_Loose.value(itau)
+                , taudiscriminatorMVA_Medium.value(itau)
+                , taudiscriminatorMVA_Tight.value(itau)
+                , taudiscriminatorMVA_VTight.value(itau)
+                , taudiscriminatorMVA_VVTight.value(itau)
+                , taudiscriminatorElectronRej.value(itau)
+                , taudiscriminatorMuonRej.value(itau)
+                , taudiscriminatorDM.key(itau).get().pt()
+                , taudiscriminatorMVAraw.key(itau).get().pt()
+                , taudiscriminatorMVA_VLoose.key(itau).get().pt())
+            for itau, tau in enumerate(taus)
+        ]
 
         # first dummy entry needed for jitted jet iso calculation function
         btagvalues = [(-2., 0., 0.)]
@@ -2257,9 +2255,7 @@ for ifile, f in enumerate(options.inputFiles):
         cutflow = 8
         hCutflow.Fill(cutflow)
 
-        ## ask Moritz
-        #chpfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_chpf(p, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.)])
-        chpfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_pf(p, pt_threshold=0.)])
+        chpfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_chpf(p, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.)])
         pfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_pf(p, pt_threshold=0.)])
         jetsforiso15 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets if passesPreselection_iso_jet(j, pt_threshold=15.)])
 
@@ -2799,14 +2795,14 @@ for ifile, f in enumerate(options.inputFiles):
             chiN2numdaughters = len(n2daughters)
             numchidaughters = chipmnumdaughters + chiN2numdaughters
             for ichid, chid in enumerate(c1daughters + n2daughters):
-                ### ask Moritz
-                #chidaughter_var_array['chiDaughter_pdgIdMother'][ichid] = chid.mother(0).pdgId()
-                #chidaughter_var_array['chiDaughter_pdgId'][ichid] = chid.pdgId()
-                #chidaughter_var_array['chiDaughter_pt'][ichid] = chid.pt()
-                #chidaughter_var_array['chiDaughter_eta'][ichid] = chid.eta()
-                #chidaughter_var_array['chiDaughter_phi'][ichid] = chid.phi()
 
-                #chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 0
+                chidaughter_var_array['chiDaughter_pdgIdMother'][ichid] = chid.mother(0).pdgId()
+                chidaughter_var_array['chiDaughter_pdgId'][ichid] = chid.pdgId()
+                chidaughter_var_array['chiDaughter_pt'][ichid] = chid.pt()
+                chidaughter_var_array['chiDaughter_eta'][ichid] = chid.eta()
+                chidaughter_var_array['chiDaughter_phi'][ichid] = chid.phi()
+
+                chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 0
                 
                 if chid.charge() != 0:
 
