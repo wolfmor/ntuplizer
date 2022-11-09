@@ -15,6 +15,7 @@ options.parseArguments()
 
 # output name
 nameout = cms.untracked.vstring(options.inputFiles).value()[0].split("/")[-2]+"_"+cms.untracked.vstring(options.inputFiles).value()[0].split("/")[-1]
+#nameout = "/nfs/dust/cms/user/tewsalex/CMSSW_10_2_18/src/test_forCrab.root"
 #print cms.untracked.vstring(options.inputFiles).value()[0], nameout
 
 process.source = cms.Source("PoolSource",
@@ -119,7 +120,10 @@ process.output = cms.OutputModule(
     SelectEvents = cms.untracked.PSet(SelectEvents = cms.vstring("path")),
     outputCommands = cms.untracked.vstring(
         "drop *",
-        "keep *_*_*_SVS",
+        "keep *_*_mvaScore_SVS",
+        "keep *_*_DcaKshort_SVS",
+        "keep *_*_Kshort_SVS",
+        "keep *_*_selectedTrackIDs_SVS",
         ),
  
     fileName = cms.untracked.string(nameout)  
