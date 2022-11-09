@@ -9,7 +9,7 @@ Runs over AOD files and writes file with histos and tree.
 python plantTrees.py inputFiles="file1, file2,..." tag="tag1 tag2 ..."
 
 minimal example: 
-python plantTrees.py inputFiles="/pnfs/desy.de/cms/tier2/store/user/sbein/CommonSamples/RadiativeMu_2016Fast/v2/higgsino94x_susyall_mChipm115GeV_dm0p77GeV_pu35_part22of25.root" tag="test, local, era16_07Aug17, Signal, skipSVs"
+python plantTrees.py inputFiles="/pnfs/desy.de/cms/tier2/store/user/sbein/CommonSamples/RadiativeMu_2016Fast/v2/higgsino94x_susyall_mChipm115GeV_dm0p77GeV_pu35_part22of25.root" tag="test, local, era16_07Aug17, signal, skipSVs, fastsim"
 python plantTrees.py inputFiles="/nfs/dust/cms/user/wolfmor/testsamples/ZJetsToNuNu_Zpt-200toInf/B044CEA0-F8C9-E611-8F67-0CC47AD990C4.root" tag="test, local, era16_07Aug17"
 ----------------------------------------------------------------------
 
@@ -77,7 +77,6 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 from DataFormats.Candidate import *
 #from DataFormats.Candidate import VertexCompositeCandidate
 from commons import *
-from commons_Alex import findMatch_tracktrack_new, findMinDr_track, calcIso_vtx, matchToMuon, calcIso_track, calcIso_jet, findMinDr_ancestors, findMatch_ancestor_new, findMinDr
 from copy import copy, deepcopy
 
 def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet):

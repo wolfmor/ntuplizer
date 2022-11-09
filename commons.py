@@ -504,6 +504,36 @@ def converter_jet(func):
     return helper
 
 
+"""Calculates isolation-variables for a track inside jets.
+"""
+def calcIso_jet(one, many, pv_pos, isTight):
+
+    pt_threshold = 15
+    conesize = 0.4
+
+    if isTight:
+        pt_threshold = 30
+        conesize = 0.4
+
+    ptsum = 0
+    num = 0
+
+    dRmin = 10
+    for m in many:
+        
+        if not passesPreselection_iso_jet(m, pt_threshold): continue
+        
+        dR = deltaR(one.eta(), m.eta(), one.phi(), m.phi())
+        
+        if dR < dRmin and dR > 0.001:
+            dRmin = dR
+            
+        if dR < conesize:
+            ptsum += m.pt()
+            num += 1
+            
+    return ptsum/one.pt(), dRmin, num
+    
 @converter_jet
 @jit(nopython=True)
 def calcIso_jet_new(one, many, isTrack=False, btagvalues=None):
@@ -553,6 +583,43 @@ def calcIso_jet_new(one, many, isTrack=False, btagvalues=None):
     return jetiso, jetisomulti, dRmin, jetisobtag, minv
 
 
+"""Calculates isolation-variables for a track inside tracks.
+"""
+def calcIso_track(one, many, pv_pos, isTight):
+
+    dz_threshold = 1
+    dxy_threshold = 1
+    pt_threshold = 0
+    conesize = 0.3
+
+    if isTight:
+        dz_threshold = 10.
+        dxy_threshold = 10.
+        pt_threshold = 0.
+        conesize = 0.3
+
+    ptsum = -one.pt()
+    num = -1
+
+    if not passesPreselection_iso_track(one, pv_pos, dz_threshold, dxy_threshold, pt_threshold):			
+        ptsum = 0
+        num = 0
+
+    dRmin = 10	
+    for m in many:
+        
+        if not passesPreselection_iso_track(m, pv_pos, dz_threshold, dxy_threshold, pt_threshold): continue
+        
+        dR = deltaR(one.eta(), m.eta(), one.phi(), m.phi())
+        
+        if dR < dRmin and dR > 0.001:
+            dRmin = dR
+            
+        if dR < conesize:
+            ptsum += m.pt()
+            num += 1
+            
+    return ptsum/one.pt(), dRmin, num
 # def calcIso_pf_or_track_new(one, many, isMini=False, dontSubtractObject=False):
 #     """Calculates isolation variables for an object inside PFs or tracks.
 #     """
@@ -602,6 +669,30 @@ def converter(func):
 
     return helper
 
+
+	
+"""Calculates isolation-variables for a vtx inside vtxs.
+"""
+def calcIso_vtx(one, many):
+
+    conesize = 0.3
+
+    ptsum = -one.pt()
+    num = -1
+
+    dRmin = 10	
+    for m in many:
+
+        dR = deltaR(one.eta(), m.eta(), one.phi(), m.phi())
+        
+        if dR < dRmin and dR > 0.001:
+            dRmin = dR
+            
+        if dR < conesize:
+            ptsum += m.pt()
+            num += 1
+            
+    return ptsum/one.pt(), dRmin, num
 
 @converter
 @jit(nopython=True)
@@ -793,6 +884,43 @@ def findDaughters(gp):
                 daughters.append(granddaughter)
     
     return daughters
+
+
+
+"""Finds matching track for lepton via delta R.
+"""
+def findMinDr_track(aTrack, tracks, threshold):
+
+    drmin = 10
+    idx = -1
+    matchingTrack = None
+    match = False
+
+    if aTrack.pt() > 0:
+
+        for itrack, track in enumerate(tracks):
+            
+            if not passesPreselection_basic_track(track): continue
+
+            
+            if not track.charge() * aTrack.charge() > 0: continue
+            
+            aTrackTlv = ROOT.TLorentzVector()
+            aTrackTlv.SetPxPyPzE(aTrack.px(),aTrack.py(),aTrack.pz(),aTrack.pt()*np.cosh(aTrack.eta()))	
+            trkTlv = ROOT.TLorentzVector()
+            trkTlv.SetPxPyPzE(track.px(), track.py(), track.pz(), track.pt()*np.cosh(track.eta()))
+            
+            dr = trkTlv.DeltaR(aTrackTlv)
+            
+            if dr < drmin:
+                    
+                drmin = dr
+                idx = itrack
+                matchingTrack = track
+                
+
+	if drmin < threshold: match = True
+	return match, idx, drmin, matchingTrack
 
 
 def getTauDecayMode(tau, decaymode):
@@ -1141,7 +1269,168 @@ def helix(t, qoverp, lmbd, phi, refX, refY, refZ):
 
 
 ###############################################################################################
+"""Finds matching track for lepton via delta R.
+"""
+def findMinDr(lepton, tracks, threshold):
 
+    drmin = 10
+    idx = -1
+    matchingTrack = None
+    match = False
+
+    if lepton.pt() > 0:
+
+        for itrack, track in enumerate(tracks):
+            
+            if not passesPreselection_basic_track(track): continue
+            
+            if not track.charge() * lepton.charge() > 0: continue
+            
+            if not abs(track.pt() - lepton.pt()) / lepton.pt() < 0.2: continue
+                    
+            if not abs(track.eta() - lepton.eta()) < 0.1: continue
+            
+            if not abs(deltaPhi(track.phi(), lepton.phi())) < 1.57: continue
+            
+            leptonTlv = ROOT.TLorentzVector()
+            leptonTlv.SetPxPyPzE(lepton.px(),lepton.py(),lepton.pz(),lepton.energy())	
+            trkTlv = ROOT.TLorentzVector()
+            trkTlv.SetPxPyPzE(track.px(), track.py(), track.pz(), track.pt()*np.cosh(track.eta()))
+            
+            dr = trkTlv.DeltaR(leptonTlv)
+            
+            if dr < drmin:
+                    
+                drmin = dr
+                idx = itrack
+                matchingTrack = track
+                
+
+    if drmin < threshold: match = True
+    return match, idx, drmin, matchingTrack
+    
+"""Foo
+"""
+def findMinDr_ancestors(svdaughter, gps, ignoreIdx=[None]):
+
+    pdgId = -1
+    pdgIdMother = -1
+    drmin = 999
+    idx = -1
+
+    tlvMother = ROOT.TLorentzVector()	
+    genmatchmother = None
+
+    relatives = [None, None]
+    charge = 0
+
+    numDaughtersOfMother = 0
+
+    if svdaughter.pt() > 0:
+
+        for igp, gp in enumerate(gps):
+                
+            if igp in ignoreIdx: continue
+            
+            if not gp.isLastCopy(): continue
+
+            if not gp.charge() == svdaughter.charge(): continue
+                            
+            if not abs(gp.eta() - svdaughter.eta()) < 0.1: continue
+            
+            if not abs(deltaPhi(gp.phi(), svdaughter.phi())) < 1.57: continue
+            
+            dr = deltaR(svdaughter.eta(), gp.eta(), gp.phi(), svdaughter.phi())
+            
+                
+            if dr < drmin:
+                    
+                drmin = dr
+                idx = igp
+                pdgId = gp.pdgId()
+                pdgIdMother = gp.mother().pdgId()
+                genmatchmother = gp.mother()
+                tlvMother.SetPxPyPzE(gp.mother().px(),gp.mother().py(),gp.mother().pz(),gp.mother().energy())
+                charge = gp.charge()
+
+                numDaughtersOfMother = gp.mother().numberOfDaughters()
+
+                
+    hasEWancestors = 0
+
+    if not (genmatchmother == None):
+        iteration = 0
+        
+        while genmatchmother.numberOfMothers() > 0:			
+
+            if (genmatchmother.pdgId())>1000000:
+                hasEWancestors = 1
+                break
+            
+            genmatchmother = genmatchmother.mother(0)
+            iteration += 1
+            
+    return idx,  pdgId, pdgIdMother, drmin, tlvMother, hasEWancestors, numDaughtersOfMother
+
+	
+    """Fooo
+    """
+def findMatch_ancestor_new(svdaughter, gps, ignoreIdx=[None]):
+
+    dxyzmin = 10
+    pdgId = -1
+    pdgIdMother = -1
+    drmin = 10
+    idx = -1
+    genmatchmother = None
+    numDaughtersOfMother = 0
+    relatives = [None, None]
+    charge = 0
+    tlvMother = ROOT.TLorentzVector()	
+    if svdaughter.pt() > 0:
+
+        for igp, gp in enumerate(gps):
+            
+            if igp in ignoreIdx: continue
+            
+            if not gp.isLastCopy(): continue
+
+            if not gp.charge()== svdaughter.charge(): continue
+                                        
+            if not abs(gp.eta() - svdaughter.eta()) < 0.1: continue
+            
+            if not abs(deltaPhi(gp.phi(), svdaughter.phi())) < 1.57: continue
+            
+            res = scipy.optimize.minimize(distanceXYOld, x0=0.0, bounds=((-1.57, 1.57),), args=(svdaughter, gp.vertex()))  # other minimization method?
+
+            dxyz = distanceXYOld(res.x, svdaughter, gp.vertex())
+            if dxyz < dxyzmin:
+                    
+                dxyzmin = dxyz
+                drmin = deltaR(svdaughter.eta(), gp.eta(), gp.phi(), addPhi(svdaughter.phi(), res.x[0]))
+                idx = igp
+                pdgId = gp.pdgId()
+                pdgIdMother = gp.mother().pdgId()
+                tlvMother.SetPxPyPzE(gp.mother().px(),gp.mother().py(),gp.mother().pz(),gp.mother().energy())
+                genmatchmother = gp.mother()
+                charge = gp.charge()
+
+                numDaughtersOfMother  = gp.mother().numberOfDaughters()
+
+                
+    hasEWancestors = 0
+    if not (genmatchmother == None):
+        iteration = 0
+        
+        while genmatchmother.numberOfMothers() > 0:			
+
+            if (genmatchmother.pdgId())>1000000:
+                hasEWancestors = 1
+                break
+            
+            genmatchmother = genmatchmother.mother(0)
+            iteration += 1
+    return idx,  dxyzmin,pdgId, pdgIdMother, drmin, tlvMother, hasEWancestors, numDaughtersOfMother
 
 
 def findMatch_track_new(lepton, tracks):
@@ -1229,6 +1518,47 @@ def findMatch_track_new_random(lepton, tracks):
                 drmin = deltaR(lepton.eta(), track.eta(), lepton.phi(), addPhi(track.phi(), float(-1. * res.x[0])))
                 idx = itrack
 
+    return idx, dxyzmin, tmin, drmin
+
+
+
+"""Finds matching track for track via dxyz.
+"""
+def findMatch_tracktrack_new(aTrack, tracks):
+
+    dxyzmin = 999
+    tmin = 10
+    drmin = 999
+    idx = -1
+
+    if aTrack.pt() > 0:
+
+        for itrack, track in enumerate(tracks):
+            
+            if not passesPreselection_basic_track(track): continue
+            
+            if not track.charge() * aTrack.charge() > 0: continue
+            ##
+            if not abs(track.pt() - aTrack.pt()) / aTrack.pt() < 0.2: continue
+                    
+            if not abs(track.eta() - aTrack.eta()) < 0.1: continue
+            
+            if not abs(deltaPhi(track.phi(), aTrack.phi())) < 1.57: continue
+            
+            res = scipy.optimize.minimize(distance, x0=np.array([0.0]), bounds=((-1.57, 1.57),),args=(track.parameter(0), track.parameter(1), track.parameter(2),
+                                                track.referencePoint().x(), track.referencePoint().y(), track.referencePoint().z(),
+                                                (aTrack.vertex().x(), aTrack.vertex().y(), aTrack.vertex().z())))  # other minimization method?
+            dxyz = distance(res.x, track.parameter(0), track.parameter(1), track.parameter(2),
+                            track.referencePoint().x(), track.referencePoint().y(), track.referencePoint().z(),
+                            (aTrack.vertex().x(), aTrack.vertex().y(), aTrack.vertex().z()))
+            
+            if dxyz < dxyzmin:
+                    
+                dxyzmin = dxyz
+                tmin = res.x[0]
+                drmin = deltaR(aTrack.eta(), track.eta(), aTrack.phi(), addPhi(track.phi(), res.x[0]))
+                idx = itrack
+                
     return idx, dxyzmin, tmin, drmin
 
 
@@ -1498,6 +1828,36 @@ def findMatch_gen_old_easy(track, genparticles):
                 
     return idx, drmin
 
+	
+"""Finds matching muon for track via dR.
+"""
+def matchToMuon(track, muons):
+	
+    drmin = 10
+    idx = -1
+
+    if track.pt() > 0:
+        
+        trackTlv = ROOT.TLorentzVector()
+        trackTlv.SetPxPyPzE(track.px(), track.py(), track.pz(), track.pt()*ROOT.TMath.CosH(track.eta()))
+
+        for imuon, muon in enumerate(muons):
+            if muon.charge() == 0: continue
+            if not muon.charge() * track.charge() > 0: continue
+                    
+            muonTlv = ROOT.TLorentzVector()
+            muonTlv.SetPxPyPzE(muon.px(), muon.py(), muon.pz(), muon.pt()*ROOT.TMath.CosH(muon.eta()))
+            
+            dr = muonTlv.DeltaR(trackTlv)
+            
+            if dr < drmin:
+                
+                drmin = dr
+                idx = imuon
+                
+    return idx, drmin
+
+
 
 ###############################################################################################
 
@@ -1712,6 +2072,7 @@ def computeFastSimBugWeight(genjets, genparticles):
             if not gp.numberOfDaughters()>1: continue
             originxy = ROOT.TMath.Sqrt(gp.vx()**2 + gp.vy()**2)
             if not originxy<2.16: continue
+            if gp.daughter(0) == None: continue
             decayxy = ROOT.TMath.Sqrt(gp.daughter(0).vx()**2 + gp.daughter(0).vy()**2)
             if (decayxy>2.17 and decayxy<2000):
                 jetHasOffendingGp = True
