@@ -900,6 +900,8 @@ def findMinDr_track(aTrack, tracks, threshold):
 
         for itrack, track in enumerate(tracks):
             
+            if track == None: continue
+            
             if not passesPreselection_basic_track(track): continue
 
             
@@ -1534,15 +1536,17 @@ def findMatch_tracktrack_new(aTrack, tracks):
     if aTrack.pt() > 0:
 
         for itrack, track in enumerate(tracks):
-            
+
+            if track == None: continue
+
             if not passesPreselection_basic_track(track): continue
-            
+
             if not track.charge() * aTrack.charge() > 0: continue
             ##
             if not abs(track.pt() - aTrack.pt()) / aTrack.pt() < 0.2: continue
                     
             if not abs(track.eta() - aTrack.eta()) < 0.1: continue
-            
+
             if not abs(deltaPhi(track.phi(), aTrack.phi())) < 1.57: continue
             
             res = scipy.optimize.minimize(distance, x0=np.array([0.0]), bounds=((-1.57, 1.57),),args=(track.parameter(0), track.parameter(1), track.parameter(2),
