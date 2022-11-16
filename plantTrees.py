@@ -10,7 +10,9 @@ python plantTrees.py inputFiles="file1, file2,..." tag="tag1 tag2 ..."
 
 minimal example: 
 python plantTrees.py inputFiles="/pnfs/desy.de/cms/tier2/store/user/sbein/CommonSamples/RadiativeMu_2016Fast/v2/higgsino94x_susyall_mChipm115GeV_dm0p77GeV_pu35_part22of25.root" tag="test, local, era16_07Aug17, signal, skipSVs, fastsim"
+python plantTrees.py inputFiles="/nfs/dust/cms/user/beinsam/CommonSamples/MC_BSM/CompressedHiggsino/RadiativeMu_2016Full/v2/higgsino94xfull_susyall_mChipm115GeV_dm0p768GeV_pu35_part22of100.root" tag="local, era16_07Aug17, signal"
 python plantTrees.py inputFiles="/nfs/dust/cms/user/wolfmor/testsamples/ZJetsToNuNu_Zpt-200toInf/B044CEA0-F8C9-E611-8F67-0CC47AD990C4.root" tag="test, local, era16_07Aug17"
+python plantTrees.py inputFiles="/nfs/dust/cms/user/wolfmor/testsamples/WJetsToLNu/80A3D525-0FBC-E611-AF19-549F35AC7EA4.root" tag="local, era16_07Aug17"
 ----------------------------------------------------------------------
 
 tags:
@@ -79,7 +81,7 @@ from DataFormats.Candidate import *
 from commons import *
 from copy import copy, deepcopy
 
-def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet):
+def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, secondaries, selectedtrackids, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet):
     """DY cleaning: replace leptons with "neutrinos" and update collections: clean jets, tracks, pfcands and adapt MET.
     """
 
@@ -88,6 +90,7 @@ def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, hZllLe
     badtracks = []
     badpfcands = []
     badjets = []
+    badsvs = []
     for l in leptonscleaning:
 
         hZllLeptonPt.Fill(l.pt())
@@ -119,18 +122,26 @@ def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, hZllLe
 
             badjets.append(idx)
 
+        for nSV, secondary in enumerate(secondaries):
+            for k in range(secondary.numberOfDaughters()):
+                _, ClassicIdx, ClassicDrmin, _ = findMinDr_track(secondary.daughter(k), l, 20.)
+                if ClassicIdx != -1 and ClassicDrmin < 0.2:
+                    badsvs.append(nSV)
+
 
         met.setP4(met.p4() + ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(l.px(), l.py(), 0, l.energy()))
 
     jets = [j for (ij, j) in enumerate(jets) if ij not in badjets]
     tracks = [t for (it, t) in enumerate(tracks) if it not in badtracks]
+    selectedtrackids = [idx for (iid, index) in enumerate(selectedtrackids) if iid not in badtracks]
     pfcands = [p for (ip, p) in enumerate(pfcands) if ip not in badpfcands]
+    secondaries = [sv for (isv, sv) in enumerate(secondaries) if isv not in badsvs]
 
     collection = [c for (ic, c) in enumerate(collection) if ic not in [zl1Idx, zl2Idx]]
 
     if not len(badtracks) == 2: tracks = None
 
-    return collection, tracks, pfcands, jets, met
+    return collection, tracks, pfcands, jets, met, secondaries, selectedtrackids
 
 
 '''
@@ -231,6 +242,7 @@ if True:
         if len(options.inputFiles) == 1: nameout = options.inputFiles[0].split('/')[-1].strip().replace('.root', '') + '_' + nameout
         if isTest: nameout += '_test'
         if 'skipSVs' in options.tag: nameout += '_noSVs'
+        if 'cleanleptons' in options.tag: nameout += '_DYCleaned'
         fout = ROOT.TFile(nameout + '.root', 'recreate')
 
         fout.cd()
@@ -341,7 +353,10 @@ if True:
         , ('n_tau', 'I'), ('n_tau_vloose', 'I'), ('n_tau_loose', 'I'), ('n_tau_medium', 'I'), ('n_tau_tight', 'I'), ('n_tau_vtight', 'I'), ('n_tau_vvtight', 'I')
         , ('n_tau_20', 'I'), ('n_tau_20_vloose', 'I'), ('n_tau_20_loose', 'I'), ('n_tau_20_medium', 'I'), ('n_tau_20_tight', 'I'), ('n_tau_20_vtight', 'I'), ('n_tau_20_vvtight', 'I')
         , ('n_track_total', 'I'), ('n_track_basic', 'I'), ('n_track', 'I')
-        , ('numSVs', 'I'), ('n_sv_total', 'I'), ('n_sv', 'I'),
+        
+        , ('numSVs', 'I'), ('n_sv_total', 'I'), ('n_sv', 'I'), ('n_sv_weighted_rebin', 'F'), ('n_sv_weighted', 'F')
+        
+        ,('n_selTracks' , 'I')
         ]
     event_level_var_names += var_names_event
 
@@ -950,7 +965,16 @@ if True:
         else: SV_level_var_array[n[0]] = array('f', 500*[0.])
         tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv]/F')
 
-
+    var_names_selected_tracks = [
+        ('selTracks_pt' , 'F'),
+        ('id' , 'I')
+    ]
+    
+    selected_tracks_var_array = {}
+    for n in var_names_selected_tracks:
+        selected_tracks_var_array[n[0]] = array('f', nMaxTracksPerEvent*[0.])
+        tEvent.Branch(nice_string(n[0]), selected_tracks_var_array[n[0]], nice_string(n[0])+ '[n_selTracks]/F')
+    
     # cutflow histos
 
     hCutflow = ROOT.TH1F('hCutflow', 'hCutflow', 10, 0., 10.)
@@ -1712,22 +1736,24 @@ for ifile, f in enumerate(options.inputFiles):
         event.getByLabel(label_taudiscriminatorMuonRej, handle_taudiscriminatorMuonRej)
         taudiscriminatorMuonRej = handle_taudiscriminatorMuonRej.product()
 
-        tauswithdiscriminators = [
-            (tau, taudiscriminatorDM.value(itau)
-                , taudiscriminatorMVAraw.value(itau)
-                , taudiscriminatorMVA_VLoose.value(itau)
-                , taudiscriminatorMVA_Loose.value(itau)
-                , taudiscriminatorMVA_Medium.value(itau)
-                , taudiscriminatorMVA_Tight.value(itau)
-                , taudiscriminatorMVA_VTight.value(itau)
-                , taudiscriminatorMVA_VVTight.value(itau)
-                , taudiscriminatorElectronRej.value(itau)
-                , taudiscriminatorMuonRej.value(itau)
-                , taudiscriminatorDM.key(itau).get().pt()
-                , taudiscriminatorMVAraw.key(itau).get().pt()
-                , taudiscriminatorMVA_VLoose.key(itau).get().pt())
-            for itau, tau in enumerate(taus)
-        ]
+### ask Moritz
+        tauswithdiscriminators = []
+        # tauswithdiscriminators = [
+            # (tau, taudiscriminatorDM.value(itau)
+                # , taudiscriminatorMVAraw.value(itau)
+                # , taudiscriminatorMVA_VLoose.value(itau)
+                # , taudiscriminatorMVA_Loose.value(itau)
+                # , taudiscriminatorMVA_Medium.value(itau)
+                # , taudiscriminatorMVA_Tight.value(itau)
+                # , taudiscriminatorMVA_VTight.value(itau)
+                # , taudiscriminatorMVA_VVTight.value(itau)
+                # , taudiscriminatorElectronRej.value(itau)
+                # , taudiscriminatorMuonRej.value(itau)
+                # , taudiscriminatorDM.key(itau).get().pt()
+                # , taudiscriminatorMVAraw.key(itau).get().pt()
+                # , taudiscriminatorMVA_VLoose.key(itau).get().pt())
+            # for itau, tau in enumerate(taus)
+        # ]
 
         # first dummy entry needed for jitted jet iso calculation function
         btagvalues = [(-2., 0., 0.)]
@@ -1975,7 +2001,7 @@ for ifile, f in enumerate(options.inputFiles):
                 l2absisodbeta = calcIso_dBeta(collection[l2Idx].pfIsolationR03())
                 l2relisodbeta = calcIso_dBeta(collection[l2Idx].pfIsolationR03()) / collection[l2Idx].pt()
 
-            collection, tracks, pfcands, jets, met = cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, jets, met, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet)
+            collection, tracks, pfcands, jets, met , filesWithSV[ifile][ievent], filesWithTrackID[ifile][ievent] = cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, jets, met, filesWithSV[ifile][ievent], filesWithTrackID[ifile][ievent], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet)
 
             if tracks is None: continue
 
@@ -2255,7 +2281,9 @@ for ifile, f in enumerate(options.inputFiles):
         cutflow = 8
         hCutflow.Fill(cutflow)
 
-        chpfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_chpf(p, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.)])
+        ## ask Moritz
+        #chpfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_chpf(p, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.)])
+        chpfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_pf(p, pt_threshold=0.)])
         pfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_pf(p, pt_threshold=0.)])
         jetsforiso15 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets if passesPreselection_iso_jet(j, pt_threshold=15.)])
 
@@ -2795,14 +2823,14 @@ for ifile, f in enumerate(options.inputFiles):
             chiN2numdaughters = len(n2daughters)
             numchidaughters = chipmnumdaughters + chiN2numdaughters
             for ichid, chid in enumerate(c1daughters + n2daughters):
+                ### ask Moritz
+                #chidaughter_var_array['chiDaughter_pdgIdMother'][ichid] = chid.mother(0).pdgId()
+                #chidaughter_var_array['chiDaughter_pdgId'][ichid] = chid.pdgId()
+                #chidaughter_var_array['chiDaughter_pt'][ichid] = chid.pt()
+                #chidaughter_var_array['chiDaughter_eta'][ichid] = chid.eta()
+                #chidaughter_var_array['chiDaughter_phi'][ichid] = chid.phi()
 
-                chidaughter_var_array['chiDaughter_pdgIdMother'][ichid] = chid.mother(0).pdgId()
-                chidaughter_var_array['chiDaughter_pdgId'][ichid] = chid.pdgId()
-                chidaughter_var_array['chiDaughter_pt'][ichid] = chid.pt()
-                chidaughter_var_array['chiDaughter_eta'][ichid] = chid.eta()
-                chidaughter_var_array['chiDaughter_phi'][ichid] = chid.phi()
-
-                chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 0
+                #chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 0
                 
                 if chid.charge() != 0:
 
@@ -3457,11 +3485,19 @@ for ifile, f in enumerate(options.inputFiles):
         if not 'skipSVs' in options.tag:
             n_sv_total = len(filesWithSV[ifile][ievent]) 
             numSVs = len(filesWithSV[ifile][ievent]) 
-            n_selTracks = len(filesWithTrackID[ifile][ievent])
-            selectedTracks = np.array([None]*len(filesWithTrackID[ifile][ievent]))
             
+
+            n_selTracks = len(filesWithTrackID[ifile][ievent])
+            event_level_var_array['n_selTracks'][0] = n_selTracks
+                        
+ 
+            selectedTracks = np.array([None]*len(filesWithTrackID[ifile][ievent]))
+
             for idx, index in enumerate(filesWithTrackID[ifile][ievent]):
+                if 'debug' in options.tag: print "event", ievent, "loop over sel. tracks ", idx, "search track ", index , "in total tracks", len(tracks), "to sel tracks", len(selectedTracks)   
                 selectedTracks[idx]=deepcopy(tracks[int(index)])
+                selected_tracks_var_array['id'][idx] = index
+
 
             for nSV, secondary in enumerate(filesWithSV[ifile][ievent]):
 
@@ -3994,6 +4030,9 @@ for ifile, f in enumerate(options.inputFiles):
                 numsvsfinalpreselection += 1
 
         event_level_var_array['n_sv'][0] = numsvsfinalpreselection
+        if 'fastsim' in options.tag: event_level_var_array['n_sv_weighted_rebin'][0] = numsvsfinalpreselection*weight_PU_FastFull_rebin
+        if 'fastsim' in options.tag: event_level_var_array['n_sv_weighted'][0] = numsvsfinalpreselection*weight_PU_FastFull
+
         event_level_var_array['numSVs'][0] = numSVs
         event_level_var_array['n_sv_total'][0] = n_sv_total
 
