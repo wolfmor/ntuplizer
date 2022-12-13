@@ -157,8 +157,10 @@ def submitEDMFiles():
 	nJobs = 0
 	#for ifile in range(totalJobs):
 	myfiles = glob("/pnfs/desy.de/cms/tier2/store/user/sbein/CommonSamples/RadiativeMu_2016Fast/v*/higgsino94x_susyall_mChipm115GeV_dm0p77GeV_pu35_part*of2?.root")
-	#myfiles = glob("/nfs/dust/cms/user/beinsam/CommonSamples/MC_BSM/CompressedHiggsino/RadiativeMu_2016Full/v2/higgsino94xfull_susyall_mChipm115GeV_dm0p768GeV_pu35_part*of100.root")
-
+	#myfiles = glob("/pnfs/desy.de/cms/tier2/store/user/sbein/CommonSamples/RadiativeMu_2016Fast/v*/higgsino94x_susyall_mChipm115GeV_dm0p77GeV_pu35_part*of*.root")
+	#myfiles = glob("/pnfs/desy.de/cms/tier2/store/user/sbein/CommonSamples/RadiativeMuLongerCtau_2016Fast/AODSIM/higgsino94x_susyall_mChipm115GeV_dm0p97GeV_20ctau0p005m_pu35_part*of*.root")
+	#myfiles = glob("/pnfs/desy.de/cms/tier2/store/user/sbein/CommonSamples/RadiativeMuLongerCtau_2016Fast/AODSIM/higgsino94x_susyall_mChipm115GeV_dm0p77GeV_20ctau0p003GeV_pu35_part*of500.root")
+	#myfiles = glob("/pnfs/desy.de/cms/tier2/store/user/sbein/CommonSamples/RadiativeMuLongerCtau_2016Fast/AODSIM/higgsino94x_susyall_mChipm115GeV_dm0p77GeV_20ctau0p001m_pu35_part*of*.root")
 
 	for ifile in range(len(myfiles)):	
 		if os.path.exists("submissionScriptT"+str(ifile+1)+".sh"): os.remove("submissionScriptT"+str(ifile+1)+".sh")
@@ -172,7 +174,7 @@ def submitEDMFiles():
 		f.write("export SCRAM_ARCH=slc7_amd64_gcc820\n")
 		f.write("scram b -j12\n")
 		f.write("cmsenv\n")
-		f.write("cmsRun construct_secondary_vertices_cfg.py inputFiles=\"file:"+myfiles[nJobs]+"\" maxEvents=-1 outputFile=\"/nfs/dust/cms/user/tewsalex/rootfiles/edmfiles/signal/higgsino94xfast_slimmededm_mChipm115GeV_dm0p768GeV_pu35_"+str(nJobs)+"of"+str(len(myfiles))+".root\"\n")
+		f.write("cmsRun construct_secondary_vertices_cfg.py inputFiles=\"file:"+myfiles[nJobs]+"\" maxEvents=-1 outputFile=\"rootfiles/testDeltaM1p54_MChi115_ctauAll_"+str(nJobs)+"of"+str(len(myfiles))+".root\"\n")
 		#f.write("cmsRun construct_secondary_vertices_cfg.py inputFiles=\"file:"+myfiles[nJobs]+"\" maxEvents=-1 outputFile=\"rootfiles/testDeltaM1p14_MChi115_ctauAll_"+str(nJobs)+"of"+str(len(myfiles))+".root\"\n")
 		#print "cmsRun construct_secondary_vertices_cfg.py inputFiles=\"file:"+myfiles[nJobs]+"\" maxEvents=-1 outputFile=\"rootfiles/testDeltaM1p94_MChi115_ctau0p005_"+str(nJobs)+"of"+str(len(myfiles))+"_v2.root\"\n"
 
@@ -190,11 +192,50 @@ def submitEDMFiles():
 
 	print 'submitted 1 jobs'
 	
+### to produce slimmed edms for signal 
+def submit_allInOneJob():
+	nJobs = 0
+	myfiles = glob("/nfs/dust/cms/user/beinsam/CommonSamples/MC_BSM/CompressedHiggsino/RadiativeMu_2016Full/v2/higgsino94xfull_susyall_mChipm115GeV_dm0p768GeV_pu35_part51of100.root")
+	#myfiles = glob("/nfs/dust/cms/user/beinsam/CommonSamples/MC_BSM/CompressedHiggsino/RadiativeMu_2016Full/v2/higgsino94xfull_susyall_mChipm115GeV_dm0p768GeV_pu35_part*of100.root")
+	#myfiles = glob("/pnfs/desy.de/cms/tier2/store/user/sbein/CommonSamples/RadiativeMu_2016Fast/v*/higgsino94x_susyall_mChipm115GeV_dm0p77GeV_pu35_part*of2?.root")
+
+	for ifile in range(len(myfiles)):	
+		if os.path.exists("submissionScriptU"+str(ifile+1)+".sh"): os.remove("submissionScriptU"+str(ifile+1)+".sh")
+		nameout = myfiles[nJobs].split('/')[-1]
+		
+		f = open("submissionScriptU"+str(ifile+1)+".sh", "w")
+		f.write("source /etc/profile.d/modules.sh\n")
+		f.write("source /afs/desy.de/user/t/tewsalex/.bash_profile\n")
+		f.write("module use -a /afs/desy.de/group/cms/modulefiles/\n")
+		f.write("module load cmssw\n")
+		f.write("cd /nfs/dust/cms/user/tewsalex/CRAB3-tutorial/CMSSW_10_6_18/src\n")
+		f.write("export SCRAM_ARCH=slc7_amd64_gcc820\n")
+		f.write("scram b -j12\n")
+		f.write("cmsenv\n")
+		f.write("cmsRun construct_secondary_vertices_cfg.py inputFiles=\"file://"+myfiles[nJobs]+"\" maxEvents=-1 crab=False outputFile=\"/nfs/dust/cms/user/tewsalex/rootfiles/edmfiles/svfile_"+nameout+"\"\n")
+		#f.write("python /nfs/dust/cms/user/tewsalex/CMSSW_10_2_18/src/ntuplizer/plantTrees.py inputFiles=\"file:"+myfiles[nJobs]+"\" tag=\"era16_07Aug17, fastsim, local, signal, debug\"\n")	
+		f.write("python /nfs/dust/cms/user/tewsalex/CMSSW_10_2_18/src/ntuplizer/plantTrees.py inputFiles=\"file:"+myfiles[nJobs]+"\" tag=\"era16_07Aug17, local, signal, debug\"\n")	
+		#ToDo: add hadd of NTuplefiles to this workflow 
+			
+		f.close()
+		
+		f = open("submissionScriptU"+str(ifile+1)+".sh", "r")
+
+		command = 'condor_qsub -l h_vmem=4G -l h_rt=06:00:00 -cwd submissionScriptU'+str(ifile+1)+'.sh &'
+		
+		print 'command', command
+		if not test: os.system(command)
+
+		sleep(1)
+		nJobs +=1
+
+	print 'submitted 1 jobs'
+	
 def main():
 	#submitNTuples()
 	#submitNTuples_back()
 	#submitNTuples_back_2()
-	submitEDMFiles()
+	submit_allInOneJob()
 
 	
 main()
