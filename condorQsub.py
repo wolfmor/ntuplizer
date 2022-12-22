@@ -195,9 +195,10 @@ def submitEDMFiles():
 ### to produce slimmed edms for signal 
 def submit_allInOneJob():
 	nJobs = 0
-	myfiles = glob("/nfs/dust/cms/user/beinsam/CommonSamples/MC_BSM/CompressedHiggsino/RadiativeMu_2016Full/v2/higgsino94xfull_susyall_mChipm115GeV_dm0p768GeV_pu35_part51of100.root")
+	#myfiles = glob("/nfs/dust/cms/user/beinsam/CommonSamples/MC_BSM/CompressedHiggsino/RadiativeMu_2016Full/v2/higgsino94xfull_susyall_mChipm115GeV_dm0p768GeV_pu35_part51of100.root")
 	#myfiles = glob("/nfs/dust/cms/user/beinsam/CommonSamples/MC_BSM/CompressedHiggsino/RadiativeMu_2016Full/v2/higgsino94xfull_susyall_mChipm115GeV_dm0p768GeV_pu35_part*of100.root")
-	#myfiles = glob("/pnfs/desy.de/cms/tier2/store/user/sbein/CommonSamples/RadiativeMu_2016Fast/v*/higgsino94x_susyall_mChipm115GeV_dm0p77GeV_pu35_part*of2?.root")
+	#myfiles = glob("/pnfs/desy.de/cms/tier2/store/user/sbein/CommonSamples/RadiativeMu_2016Fast/v*/higgsino94x_susyall_mChipm*GeV_dm0p*GeV_pu35_part*of2?.root")
+	myfiles = glob("/pnfs/desy.de/cms/tier2/store/user/sbein/CommonSamples/RadiativeMu_2016Fast/v4/step3_higgsinoDm0eDmpm_RunIISpring21UL16FS_susyall_mChipm*GeV_dm*GeV_part*of*.root")
 
 	for ifile in range(len(myfiles)):	
 		if os.path.exists("submissionScriptU"+str(ifile+1)+".sh"): os.remove("submissionScriptU"+str(ifile+1)+".sh")
@@ -214,7 +215,7 @@ def submit_allInOneJob():
 		f.write("cmsenv\n")
 		f.write("cmsRun construct_secondary_vertices_cfg.py inputFiles=\"file://"+myfiles[nJobs]+"\" maxEvents=-1 crab=False outputFile=\"/nfs/dust/cms/user/tewsalex/rootfiles/edmfiles/svfile_"+nameout+"\"\n")
 		#f.write("python /nfs/dust/cms/user/tewsalex/CMSSW_10_2_18/src/ntuplizer/plantTrees.py inputFiles=\"file:"+myfiles[nJobs]+"\" tag=\"era16_07Aug17, fastsim, local, signal, debug\"\n")	
-		f.write("python /nfs/dust/cms/user/tewsalex/CMSSW_10_2_18/src/ntuplizer/plantTrees.py inputFiles=\"file:"+myfiles[nJobs]+"\" tag=\"era16_07Aug17, local, signal, debug\"\n")	
+		f.write("python /nfs/dust/cms/user/tewsalex/CMSSW_10_2_18/src/ntuplizer/plantTrees.py inputFiles=\"file://"+myfiles[nJobs]+"\" tag=\"era16_UL, local, signal, fastsim\"\n")	
 		#ToDo: add hadd of NTuplefiles to this workflow 
 			
 		f.close()

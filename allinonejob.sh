@@ -37,7 +37,10 @@ cmsRun -j FrameworkJobReport.xml -p PSet.py #config option crab
 
 echo "================= producing the ntuples ===================="
 CRABFILES=$(python -c "import PSet; print(','.join(PSet.process.source.fileNames.value()))" 2>/dev/null| tail -1)
-python plantTrees.py inputFiles="$CRABFILES" tag="era16_07Aug17, crab, cleanleptons"
+#python plantTrees.py inputFiles="$CRABFILES" tag="era16_07Aug17, crab, cleanleptons"
+#python plantTrees.py inputFiles="$CRABFILES" tag="era16_07Aug17, test, crab"
+echo $2
+python plantTrees.py inputFiles="$CRABFILES" $2
 
 #python plantTrees.py inputFiles="$CRABFILES" tag="era16_07Aug17, crab"
 #python plantTrees.py inputFiles="$CRABFILES" tag="era16_07Aug17, test, crab, debug"

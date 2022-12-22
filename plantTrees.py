@@ -44,8 +44,13 @@ genmatchtracks -> try to find GEN match to every 10th track
 genmatchalltracks -> try to find GEN match to every track
 
 era16_07Aug17 -> use corresponding golden json, JECs, jetID, working points,...
-era16_UL -> ...
-era16_UL_APV -> ...
+era16_UL -> before HIP problem
+era16_UL_APV -> after / with HIP problem, preVFP samples
+
+## toDo: implement JECs etc. for 17 and 18 UL
+era17_UL -> ...
+era18_UL -> ...
+
 era17_17Nov2017 -> ...
 era18_17Sep2018 -> ...
 
@@ -156,6 +161,7 @@ def createJEC(jecSrc, jecLevelList, jetAlgo):
 
     # Load the different JEC levels (the order matters!)
     for jecLevel in jecLevelList:
+        print '%s_%s_%s.txt' % (jecSrc, jecLevel, jetAlgo)
         jecParameter = ROOT.JetCorrectorParameters('%s_%s_%s.txt' % (jecSrc, jecLevel, jetAlgo))
         jecParameterList.push_back(jecParameter)
 
@@ -182,7 +188,7 @@ class DataJEC:
     def __init__(self, inputmap, jettype):
         for minrun, maxrun, version in inputmap:
             JECMap = {}
-            JECMap['jecAK4'] = createJEC('/nfs/dust/cms/user/wolfmor/JECs/'+version+'/'+version, ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            JECMap['jecAK4'] = createJEC('/nfs/dust/cms/user/tewsalex/JECs/'+version+'/'+version, ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
             self.JECList.append([minrun, maxrun, JECMap])
 
     def GetJECMap(self, run):
@@ -371,7 +377,7 @@ if True:
         tEvent.Branch(nice_string(n[0]), event_level_var_array[n[0]], nice_string(n[0]) + '/' + n[1])
 
 
-    # TODO: implement the correct MET filters:
+    # MissingET Filter For data and MC, suggest for FullSim, wip for FastSim [update 2022/12/16]
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/MissingETOptionalFiltersRun2
     trigger_flags = []
     if 'era16_07Aug17' in options.tag:
@@ -386,13 +392,36 @@ if True:
             , 'eeBadScFilter'
         ]
     elif 'era16_UL' in options.tag:
-        pass
+        trigger_flags = [
+            'goodVertices'
+            , 'globalSuperTightHalo2016Filter'
+            , 'HBHENoiseFilter'
+            , 'HBHENoiseIsoFilter'
+            , 'EcalDeadCellTriggerPrimitiveFilter'
+            , 'BadPFMuonFilter'
+            # , 'BadChargedCandidateFilter'
+            , 'eeBadScFilter'
+            #, 'hfNoisyHitsFilter'
+        ]
+    elif 'era17_UL' in options.tag or 'era18_UL' in options.tag:
+        trigger_flags = [
+            'goodVertices'
+            , 'globalSuperTightHalo2016Filter'
+            , 'HBHENoiseFilter'
+            , 'HBHENoiseIsoFilter'
+            , 'EcalDeadCellTriggerPrimitiveFilter'
+            , 'BadPFMuonFilter'
+            , 'BadPFMuonDzFilter'
+            # , 'BadChargedCandidateFilter'
+            , 'eeBadScFilter'
+            #, 'hfNoisyHitsFilter'
+        ]
     elif 'era17_17Nov2017' in options.tag:
         pass
     elif 'era18_17Sep2018' in options.tag:
         pass
     else:
-        raise NotImplementedError('MET filters: era unknown or not specified')
+        raise NotImplementedError('MET filters: era unknown or not specified', options.tag)
 
     """
     flags available in /nfs/dust/cms/user/wolfmor/testsamples/DataMET_16C/8AFF8257-2BAF-E711-BBAC-0CC47A4D7614.root
@@ -1070,15 +1099,20 @@ if True:
                 [1, 276811, 'Summer16_07Aug2017BCD_V11_DATA'],
                 [276831, 278801, 'Summer16_07Aug2017EF_V11_DATA'],
                 [278802, float('inf'), 'Summer16_07Aug2017GH_V11_DATA']]
+            print jet_energy_corrections, jettype
             DataJECs = DataJEC(jet_energy_corrections, jettype)
         elif 'fastsim' in options.tag:
             if 'crab' in options.tag: jecAK4 = createJEC('Summer16_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            # else: jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC',
+                               # ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
             else: jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
         else:  # FullSim
             if 'crab' in options.tag: jecAK4 = createJEC('Summer16_07Aug2017_V11_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            # else: jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC',
+                               # ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
             else: jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 
@@ -1096,8 +1130,12 @@ if True:
 
         # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt
         # from https://twiki.cern.ch/twiki/bin/viewauth/CMS/DCUserPage
-        with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/goldenjson_era16_UL.json') as goldenjsonfile:
-            goldenjson = json.load(goldenjsonfile)
+        if 'crab' in options.tag:
+            with open('goldenjson_era16_UL.json') as goldenjsonfile:
+                goldenjson = json.load(goldenjsonfile)
+        else:
+            with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/goldenjson_era16_UL.json') as goldenjsonfile:
+                goldenjson = json.load(goldenjsonfile)
 
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
         # and https://twiki.cern.ch/twiki/bin/view/CMS/PdmVDataReprocessingUL2016
@@ -1108,13 +1146,29 @@ if True:
                 [278769, float('inf'), 'Summer19UL16_RunFGH_V7_DATA']]
             DataJECs = DataJEC(jet_energy_corrections, jettype)
         elif 'fastsim' in options.tag:
-            raise NotImplementedError('no JECs for UL FastSim')
-        else:  # FullSim
+            ## toDo: same as for FullSim; implement JEC for fastsim, sofar no JEC for fastsim avialable [update 2022/12/16]
+            ## toDo: implement crab options if ever run fastsim via crab
             if 'era16_UL_APV' in options.tag:
                 jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC',
                                    ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
             else:
-                jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC',
+                jecAK4 = createJEC('/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC',
+                                   ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+
+        else:  # FullSim
+            if 'era16_UL_APV' in options.tag:
+                if 'crab' in options.tag:
+                    jecAK4 = createJEC('Summer19UL16_V7_MC',
+                                   ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+                else:
+                    jecAK4 = createJEC('/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC',
+                                   ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            else:
+                if 'crab' in options.tag:
+                    jecAK4 = createJEC('Summer19UL16APV_V7_MC',
+                                   ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+                else:
+                    jecAK4 = createJEC('/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC',
                                    ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 
         # tau energy scale (TES)
@@ -1450,7 +1504,8 @@ for ifile, f in enumerate(options.inputFiles):
 
         fname = 'root://' + redir + '/' + f.strip()
         
-        if 'crab' in options.tag: fname = 'root://' + redir + '/' + '/pnfs/desy.de/cms/tier2' +  f.strip()
+        if 'crab' in options.tag: 
+            fname = 'root://' + redir + '/' + '/pnfs/desy.de/cms/tier2' +  f.strip()
         
         print ''
         print fname
@@ -1465,7 +1520,7 @@ for ifile, f in enumerate(options.inputFiles):
             retry += 1
             if retry > 5: break
 
-            if 'crab' in options.tag: fin = ROOT.TFile.Open('root://' + redir + '/' + '/pnfs/desy.de/cms/tier2' +  f.strip())
+            if 'crab' in options.tag: fin = ROOT.TFile.Open('root://cms-xrd-global.cern.ch/' + f.strip())
             else: fin = ROOT.TFile.Open('root://' + redir + '/' + f.strip())
 
     events = Events(fin)
