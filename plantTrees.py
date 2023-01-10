@@ -189,8 +189,7 @@ class DataJEC:
     def __init__(self, inputmap, jettype):
         for minrun, maxrun, version in inputmap:
             JECMap = {}
-            if 'crab' in globals()['options'].tag: JECMap['jecAK4'] = createJEC(version, ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
-            else: JECMap['jecAK4'] = createJEC('/nfs/dust/cms/user/tewsalex/JECs/'+version+'/'+version, ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            JECMap['jecAK4'] = createJEC(globals()['localpath'] + 'JECs/'+version+'/'+version, ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
             self.JECList.append([minrun, maxrun, JECMap])
 
     def GetJECMap(self, run):
@@ -223,6 +222,10 @@ saveOutputFile = True
 
 if 'test' in options.tag: isTest = True
 else: isTest = False
+
+if 'crab' in options.tag: localpath = ''
+else: localpath = '/nfs/dust/cms/user/wolfmor/NTupleStuff/'
+
 nEventsTest = 100 # number of events that are analyzed in case of test
 printevery = 100
 
@@ -1089,12 +1092,9 @@ if True:
 
         # https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
         # from https://twiki.cern.ch/twiki/bin/viewauth/CMS/PdmV2016Analysis#Re_reco_datasets_07Aug17
-        if 'crab' in options.tag:
-            with open('goldenjson_era16_07Aug17.json') as goldenjsonfile:
-                goldenjson = json.load(goldenjsonfile)
-        else: 
-            with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/goldenjson_era16_07Aug17.json') as goldenjsonfile:
-                goldenjson = json.load(goldenjsonfile)
+
+        with open(localpath + 'goldenjson_era16_07Aug17.json') as goldenjsonfile:
+            goldenjson = json.load(goldenjsonfile)
 
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
         if 'data' in options.tag:  # data
@@ -1106,21 +1106,16 @@ if True:
             DataJECs = DataJEC(jet_energy_corrections, jettype)
             
         elif 'fastsim' in options.tag:
-            if 'crab' in options.tag: jecAK4 = createJEC('Summer16_FastSimV1_MC',
-                               ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
-            else: jecAK4 = createJEC('/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC',
+            jecAK4 = createJEC(localpath + 'JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
         else:  # FullSim
-            if 'crab' in options.tag: jecAK4 = createJEC('Summer16_07Aug2017_V11_MC',
-                               ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
-            else: jecAK4 = createJEC('/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC',
+            jecAK4 = createJEC(localpath + 'JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 
         # tau energy scale (TES)
         # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
         if tauIDalgo == 'MVArun2v1DBoldDMwLT':
-            if 'crab' in options.tag: tesfile = ROOT.TFile('TauES_dm_MVAoldDM2017v2_2016Legacy.root')
-            else: tesfile = ROOT.TFile('/nfs/dust/cms/user/wolfmor/TES/TauES_dm_MVAoldDM2017v2_2016Legacy.root')
+            tesfile = ROOT.TFile(localpath + 'TES/TauES_dm_MVAoldDM2017v2_2016Legacy.root')
             teshist = tesfile.Get('tes')
         else:
             raise NotImplementedError('tauIDalgo unknown or not specified')
@@ -1130,11 +1125,7 @@ if True:
 
         # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt
         # from https://twiki.cern.ch/twiki/bin/viewauth/CMS/DCUserPage
-        if 'crab' in options.tag:
-            with open('goldenjson_era16_UL.json') as goldenjsonfile:
-                goldenjson = json.load(goldenjsonfile)
-        else:
-            with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/goldenjson_era16_UL.json') as goldenjsonfile:
+        with open(localpath + 'goldenjson_era16_UL.json') as goldenjsonfile:
                 goldenjson = json.load(goldenjsonfile)
 
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
@@ -1148,25 +1139,15 @@ if True:
             
         elif 'fastsim' in options.tag:
             ## toDo: same as for 'era16_07Aug17'; not available so far
-            if 'crab' in options.tag: jecAK4 = createJEC('Summer16_FastSimV1_MC',
-                            ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
-            else: jecAK4 = createJEC('/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC',
+            jecAK4 = createJEC(localpath + 'JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC',
                             ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 
         else:  # FullSim
             if 'era16_UL_APV' in options.tag:
-                if 'crab' in options.tag:
-                    jecAK4 = createJEC('Summer19UL16_V7_MC',
-                                   ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
-                else:
-                    jecAK4 = createJEC('/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC',
+                jecAK4 = createJEC(localpath + 'JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC',
                                    ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
             else:
-                if 'crab' in options.tag:
-                    jecAK4 = createJEC('Summer19UL16APV_V7_MC',
-                                   ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
-                else:
-                    jecAK4 = createJEC('/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC',
+                jecAK4 = createJEC(localpath + 'JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC',
                                    ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 
         # tau energy scale (TES)
@@ -1183,7 +1164,7 @@ if True:
 
         # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
         # from https://twiki.cern.ch/twiki/bin/viewauth/CMS/DCUserPage
-        with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/goldenjson_era17_17Nov2017.json') as goldenjsonfile:
+        with open(localpath + 'goldenjson_era17_17Nov2017.json') as goldenjsonfile:
             goldenjson = json.load(goldenjsonfile)
 
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
@@ -1212,7 +1193,7 @@ if True:
 
         # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions18/13TeV/ReReco/Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt
         # from https://twiki.cern.ch/twiki/bin/viewauth/CMS/DCUserPage
-        with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/goldenjson_era18_17Sep2018.json') as goldenjsonfile:
+        with open(localpath + 'goldenjson_era18_17Sep2018.json') as goldenjsonfile:
             goldenjson = json.load(goldenjsonfile)
 
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
@@ -1395,12 +1376,12 @@ if not 'skipSVs' in options.tag:
                 filesWithDCA[0][event_id][nSV] = dca
 
     else: 
-        localpath = '/nfs/dust/cms/user/tewsalex/rootfiles/edmfiles/svfile_'
+        localpath_out = '/nfs/dust/cms/user/tewsalex/rootfiles/edmfiles/svfile_'
        
         for ifile, f in enumerate(options.inputFiles):
             
             #vertexfile = localpath+f.split("/")[-2]+"_"+f.split("/")[-1]
-            vertexfile = localpath+f.split("/")[-1]
+            vertexfile = localpath_out+f.split("/")[-1]
             #vertexfile = '/pnfs/desy.de/cms/tier2/store/user/altews/ZJetsToNuNu_Zpt-200toInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/v6_2022_11_23/221123_104832/0000/test_forCrab_1.root' 
 
             '''
@@ -3026,7 +3007,7 @@ for ifile, f in enumerate(options.inputFiles):
         if 'SignalV1' in options.tag or 'SignalV2' in options.tag or 'SignalFullV2' in options.tag:
 
             # from https://twiki.cern.ch/twiki/bin/view/LHCPhysics/SUSYCrossSections13TeVhino
-            higgsinoxsecfile = ROOT.TFile('/nfs/dust/cms/user/wolfmor/NTupleStuff/CN_hino_13TeV.root')
+            higgsinoxsecfile = ROOT.TFile(localpath + 'CN_hino_13TeV.root')
 
             if 100 <= chipmmFILE < 150:
                 higgsinoxsec = higgsinoxsecfile.Get('fit_nom_0')
@@ -3057,13 +3038,13 @@ for ifile, f in enumerate(options.inputFiles):
             fSimEventNumbers_Signal = None
             hSimEventNumbers_Signal = None
             if 'SignalV1' in options.tag:
-                fSimEventNumbers_Signal = ROOT.TFile('/nfs/dust/cms/user/wolfmor/NTupleStuff/simEventNumbers_AOD_v1.root')
+                fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_AOD_v1.root')
                 hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_AOD_v1')  # is TH2F with sim. event numbers for each model point
             elif 'SignalV2' in options.tag:
-                fSimEventNumbers_Signal = ROOT.TFile('/nfs/dust/cms/user/wolfmor/NTupleStuff/simEventNumbers_AOD_v2.root')
+                fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_AOD_v2.root')
                 hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_AOD_v2')  # is TH2F with sim. event numbers for each model point
             elif 'SignalFullV2' in options.tag:
-                fSimEventNumbers_Signal = ROOT.TFile('/nfs/dust/cms/user/wolfmor/NTupleStuff/simEventNumbers_FullSim_AOD_v2.root')
+                fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_FullSim_AOD_v2.root')
                 hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_FullSim_AOD_v2')  # is TH2F with sim. event numbers for each model point
                 
             if fSimEventNumbers_Signal is not None and hSimEventNumbers_Signal is not None:
@@ -3077,7 +3058,7 @@ for ifile, f in enumerate(options.inputFiles):
 
         elif 'SignalStopV3' in options.tag:
 
-            with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/SUSYCrossSections13TeVstopsbottom.json') as stopxsecfile:
+            with open(localpath + 'SUSYCrossSections13TeVstopsbottom.json') as stopxsecfile:
                 stopxsec = json.load(stopxsecfile)
                 crossSection = stopxsec[str(int(mstopFILE))][0]
 
@@ -3146,30 +3127,30 @@ for ifile, f in enumerate(options.inputFiles):
                             numSimEvents = bkgnsim[processid]
                 else:
                     if 'era16_07Aug17' in options.tag:
-                        with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/BkgCrossSections.json') as bkgxsecfile:
+                        with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
                             bkgxsec = json.load(bkgxsecfile)
                             crossSection = bkgxsec[processid]
 
-                        with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/simEventNumbers_Bkg.json') as bkgnsimfile:
+                        with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
                             bkgnsim = json.load(bkgnsimfile)
                             numSimEvents = bkgnsim[processid]
                     elif 'era16_UL_APV' in options.tag:
                         ### ToDo: update json files here for UL
-                        with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/BkgCrossSections.json') as bkgxsecfile:
+                        with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
                             bkgxsec = json.load(bkgxsecfile)
                             crossSection = bkgxsec[processid]
 
-                        with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/simEventNumbers_Bkg.json') as bkgnsimfile:
+                        with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
                             bkgnsim = json.load(bkgnsimfile)
                             numSimEvents = bkgnsim[processid]
                             
                     elif 'era16_UL' in options.tag:
                         ### ToDo: update json files here for UL
-                        with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/BkgCrossSections.json') as bkgxsecfile:
+                        with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
                             bkgxsec = json.load(bkgxsecfile)
                             crossSection = bkgxsec[processid]
 
-                        with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/simEventNumbers_Bkg.json') as bkgnsimfile:
+                        with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
                             bkgnsim = json.load(bkgnsimfile)
                             numSimEvents = bkgnsim[processid]
                         
@@ -3190,7 +3171,7 @@ for ifile, f in enumerate(options.inputFiles):
         if 'fastsim' in options.tag and 'signal' in options.tag:
 
             if 'crab' in options.tag: fPUweights = ROOT.TFile('PUweights.root')
-            else: fPUweights = ROOT.TFile('/nfs/dust/cms/user/wolfmor/NTupleStuff/PUweights.root')
+            else: fPUweights = ROOT.TFile(localpath + 'PUweights.root')
 
             hPUweightFastFull = fPUweights.Get('NPVsPerEventSignalFull:SignalFast')
             binPUweightFastFull = hPUweightFastFull.GetXaxis().FindBin(n_pv)
