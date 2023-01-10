@@ -51,6 +51,7 @@ era16_UL_APV -> after / with HIP problem, preVFP samples
 era17_UL -> ...
 era18_UL -> ...
 
+## outdated; dont use anymore
 era17_17Nov2017 -> ...
 era18_17Sep2018 -> ...
 
@@ -188,7 +189,8 @@ class DataJEC:
     def __init__(self, inputmap, jettype):
         for minrun, maxrun, version in inputmap:
             JECMap = {}
-            JECMap['jecAK4'] = createJEC('/nfs/dust/cms/user/tewsalex/JECs/'+version+'/'+version, ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            if 'crab' in globals()['options'].tag: JECMap['jecAK4'] = createJEC(version, ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            else: JECMap['jecAK4'] = createJEC('/nfs/dust/cms/user/tewsalex/JECs/'+version+'/'+version, ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
             self.JECList.append([minrun, maxrun, JECMap])
 
     def GetJECMap(self, run):
@@ -249,6 +251,7 @@ if True:
         if 'cleanleptons' in options.tag: nameout += '_DYCleaned'
       
         if 'crab' in options.tag: fout = ROOT.TFile('crab_NTuple.root', 'recreate')
+        #if 'pnfs' in options.tag: fout = ROOT.TFile( '/pnfs/desy.de/cms/tier2/store/user/altews/Signal/'+nameout + '.root', 'recreate')
         else: fout = ROOT.TFile(nameout + '.root', 'recreate')
 
         fout.cd()
@@ -1101,19 +1104,16 @@ if True:
                 [278802, float('inf'), 'Summer16_07Aug2017GH_V11_DATA']]
             print jet_energy_corrections, jettype
             DataJECs = DataJEC(jet_energy_corrections, jettype)
+            
         elif 'fastsim' in options.tag:
             if 'crab' in options.tag: jecAK4 = createJEC('Summer16_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
-            # else: jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC',
-                               # ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
-            else: jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC',
+            else: jecAK4 = createJEC('/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
         else:  # FullSim
             if 'crab' in options.tag: jecAK4 = createJEC('Summer16_07Aug2017_V11_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
-            # else: jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC',
-                               # ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
-            else: jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC',
+            else: jecAK4 = createJEC('/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 
         # tau energy scale (TES)
@@ -1145,15 +1145,13 @@ if True:
                 [276831, 278807, 'Summer19UL16APV_RunEF_V7_DATA'],
                 [278769, float('inf'), 'Summer19UL16_RunFGH_V7_DATA']]
             DataJECs = DataJEC(jet_energy_corrections, jettype)
+            
         elif 'fastsim' in options.tag:
-            ## toDo: same as for FullSim; implement JEC for fastsim, sofar no JEC for fastsim avialable [update 2022/12/16]
-            ## toDo: implement crab options if ever run fastsim via crab
-            if 'era16_UL_APV' in options.tag:
-                jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC',
-                                   ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
-            else:
-                jecAK4 = createJEC('/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC',
-                                   ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            ## toDo: same as for 'era16_07Aug17'; not available so far
+            if 'crab' in options.tag: jecAK4 = createJEC('Summer16_FastSimV1_MC',
+                            ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            else: jecAK4 = createJEC('/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC',
+                            ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 
         else:  # FullSim
             if 'era16_UL_APV' in options.tag:
@@ -1180,6 +1178,7 @@ if True:
         else:
             raise NotImplementedError('tauIDalgo unknown or not specified')
 
+    ### toDO: not updated to usage with CRAB
     elif 'era17_17Nov2017' in options.tag:
 
         # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
@@ -1208,6 +1207,7 @@ if True:
         else:
             raise NotImplementedError('tauIDalgo unknown or not specified')
 
+    ### toDO: not updated to usage with CRAB
     elif 'era18_17Sep2018' in options.tag:
 
         # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions18/13TeV/ReReco/Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt
@@ -1594,10 +1594,11 @@ for ifile, f in enumerate(options.inputFiles):
         lumisec = event.eventAuxiliary().luminosityBlock()
         eventnum = event.eventAuxiliary().event()
         event_id = str(event.eventAuxiliary().run())+"_"+str(event.eventAuxiliary().luminosityBlock())+"_"+str(event.eventAuxiliary().event())
-        print "filenumber", ifile, "event", ievent, "event no", event.eventAuxiliary().event(), " run num", event.eventAuxiliary().run(), "lumi section", event.eventAuxiliary().luminosityBlock()
+        #print "filenumber", ifile, "event", ievent, "event no", event.eventAuxiliary().event(), " run num", event.eventAuxiliary().run(), "lumi section", event.eventAuxiliary().luminosityBlock()
         
         if 'crab' in options.tag and 'skipSVs' not in options.tag:
-            if event_id not in filesWithSV[ifile].keys(): continue
+            if event_id not in filesWithSV[0].keys(): continue
+            #if event_id not in filesWithSV[ifile].keys(): continue
             nevents +=1
         
         if 'pmssm' in options.tag:
@@ -2388,7 +2389,6 @@ for ifile, f in enumerate(options.inputFiles):
         hCutflow.Fill(cutflow)
 
         chpfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_chpf(p, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.)])
-        chpfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_pf(p, pt_threshold=0.)])
         pfcandsforiso0 = np.array([(p.pt(), p.eta(), p.phi()) for p in pfcands if passesPreselection_iso_pf(p, pt_threshold=0.)])
         jetsforiso15 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets if passesPreselection_iso_jet(j, pt_threshold=15.)])
 
@@ -3116,21 +3116,63 @@ for ifile, f in enumerate(options.inputFiles):
 
             if processid is not None:
                 if 'crab' in options.tag:
-                    with open('BkgCrossSections.json') as bkgxsecfile:
-                        bkgxsec = json.load(bkgxsecfile)
-                        crossSection = bkgxsec[processid]
+                    if 'era16_07Aug17' in options.tag:
+                        with open('BkgCrossSections.json') as bkgxsecfile:
+                            bkgxsec = json.load(bkgxsecfile)
+                            crossSection = bkgxsec[processid]
 
-                    with open('simEventNumbers_Bkg.json') as bkgnsimfile:
-                        bkgnsim = json.load(bkgnsimfile)
-                        numSimEvents = bkgnsim[processid]
+                        with open('simEventNumbers_Bkg.json') as bkgnsimfile:
+                            bkgnsim = json.load(bkgnsimfile)
+                            numSimEvents = bkgnsim[processid]
+                            
+                    elif 'era16_UL_APV' in options.tag:
+                    ### ToDo: update json files here for UL
+                        with open('BkgCrossSections.json') as bkgxsecfile:
+                            bkgxsec = json.load(bkgxsecfile)
+                            crossSection = bkgxsec[processid]
+
+                        with open('simEventNumbers_Bkg.json') as bkgnsimfile:
+                            bkgnsim = json.load(bkgnsimfile)
+                            numSimEvents = bkgnsim[processid]
+                            
+                    elif 'era16_UL' in options.tag:
+                        ### ToDo: update json files here for UL
+                        with open('BkgCrossSections.json') as bkgxsecfile:
+                            bkgxsec = json.load(bkgxsecfile)
+                            crossSection = bkgxsec[processid]
+
+                        with open('simEventNumbers_Bkg.json') as bkgnsimfile:
+                            bkgnsim = json.load(bkgnsimfile)
+                            numSimEvents = bkgnsim[processid]
                 else:
-                    with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/BkgCrossSections.json') as bkgxsecfile:
-                        bkgxsec = json.load(bkgxsecfile)
-                        crossSection = bkgxsec[processid]
+                    if 'era16_07Aug17' in options.tag:
+                        with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/BkgCrossSections.json') as bkgxsecfile:
+                            bkgxsec = json.load(bkgxsecfile)
+                            crossSection = bkgxsec[processid]
 
-                    with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/simEventNumbers_Bkg.json') as bkgnsimfile:
-                        bkgnsim = json.load(bkgnsimfile)
-                        numSimEvents = bkgnsim[processid]
+                        with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/simEventNumbers_Bkg.json') as bkgnsimfile:
+                            bkgnsim = json.load(bkgnsimfile)
+                            numSimEvents = bkgnsim[processid]
+                    elif 'era16_UL_APV' in options.tag:
+                        ### ToDo: update json files here for UL
+                        with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/BkgCrossSections.json') as bkgxsecfile:
+                            bkgxsec = json.load(bkgxsecfile)
+                            crossSection = bkgxsec[processid]
+
+                        with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/simEventNumbers_Bkg.json') as bkgnsimfile:
+                            bkgnsim = json.load(bkgnsimfile)
+                            numSimEvents = bkgnsim[processid]
+                            
+                    elif 'era16_UL' in options.tag:
+                        ### ToDo: update json files here for UL
+                        with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/BkgCrossSections.json') as bkgxsecfile:
+                            bkgxsec = json.load(bkgxsecfile)
+                            crossSection = bkgxsec[processid]
+
+                        with open('/nfs/dust/cms/user/wolfmor/NTupleStuff/simEventNumbers_Bkg.json') as bkgnsimfile:
+                            bkgnsim = json.load(bkgnsimfile)
+                            numSimEvents = bkgnsim[processid]
+                        
 
         event_level_var_array['crossSection'][0] = crossSection
         event_level_var_array['numSimEvents'][0] = numSimEvents
