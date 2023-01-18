@@ -367,7 +367,7 @@ if True:
         , ('n_track_total', 'I'), ('n_track_basic', 'I'), ('n_track', 'I')
         
         , ('numSVs', 'I'), ('n_sv_total', 'I'), ('n_sv', 'I'), ('n_sv_weighted_rebin', 'F'), ('n_sv_weighted', 'F')
-        
+        ,('n_sv_daughter', 'I')
         ,('n_selTracks' , 'I')
         ]
     event_level_var_names += var_names_event
@@ -976,17 +976,18 @@ if True:
         , ('svdaughter_trackMatching_dxyzminrandom', 'F'), ('svdaughter_trackMatching_drminrandom', 'F')
         , ('svdaughter_trackMatching_drminold', 'F'), ('svdaughter_trackMatching_drminoldrandom', 'F')
     ]	
+    
 
     SV_level_var_array = {}
     for n in SV_level_var_names:
         if 'max50SVs' in options.tag: SV_level_var_array[n[0]] = array('f', 51*[0.])
         else: SV_level_var_array[n[0]] = array('f', 1000*[0.])
-        tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv]/F')
+        tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv_total]/F')
 
-    sv_vars = {}
-    for n in SV_level_var_names:
-        if 'max50SVs' in options.tag: sv_vars[n[0]] = array('f', 51*[0.])
-        else: sv_vars[n[0]] = array('f', 500*[0.])    
+    # sv_vars = {}
+    # for n in SV_level_var_names:
+        # if 'max50SVs' in options.tag: sv_vars[n[0]] = array('f', 51*[0.])
+        # else: sv_vars[n[0]] = array('f', 500*[0.])    
     
     
     var_names_sv_resolution = [
@@ -1001,8 +1002,20 @@ if True:
     for n in var_names_sv_resolution:
         if 'max50SVs' in options.tag: SV_level_var_array[n[0]] = array('f', 51*[0.])
         else: SV_level_var_array[n[0]] = array('f', 500*[0.])
-        tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv]/F')
+        tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv_total]/F')
 
+    SVDaughter_level_var_names = [('svdaughter_trackMatching_tmin', 'F'), ('svdaughter_trackMatching_dxyzmin', 'F'), ('svdaughter_trackMatching_drmin', 'F')
+        , ('svdaughter_trackMatching_dxyzminrandom', 'F'), ('svdaughter_trackMatching_drminrandom', 'F')
+        , ('svdaughter_trackMatching_drminold', 'F'), ('svdaughter_trackMatching_drminoldrandom', 'F')
+    ]
+
+    SVDaughter_level_var = {}
+    for n in SVDaughter_level_var_names:
+        if 'max50SVs' in options.tag: SV_level_var_array[n[0]] = array('f', 2*51*[0.])
+        else: SV_level_var_array[n[0]] = array('f', 2*1000*[0.])
+        tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv_daughter]/F')
+    
+    
     var_names_selected_tracks = [
         ('selTracks_pt' , 'F'),
         ('id' , 'I')
@@ -1015,7 +1028,7 @@ if True:
     
     # cutflow histos
 
-    hCutflow = ROOT.TH1F('hCutflow', 'hCutflow', 10, 0., 10.)
+    hCutflow = ROOT.TH1F('hCutflow', 'hCutflow', 11, -1., 10.)
 
     hMetptRaw = ROOT.TH1F('hMetptRaw', 'hMetptRaw', 5000, 0., 5000.)
     hMetptBeforeLeptonCleaning = ROOT.TH1F('hMetptBeforeLeptonCleaning', 'hMetptBeforeLeptonCleaning', 5000, 0., 5000.)
@@ -1144,17 +1157,17 @@ if True:
 
         else:  # FullSim
             if 'era16_UL_APV' in options.tag:
-                jecAK4 = createJEC(localpath + 'JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC',
-                                   ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
-            else:
                 jecAK4 = createJEC(localpath + 'JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC',
                                    ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            else:
+                jecAK4 = createJEC(localpath + 'JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC',
+                                   ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+
 
         # tau energy scale (TES)
         # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
         if tauIDalgo == 'MVArun2v1DBoldDMwLT':
-            if 'crab' in options.tag: tesfile = ROOT.TFile('TauES_dm_MVAoldDM2017v2_2016Legacy.root')  # TODO: this is not UL but ok...
-            else: tesfile = ROOT.TFile('/nfs/dust/cms/user/wolfmor/TES/TauES_dm_MVAoldDM2017v2_2016Legacy.root')  # TODO: this is not UL but ok...
+            tesfile = ROOT.TFile(localpath + 'TES/TauES_dm_MVAoldDM2017v2_2016Legacy.root')  # TODO: this is not UL but ok...
             teshist = tesfile.Get('tes')
         else:
             raise NotImplementedError('tauIDalgo unknown or not specified')
@@ -1174,16 +1187,16 @@ if True:
             # jet_energy_corrections = []
             # DataJECs = DataJEC(jet_energy_corrections, jettype)
         elif 'fastsim' in options.tag:
-            jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Fall17_FastSimV1_MC/Fall17_FastSimV1_MC',
+            jecAK4 = createJEC(localpath + 'Fall17_FastSimV1_MC/Fall17_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
         else:  # FullSim
-            jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Fall17_17Nov2017_V32_MC/Fall17_17Nov2017_V32_MC',
+            jecAK4 = createJEC(localpath + 'JECs/Fall17_17Nov2017_V32_MC/Fall17_17Nov2017_V32_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 
         # tau energy scale (TES)
         # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
         if tauIDalgo == 'MVArun2v1DBoldDMwLT':
-            tesfile = ROOT.TFile('/nfs/dust/cms/user/wolfmor/TES/TauES_dm_MVAoldDM2017v2_2017ReReco.root')
+            tesfile = ROOT.TFile(localpath + 'TES/TauES_dm_MVAoldDM2017v2_2017ReReco.root')
             teshist = tesfile.Get('tes')
         else:
             raise NotImplementedError('tauIDalgo unknown or not specified')
@@ -1203,16 +1216,16 @@ if True:
             # jet_energy_corrections = []
             # DataJECs = DataJEC(jet_energy_corrections, jettype)
         elif 'fastsim' in options.tag:
-            jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Autumn18_FastSimV1_MC/Autumn18_FastSimV1_MC',
+            jecAK4 = createJEC(localpath + 'JECs/Autumn18_FastSimV1_MC/Autumn18_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
         else:  # FullSim
-            jecAK4 = createJEC('/nfs/dust/cms/user/wolfmor/JECs/Autumn18_V19_MC/Autumn18_V19_MC',
+            jecAK4 = createJEC(localpath + 'JECs/Autumn18_V19_MC/Autumn18_V19_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 
         # tau energy scale (TES)
         # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
         if tauIDalgo == 'MVArun2v1DBoldDMwLT':
-            tesfile = ROOT.TFile('/nfs/dust/cms/user/wolfmor/TES/TauES_dm_MVAoldDM2017v2_2018ReReco.root')
+            tesfile = ROOT.TFile(localpath + 'TES/TauES_dm_MVAoldDM2017v2_2018ReReco.root')
             teshist = tesfile.Get('tes')
         else:
             raise NotImplementedError('tauIDalgo unknown or not specified')
@@ -1557,8 +1570,6 @@ for ifile, f in enumerate(options.inputFiles):
 
         if ievent % printevery == 0: print 'analyzing event %d of %d' % (ievent, nevents)
 
-        tCounter.Fill()
-
         cutflow = 0
         hCutflow.Fill(cutflow)
 
@@ -1578,9 +1589,14 @@ for ifile, f in enumerate(options.inputFiles):
         #print "filenumber", ifile, "event", ievent, "event no", event.eventAuxiliary().event(), " run num", event.eventAuxiliary().run(), "lumi section", event.eventAuxiliary().luminosityBlock()
         
         if 'crab' in options.tag and 'skipSVs' not in options.tag:
+            
+            hCutflow.Fill(cutflow)
             if event_id not in filesWithSV[0].keys(): continue
             #if event_id not in filesWithSV[ifile].keys(): continue
             nevents +=1
+            cutflow = -1
+            
+        tCounter.Fill()
         
         if 'pmssm' in options.tag:
 
@@ -1600,11 +1616,15 @@ for ifile, f in enumerate(options.inputFiles):
         if 'data' in options.tag:
 
             if runnum != lastrun or lumisec != lastlumi:
+                if 'debug' in options.tag: print "new runnum ", runnum, " or luminsec", lumisec
+                if 'debug' in options.tag: print "str(runnum) in goldenjson", goldenjsonfile, str(runnum) in goldenjson
+                
                 if str(runnum) in goldenjson: goodlumisecs = goldenjson[str(runnum)]
                 else: goodlumisecs = []
                 isgood = False
                 for gls in goodlumisecs:
                     if lumisec in range(gls[0], gls[1]+1): isgood = True
+                    print 'lumisec in range(gls[0], gls[1]+1)', gls[0], gls[1]+1, lumisec in range(gls[0], gls[1]+1)
                     if isgood: break
 
             if not isgood:
@@ -2064,7 +2084,7 @@ for ifile, f in enumerate(options.inputFiles):
             elif muonsCleaned: collection = muons
             else:
                 print 'not tidy...'
-                sys.exit(1)
+                continue
 
             l1pt = collection[l1Idx].pt()
             l2pt = collection[l2Idx].pt()
@@ -2084,7 +2104,7 @@ for ifile, f in enumerate(options.inputFiles):
                 l2absisodbeta = calcIso_dBeta(collection[l2Idx].pfIsolationR03())
                 l2relisodbeta = calcIso_dBeta(collection[l2Idx].pfIsolationR03()) / collection[l2Idx].pt()
 
-                collection, tracks, pfcands, jets, met , filesWithSV[ifile][event_id] = cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, jets, met, filesWithSV[ifile][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet)
+            collection, tracks, pfcands, jets, met , filesWithSV[ifile][event_id] = cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, jets, met, filesWithSV[ifile][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet)
 
             if tracks is None: continue
 
@@ -3096,63 +3116,34 @@ for ifile, f in enumerate(options.inputFiles):
                 pass
 
             if processid is not None:
-                if 'crab' in options.tag:
-                    if 'era16_07Aug17' in options.tag:
-                        with open('BkgCrossSections.json') as bkgxsecfile:
-                            bkgxsec = json.load(bkgxsecfile)
-                            crossSection = bkgxsec[processid]
 
-                        with open('simEventNumbers_Bkg.json') as bkgnsimfile:
-                            bkgnsim = json.load(bkgnsimfile)
-                            numSimEvents = bkgnsim[processid]
-                            
-                    elif 'era16_UL_APV' in options.tag:
+                if 'era16_07Aug17' in options.tag:
+                    with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
+                        bkgxsec = json.load(bkgxsecfile)
+                        crossSection = bkgxsec[processid]
+
+                    with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
+                        bkgnsim = json.load(bkgnsimfile)
+                        numSimEvents = bkgnsim[processid]
+                elif 'era16_UL_APV' in options.tag:
                     ### ToDo: update json files here for UL
-                        with open('BkgCrossSections.json') as bkgxsecfile:
-                            bkgxsec = json.load(bkgxsecfile)
-                            crossSection = bkgxsec[processid]
+                    with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
+                        bkgxsec = json.load(bkgxsecfile)
+                        crossSection = bkgxsec[processid]
 
-                        with open('simEventNumbers_Bkg.json') as bkgnsimfile:
-                            bkgnsim = json.load(bkgnsimfile)
-                            numSimEvents = bkgnsim[processid]
-                            
-                    elif 'era16_UL' in options.tag:
-                        ### ToDo: update json files here for UL
-                        with open('BkgCrossSections.json') as bkgxsecfile:
-                            bkgxsec = json.load(bkgxsecfile)
-                            crossSection = bkgxsec[processid]
+                    with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
+                        bkgnsim = json.load(bkgnsimfile)
+                        numSimEvents = bkgnsim[processid]
+                        
+                elif 'era16_UL' in options.tag:
+                    ### ToDo: update json files here for UL
+                    with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
+                        bkgxsec = json.load(bkgxsecfile)
+                        crossSection = bkgxsec[processid]
 
-                        with open('simEventNumbers_Bkg.json') as bkgnsimfile:
-                            bkgnsim = json.load(bkgnsimfile)
-                            numSimEvents = bkgnsim[processid]
-                else:
-                    if 'era16_07Aug17' in options.tag:
-                        with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
-                            bkgxsec = json.load(bkgxsecfile)
-                            crossSection = bkgxsec[processid]
-
-                        with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
-                            bkgnsim = json.load(bkgnsimfile)
-                            numSimEvents = bkgnsim[processid]
-                    elif 'era16_UL_APV' in options.tag:
-                        ### ToDo: update json files here for UL
-                        with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
-                            bkgxsec = json.load(bkgxsecfile)
-                            crossSection = bkgxsec[processid]
-
-                        with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
-                            bkgnsim = json.load(bkgnsimfile)
-                            numSimEvents = bkgnsim[processid]
-                            
-                    elif 'era16_UL' in options.tag:
-                        ### ToDo: update json files here for UL
-                        with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
-                            bkgxsec = json.load(bkgxsecfile)
-                            crossSection = bkgxsec[processid]
-
-                        with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
-                            bkgnsim = json.load(bkgnsimfile)
-                            numSimEvents = bkgnsim[processid]
+                    with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
+                        bkgnsim = json.load(bkgnsimfile)
+                        numSimEvents = bkgnsim[processid]
                         
 
         event_level_var_array['crossSection'][0] = crossSection
@@ -3601,6 +3592,7 @@ for ifile, f in enumerate(options.inputFiles):
         '''
         numsvsfinalpreselection = 0  
         n_sv_total = 0
+        n_sv_daughter = 0
         numSVs = 0
 
         if not 'skipSVs' in options.tag:
@@ -3632,19 +3624,22 @@ for ifile, f in enumerate(options.inputFiles):
                 matchingTrkIdx = [-1, -1]
 
                 for k in range(secondary.numberOfDaughters()):
+                    
+                    n_sv_daughter += 1
+                    
                     print "SV no. ", nSV, "daughter no. ", k, " charge ", secondary.daughter(k).charge()
                     
                     idx, dxyzmin, tminmatching, drmin = findMatch_track_new(secondary.daughter(k), tracks)
                     _, dxyzminrandom, _, drminrandom = findMatch_track_new_random(secondary.daughter(k), tracks)
                     print "dxyzmin", dxyzmin, "drmin", drmin
                     
-                    SV_level_var_array['svdaughter_trackMatching_tmin'][igp] = tminmatching
-                    SV_level_var_array['svdaughter_trackMatching_dxyzmin'][igp] = dxyzmin
-                    SV_level_var_array['svdaughter_trackMatching_drmin'][igp] = drmin
-                    SV_level_var_array['svdaughter_trackMatching_dxyzminrandom'][igp] = dxyzminrandom
-                    SV_level_var_array['svdaughter_trackMatching_drminrandom'][igp] = drminrandom
-                    SV_level_var_array['svdaughter_trackMatching_drminold'][igp] = drmin
-                    SV_level_var_array['svdaughter_trackMatching_drminoldrandom'][igp] = drminrandom
+                    SV_level_var_array['svdaughter_trackMatching_tmin'][k] = tminmatching
+                    SV_level_var_array['svdaughter_trackMatching_dxyzmin'][k] = dxyzmin
+                    SV_level_var_array['svdaughter_trackMatching_drmin'][k] = drmin
+                    SV_level_var_array['svdaughter_trackMatching_dxyzminrandom'][k] = dxyzminrandom
+                    SV_level_var_array['svdaughter_trackMatching_drminrandom'][k] = drminrandom
+                    SV_level_var_array['svdaughter_trackMatching_drminold'][k] = drmin
+                    SV_level_var_array['svdaughter_trackMatching_drminoldrandom'][k] = drminrandom
 
                     if not idx == -1:
                         if (drmin < 0.02)  or (dxyzmin < 0.02 and drmin < 0.04):
@@ -3674,7 +3669,7 @@ for ifile, f in enumerate(options.inputFiles):
                         SV_level_var_array['hasTrackMatch_Low'][nSV] = 0
                         SV_level_var_array['hasTrackMatch_High'][nSV] = 1
                         
-                    numsvsfinalpreselection += 1
+                    #numsvsfinalpreselection += 1
                     continue
                     
                 SV_level_var_array['hasTrackMatch_Low'][nSV] = 1
@@ -3822,6 +3817,16 @@ for ifile, f in enumerate(options.inputFiles):
                     SV_level_var_array['log10IPxyzPU_Low'][nSV] = ROOT.TMath.Log10(minipPU_Low.getIP())
                     SV_level_var_array['log10IPxyPU_Low'][nSV] = ROOT.TMath.Log10(minipPU_Low.getDxy())
                     SV_level_var_array['log10IPzPU_Low'][nSV] = ROOT.TMath.Log10(minipPU_Low.getDz())
+                else:
+                    #SV_level_var_array['idxpvPU'][nSV] = minivPU+1
+                    SV_level_var_array['IPsignificancePU_Low'][nSV] = -999
+                    SV_level_var_array['IPxyzPU_Low'][nSV] = -999
+                    SV_level_var_array['IPxyPU_Low'][nSV] = -999
+                    SV_level_var_array['IPzPU_Low'][nSV] = -999
+                    SV_level_var_array['log10IPsignificancePU_Low'][nSV] = -999
+                    SV_level_var_array['log10IPxyzPU_Low'][nSV] = -999
+                    SV_level_var_array['log10IPxyPU_Low'][nSV] = -999
+                    SV_level_var_array['log10IPzPU_Low'][nSV] = -999
 
                 
                 if not minivPU_High == -1:
@@ -3834,6 +3839,16 @@ for ifile, f in enumerate(options.inputFiles):
                     SV_level_var_array['log10IPxyzPU_High'][nSV] = ROOT.TMath.Log10(minipPU_High.getIP())
                     SV_level_var_array['log10IPxyPU_High'][nSV] = ROOT.TMath.Log10(minipPU_High.getDxy())
                     SV_level_var_array['log10IPzPU_High'][nSV] = ROOT.TMath.Log10(minipPU_High.getDz())
+                else:
+                    #SV_level_var_array['idxpvPU'][nSV] = minivPU+1
+                    SV_level_var_array['IPsignificancePU_High'][nSV] = -999
+                    SV_level_var_array['IPxyzPU_High'][nSV] = -999
+                    SV_level_var_array['IPxyPU_High'][nSV] = -999
+                    SV_level_var_array['IPzPU_High'][nSV] = -999
+                    SV_level_var_array['log10IPsignificancePU_High'][nSV] = -999
+                    SV_level_var_array['log10IPxyzPU_High'][nSV] = -999
+                    SV_level_var_array['log10IPxyPU_High'][nSV] = -999
+                    SV_level_var_array['log10IPzPU_High'][nSV] = -999
 
                 
                 mounMatch_Low, mounDR_Low = matchToMuon(trackLow, muons)
@@ -3862,6 +3877,17 @@ for ifile, f in enumerate(options.inputFiles):
                 else: 
                     SV_level_var_array['muonMatched_Low'][nSV] = 0
                     SV_level_var_array['isSoftMuon_Low'][nSV] = 0
+                    
+                    SV_level_var_array['numberOfChambers_Low'][nSV] = -999
+                    SV_level_var_array['numberOfMatchedStations_Low'][nSV] = -999
+                    #SV_level_var_array['numberOfSegments_Low'][nSV] = -999
+                    SV_level_var_array['isGlobalMuon_Low'][nSV] = 0
+                    SV_level_var_array['isTrackerMuon_Low'][nSV] = 0
+                    SV_level_var_array['normalizedChi2Muon_Low'][nSV] =  -999
+                    SV_level_var_array['trackerLayersWithMeasurementMuon_Low'][nSV] = -999
+                    SV_level_var_array['pixelLayersWithMeasurementMuon_Low'][nSV] = -999
+                    SV_level_var_array['dxyPVMuon_Low'][nSV] = -999
+                    SV_level_var_array['dzPVMuon_Low'][nSV] = -999
 
                 mounMatch_High, mounDR_High = matchToMuon(trackHigh, muons)
                 if mounDR_High < 0.01 : 
@@ -3889,6 +3915,17 @@ for ifile, f in enumerate(options.inputFiles):
                 else: 
                     SV_level_var_array['muonMatched_High'][nSV] = 0
                     SV_level_var_array['isSoftMuon_High'][nSV] = 0
+                    
+                    SV_level_var_array['numberOfChambers_High'][nSV] = -999
+                    SV_level_var_array['numberOfMatchedStations_High'][nSV] = -999
+                    #SV_level_var_array['numberOfSegments_High'][nSV] = -999
+                    SV_level_var_array['isGlobalMuon_High'][nSV] = 0
+                    SV_level_var_array['isTrackerMuon_High'][nSV] = 0
+                    SV_level_var_array['normalizedChi2Muon_High'][nSV] =  -999
+                    SV_level_var_array['trackerLayersWithMeasurementMuon_High'][nSV] = -999
+                    SV_level_var_array['pixelLayersWithMeasurementMuon_High'][nSV] = -999
+                    SV_level_var_array['dxyPVMuon_High'][nSV] = -999
+                    SV_level_var_array['dzPVMuon_High'][nSV] = -999
                     
                 SV_level_var_array['eta_Low'][nSV] = trackLow.eta()
                 SV_level_var_array['pt_Low'][nSV] = trackLow.pt()
@@ -4069,6 +4106,13 @@ for ifile, f in enumerate(options.inputFiles):
                             SV_level_var_array['pdgID_Low'][nSV] = abs(pdgIds[1])
                             SV_level_var_array['pdgID_High'][nSV] = abs(pdgIds[0])
 
+                    else:
+                        SV_level_var_array['hasGenMatchWithSameMother'][nSV] = 0
+                        SV_level_var_array['pdgIDMother_Low'][nSV] = -999999
+                        SV_level_var_array['pdgIDMother_High'][nSV] = -999999	
+                        SV_level_var_array['pdgID_Low'][nSV] = -999999
+                        SV_level_var_array['pdgID_High'][nSV] = -999999
+                            
                     SV_level_var_array['hasEWancestor_Low'][nSV] = hasEWancestors[1]+hasEWancestors_new[1]
                     SV_level_var_array['hasEWancestor_High'][nSV] = hasEWancestors[0]+hasEWancestors_new[0]
 
@@ -4094,7 +4138,29 @@ for ifile, f in enumerate(options.inputFiles):
                             event_level_var_array['res_ncrossn'][0] = (normalvector.Cross(normalvector_reco)).Mag()
                             event_level_var_array['res_alphan'][0] = asin((normalvector.Cross(normalvector_reco).Mag()))
                             event_level_var_array['res_mtransverse2'][0] = mtransverse2 - mtransverse2_reco_muoncase
-                            event_level_var_array['res_mtransverse'][0] = sqrt(mtransverse2)- sqrt(mtransverse2_reco_muoncase)    
+                            event_level_var_array['res_mtransverse'][0] = sqrt(mtransverse2)- sqrt(mtransverse2_reco_muoncase)
+                    else:
+                            SV_level_var_array['mtransverse2_hybrid'][nSV] = -999
+                            event_level_var_array['res_vx'][0] = -999
+                            event_level_var_array['res_vy'][0] = -999
+                            event_level_var_array['res_vz'][0] = -999
+                            event_level_var_array['res_PVx'][0] = -999
+                            event_level_var_array['res_PVy'][0] = -999
+                            event_level_var_array['res_PVz'][0] = -999
+                            event_level_var_array['res_dx'][0] = -999
+                            event_level_var_array['res_dy'][0] = -999
+                            event_level_var_array['res_dz'][0] = -999
+                            event_level_var_array['res_theta'][0] = -999
+                            event_level_var_array['gen_theta'][0] = -999
+                            event_level_var_array['reco_theta'][0] = -999
+                            event_level_var_array['res_deltaEta'][0] = -999
+                            event_level_var_array['res_deltaPhi'][0] = -999
+                            event_level_var_array['res_eta'][0] = -999
+                            event_level_var_array['res_phi'][0] = -999
+                            event_level_var_array['res_ncrossn'][0] = -999
+                            event_level_var_array['res_alphan'][0] = -999
+                            event_level_var_array['res_mtransverse2'][0] = -999
+                            event_level_var_array['res_mtransverse'][0] = -999  
 
 
 
@@ -4106,6 +4172,7 @@ for ifile, f in enumerate(options.inputFiles):
 
         event_level_var_array['numSVs'][0] = numSVs
         event_level_var_array['n_sv_total'][0] = n_sv_total
+        event_level_var_array['n_sv_daughter'][0] = n_sv_daughter
 
         '''
         ###############################################################################################
