@@ -47,7 +47,6 @@ era16_07Aug17 -> use corresponding golden json, JECs, jetID, working points,...
 era16_UL -> before HIP problem
 era16_UL_APV -> after / with HIP problem, preVFP samples
 
-## toDo: implement JECs etc. for 17 and 18 UL
 era17_UL -> ...
 era18_UL -> ...
 
@@ -55,9 +54,10 @@ era18_UL -> ...
 era17_17Nov2017 -> ...
 era18_17Sep2018 -> ...
 
+
+dataset: give full dataset name for numsimevents and xsec (keys to dict. in json)
+-----
 """
-
-
 import sys
 import json
 import re
@@ -210,9 +210,17 @@ class DataJEC:
 ###############################################################################################
 '''
 
-options = VarParsing('python')
-options.parseArguments()
 
+options = VarParsing('python')
+
+options.register('dataset',
+                '',
+                VarParsing.multiplicity.singleton,
+                VarParsing.varType.string,
+                'dataset name'
+)
+
+options.parseArguments()
 
 
 nMaxTracksPerEvent = 10000
@@ -220,13 +228,16 @@ nMaxTracksPerEvent = 10000
 # TODO: check if saveoutputfile
 saveOutputFile = True
 
+dataset = options.dataset
+if 'debug' in options.tag: print 'dataset', dataset
+
 if 'test' in options.tag: isTest = True
 else: isTest = False
 
 if 'crab' in options.tag: localpath = ''
 else: localpath = '/nfs/dust/cms/user/wolfmor/NTupleStuff/'
 
-nEventsTest = 100 # number of events that are analyzed in case of test
+nEventsTest = 1000 # number of events that are analyzed in case of test
 printevery = 100
 
 # TODO: check thresholds for "new" matching
@@ -330,8 +341,10 @@ if True:
         , ('weight_fastSimBug', 'F')
         , ('weight_PU_FastFull', 'F'), ('weight_PU_FastFull_rebin', 'F')
         , ('weight_PU_SigBkg', 'F'), ('weight_PU_SigBkg_rebin', 'F')
+        
+        , ('weight_PU_MCData', 'F')
 
-        , ('n_pv', 'I'), ('rho', 'F')
+        , ('n_pv', 'I'),  ('n_trueInteractions', 'F'),('rho', 'F')
 
         , ('met_pt', 'F'), ('met_phi', 'F')
         , ('met_ptNoFastSimCorr', 'F'), ('met_phiNoFastSimCorr', 'F')
@@ -1265,6 +1278,9 @@ else:
     handle_genjets = Handle('std::vector<reco::GenJet>')
     label_genjets = ('ak4GenJets')
 
+    handle_pileupInfo = Handle('std::vector<PileupSummaryInfo>')
+    label_pileupInfo = ('mixData')
+
 handle_tracks = Handle('std::vector<reco::Track>')
 label_tracks = ('generalTracks')
 
@@ -1503,7 +1519,7 @@ for ifile, f in enumerate(options.inputFiles):
         
         print ''
         print fname
-        
+            
         fin = ROOT.TFile.Open(fname)
 
         retry = 1
@@ -1776,11 +1792,13 @@ for ifile, f in enumerate(options.inputFiles):
             event_level_var_array[t_hlt][0] = trigger_hlt_accept[t_hlt]
         event_level_var_array['triggerfired'][0] = triggerfired
 
-
+        n_trueInteractions = -1.0
         if 'data' not in options.tag:
             event.getByLabel(label_genparticles, handle_genparticles)
             event.getByLabel(label_genmet, handle_genmet)
             event.getByLabel(label_genjets, handle_genjets)
+            event.getByLabel(label_pileupInfo, handle_pileupInfo)
+        
         event.getByLabel(label_pfcands, handle_pfcands)
         event.getByLabel(label_jets, handle_jets)
         event.getByLabel(label_met, handle_met)
@@ -1794,10 +1812,14 @@ for ifile, f in enumerate(options.inputFiles):
             genparticles = handle_genparticles.product()
             genmet = handle_genmet.product().front()
             genjets = handle_genjets.product()
+            pileupInfo = handle_pileupInfo.product().front()
+            n_trueInteractions = pileupInfo.getTrueNumInteractions()
+
         pfcands = handle_pfcands.product()
         jets = handle_jets.product()
         met = handle_met.product().front()
         nbtags = len(handle_btag.product())
+
         photons = handle_photons.product()
         electrons = handle_electrons.product()
         muons = handle_muons.product()
@@ -2204,6 +2226,7 @@ for ifile, f in enumerate(options.inputFiles):
         ###############################################################################################
         '''
 
+        event_level_var_array['n_trueInteractions'][0] = n_trueInteractions
         event_level_var_array['n_pv'][0] = n_pv
         event_level_var_array['rho'][0] = rho
 
@@ -3066,6 +3089,15 @@ for ifile, f in enumerate(options.inputFiles):
             elif 'SignalFullV2' in options.tag:
                 fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_FullSim_AOD_v2.root')
                 hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_FullSim_AOD_v2')  # is TH2F with sim. event numbers for each model point
+            elif 'era16_UL' in options.tag:
+                fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_Signal_v4_era16_UL.root')
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v4_era16_UL')  # is TH2F with sim. event numbers for each model point
+            elif 'era17_UL' in options.tag:
+                fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_Signal_v4_era17_UL.root')
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v4_era17_UL')  # is TH2F with sim. event numbers for each model point
+            elif 'era18_UL' in options.tag:
+                fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_Signal_v4_era18_UL.root')
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v4_era18_UL')  # is TH2F with sim. event numbers for each model point
                 
             if fSimEventNumbers_Signal is not None and hSimEventNumbers_Signal is not None:
 
@@ -3084,36 +3116,37 @@ for ifile, f in enumerate(options.inputFiles):
 
         else:
 
-
-            # TODO: adapt x-sec and nsimevents for UL
-
             processid = None
-            if 'ZJetsToNuNu_Zpt-200toInf' in options.tag:
-                processid = 'ZJetsToNuNu_Zpt-200toInf'
-            elif 'WJetsToLNu_HT-100To200' in options.tag:
-                processid = 'WJetsToLNu_HT-100To200'
-            elif 'WJetsToLNu_HT-200To400' in options.tag:
-                processid = 'WJetsToLNu_HT-200To400'
-            elif 'WJetsToLNu_HT-400To600' in options.tag:
-                processid = 'WJetsToLNu_HT-400To600'
-            elif 'WJetsToLNu_HT-600To800' in options.tag:
-                processid = 'WJetsToLNu_HT-600To800'
-            elif 'WJetsToLNu_HT-800To1200' in options.tag:
-                processid = 'WJetsToLNu_HT-800To1200'
-            elif 'WJetsToLNu_HT-1200To2500' in options.tag:
-                processid = 'WJetsToLNu_HT-1200To2500'
-            elif 'WJetsToLNu_HT-2500ToInf' in options.tag:
-                processid = 'WJetsToLNu_HT-2500ToInf'
-            elif 'DYJetsToLL_Zpt-150toInf' in options.tag:
-                processid = 'DYJetsToLL_Zpt-150toInf'
-            elif 'TTJets_DiLept' in options.tag:
-                processid = 'TTJets_DiLept'
-            elif 'TTJets_SingleLeptFromT' in options.tag:
-                processid = 'TTJets_SingleLeptFromT'
-            elif 'TTJets_SingleLeptFromTbar' in options.tag:
-                processid = 'TTJets_SingleLeptFromTbar'
-            else:
-                pass
+            if'era16_07Aug17' in options.tag:
+                if 'ZJetsToNuNu_Zpt-200toInf' in options.tag:
+                    processid = 'ZJetsToNuNu_Zpt-200toInf'
+                elif 'WJetsToLNu_HT-100To200' in options.tag:
+                    processid = 'WJetsToLNu_HT-100To200'
+                elif 'WJetsToLNu_HT-200To400' in options.tag:
+                    processid = 'WJetsToLNu_HT-200To400'
+                elif 'WJetsToLNu_HT-400To600' in options.tag:
+                    processid = 'WJetsToLNu_HT-400To600'
+                elif 'WJetsToLNu_HT-600To800' in options.tag:
+                    processid = 'WJetsToLNu_HT-600To800'
+                elif 'WJetsToLNu_HT-800To1200' in options.tag:
+                    processid = 'WJetsToLNu_HT-800To1200'
+                elif 'WJetsToLNu_HT-1200To2500' in options.tag:
+                    processid = 'WJetsToLNu_HT-1200To2500'
+                elif 'WJetsToLNu_HT-2500ToInf' in options.tag:
+                    processid = 'WJetsToLNu_HT-2500ToInf'
+                elif 'DYJetsToLL_Zpt-150toInf' in options.tag:
+                    processid = 'DYJetsToLL_Zpt-150toInf'
+                elif 'TTJets_DiLept' in options.tag:
+                    processid = 'TTJets_DiLept'
+                elif 'TTJets_SingleLeptFromT' in options.tag:
+                    processid = 'TTJets_SingleLeptFromT'
+                elif 'TTJets_SingleLeptFromTbar' in options.tag:
+                    processid = 'TTJets_SingleLeptFromTbar'
+                else:
+                    pass
+
+            elif 'era16_UL' in options.tag or 'era17_UL' in options.tag or 'era18_UL' in options.tag:
+                processid = dataset
 
             if processid is not None:
 
@@ -3127,11 +3160,11 @@ for ifile, f in enumerate(options.inputFiles):
                         numSimEvents = bkgnsim[processid]
                 elif 'era16_UL_APV' in options.tag:
                     ### ToDo: update json files here for UL
-                    with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
+                    with open(localpath + 'crossSections_Bkg_era16_UL_APV.json') as bkgxsecfile:
                         bkgxsec = json.load(bkgxsecfile)
                         crossSection = bkgxsec[processid]
 
-                    with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
+                    with open(localpath + 'simEventNumbers_Bkg_era16_UL_APV.json') as bkgnsimfile:
                         bkgnsim = json.load(bkgnsimfile)
                         numSimEvents = bkgnsim[processid]
                         
@@ -3161,8 +3194,7 @@ for ifile, f in enumerate(options.inputFiles):
         weight_PU_SigBkg_rebin = 1.
         if 'fastsim' in options.tag and 'signal' in options.tag:
 
-            if 'crab' in options.tag: fPUweights = ROOT.TFile('PUweights.root')
-            else: fPUweights = ROOT.TFile(localpath + 'PUweights.root')
+            fPUweights = ROOT.TFile(localpath + 'PUweights.root')
 
             hPUweightFastFull = fPUweights.Get('NPVsPerEventSignalFull:SignalFast')
             binPUweightFastFull = hPUweightFastFull.GetXaxis().FindBin(n_pv)
@@ -3186,6 +3218,30 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['weight_PU_FastFull_rebin'][0] = weight_PU_FastFull_rebin
         event_level_var_array['weight_PU_SigBkg'][0] = weight_PU_SigBkg
         event_level_var_array['weight_PU_SigBkg_rebin'][0] = weight_PU_SigBkg_rebin
+
+        weight_PU_DataMC = 1.
+        if not 'data' in options.tag and not 'signal' in options.tag:
+
+            ### https://twiki.cern.ch/twiki/bin/view/CMS/PileupReweighting
+            ###'/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-69200ub-99bins.root'
+            ###'/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2017-69200ub-99bins.root'
+            ###'/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2018-69200ub-99bins.root'
+            ### https://github.com/CMS-LUMI-POG/PileupTools
+
+            fPUdistribution = ROOT.TFile(localpath + 'pileupweights.root')
+                
+            if 'era16_UL_APV' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016_HIPM')
+            #if 'era16_UL_APV' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016 HIPM')
+            elif 'era16_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016')
+            elif 'era17_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2017')
+            elif 'era18_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2018')
+
+            binPUweight = hPUdistribution.GetXaxis().FindBin(n_trueInteractions)
+            weight_PU_DataMC = hPUdistribution.GetBinContent(binPUweight)
+
+            fPUdistribution.Close()
+
+        event_level_var_array['weight_PU_MCData'][0] = weight_PU_DataMC
 
 
         event_level_var_array['n_genParticle'][0] = 0
