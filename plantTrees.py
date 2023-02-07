@@ -55,7 +55,10 @@ era17_17Nov2017 -> ...
 era18_17Sep2018 -> ...
 
 
-dataset: give full dataset name for numsimevents and xsec (keys to dict. in json)
+dataset: 
+-----
+for Non UL eras: use tag for processid, e.g. tag="...,ZJetsToNuNu_Zpt-200toInf"
+for UL eras: give full dataset name for numsimevents and xsec (keys to dict. in json) e.g. tag="..." dataset="/ZJetsToNuNu_Zpt-200toInf_BPSFilter_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM"
 -----
 """
 import sys
@@ -3085,19 +3088,19 @@ for ifile, f in enumerate(options.inputFiles):
                 hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_AOD_v1')  # is TH2F with sim. event numbers for each model point
             elif 'SignalV2' in options.tag:
                 fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_AOD_v2.root')
-                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_AOD_v2')  # is TH2F with sim. event numbers for each model point
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_AOD_v2') 
             elif 'SignalFullV2' in options.tag:
                 fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_FullSim_AOD_v2.root')
-                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_FullSim_AOD_v2')  # is TH2F with sim. event numbers for each model point
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_FullSim_AOD_v2') 
             elif 'era16_UL' in options.tag:
                 fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_Signal_v4_era16_UL.root')
-                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v4_era16_UL')  # is TH2F with sim. event numbers for each model point
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v4_era16_UL')  
             elif 'era17_UL' in options.tag:
                 fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_Signal_v4_era17_UL.root')
-                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v4_era17_UL')  # is TH2F with sim. event numbers for each model point
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v4_era17_UL')  
             elif 'era18_UL' in options.tag:
                 fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_Signal_v4_era18_UL.root')
-                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v4_era18_UL')  # is TH2F with sim. event numbers for each model point
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v4_era18_UL')  
                 
             if fSimEventNumbers_Signal is not None and hSimEventNumbers_Signal is not None:
 
@@ -3158,8 +3161,8 @@ for ifile, f in enumerate(options.inputFiles):
                     with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
                         bkgnsim = json.load(bkgnsimfile)
                         numSimEvents = bkgnsim[processid]
+
                 elif 'era16_UL_APV' in options.tag:
-                    ### ToDo: update json files here for UL
                     with open(localpath + 'crossSections_Bkg_era16_UL_APV.json') as bkgxsecfile:
                         bkgxsec = json.load(bkgxsecfile)
                         crossSection = bkgxsec[processid]
@@ -3169,7 +3172,27 @@ for ifile, f in enumerate(options.inputFiles):
                         numSimEvents = bkgnsim[processid]
                         
                 elif 'era16_UL' in options.tag:
-                    ### ToDo: update json files here for UL
+                    ### ToDo: update json files here for 16UL
+                    with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
+                        bkgxsec = json.load(bkgxsecfile)
+                        crossSection = bkgxsec[processid]
+
+                    with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
+                        bkgnsim = json.load(bkgnsimfile)
+                        numSimEvents = bkgnsim[processid]
+
+                elif 'era17_UL' in options.tag:
+                    ### ToDo: update json files here for 17UL
+                    with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
+                        bkgxsec = json.load(bkgxsecfile)
+                        crossSection = bkgxsec[processid]
+
+                    with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
+                        bkgnsim = json.load(bkgnsimfile)
+                        numSimEvents = bkgnsim[processid]
+
+                elif 'era18_UL' in options.tag:
+                    ### ToDo: update json files here for 18UL
                     with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
                         bkgxsec = json.load(bkgxsecfile)
                         crossSection = bkgxsec[processid]
