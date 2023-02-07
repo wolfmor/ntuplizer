@@ -232,11 +232,60 @@ def submit_allInOneJob():
 
 	print 'submitted 1 jobs'
 	
+	
+def haddNTuple():
+	
+	myfiles = glob("/nfs/dust/cms/user/tewsalex/CRAB3-tutorial/CMSSW_10_6_18/src/step3_higgsinoDm0eDmpm_RunIISpring21UL16FS_susyall_mChipm*GeV_dm*GeV_part*of*.root")
+	samefiles ={}
+	for afile in myfiles:	
+		#mass = ((ifile.split('/')[-1])
+		mass = ((afile.split('/')[-1]).split('mChipm')[-1]).split('GeV_dm')[0]
+		#print mass
+		dm = afile.split('/')[-1].split('GeV_dm')[-1].split('GeV_part')[0]
+
+		
+		if not mass in samefiles.keys(): 
+			samefiles[mass] = {}
+			samefiles[mass][dm] = []
+			if afile not in samefiles[mass][dm]:samefiles[mass][dm].append(afile)
+			
+		else: 
+			if not dm in samefiles[mass].keys():
+				samefiles[mass][dm] = []
+				samefiles[mass][dm].append(afile)
+			else: 
+				if afile not in samefiles[mass][dm]:samefiles[mass][dm].append(afile)
+				
+	for mass in samefiles.keys():
+		print 'mass ', mass 
+		for dm in samefiles[mass].keys():
+			print '        dm ', dm
+			for idx, afile in enumerate(samefiles[mass][dm]):
+				#print '              file ', afile
+				if idx == 0:
+					command = 'hadd -f /nfs/dust/cms/user/tewsalex/rootfiles/ntuple/step3_higgsinoDm0eDmpm_RunIISpring21UL16FS_susyall_mChipm' + mass +'GeV_dm' + dm + '_NTuple.root'+ ' ' + afile
+					print command
+					os.system(command)
+				else: 
+					command = 'hadd -a /nfs/dust/cms/user/tewsalex/rootfiles/ntuple/step3_higgsinoDm0eDmpm_RunIISpring21UL16FS_susyall_mChipm' + mass +'GeV_dm' + dm + '_NTuple.root'+ ' ' + afile
+					print command
+					os.system(command)
+			
+			#print '              hadd /nfs/dust/cms/user/tewsalex/rootfiles/ntuple/step3_higgsinoDm0eDmpm_RunIISpring21UL16FS_susyall_mChipm' + mass +'GeV_dm' + dm + '_NTuple.root', samefiles[mass][dm]
+			#os.system('hadd \'/nfs/dust/cms/user/tewsalex/rootfiles/ntuple/step3_higgsinoDm0eDmpm_RunIISpring21UL16FS_susyall_mChipm\' + mass +\'GeV_dm\' + dm + \'_NTuple.root\', samefiles[mass][dm]')
+				
+		
+		
+	
+	
+
+	
 def main():
 	#submitNTuples()
 	#submitNTuples_back()
 	#submitNTuples_back_2()
-	submit_allInOneJob()
+	#submit_allInOneJob()
+	#haddNTuple()
 
 	
 main()

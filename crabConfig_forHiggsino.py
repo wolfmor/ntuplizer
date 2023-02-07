@@ -7,23 +7,40 @@ config = config()
 #tag = 'test'
 
 ## era 16_UL
-#tag = 'test2'
-
-#tag = 'ZJetsToNuNu_Zpt-200toInf_RunIISummer20UL16RECOAPV_preVFP'
 #tag = 'DYJetsToLL_M-50_Zpt-200toInf_RunIISummer20UL16RECOAPV_preVFP'
-tag = 'TTJets_DiLept_RunIISummer20UL16RECOAPV_preVFP'
+#tag = 'TTJets_DiLept_RunIISummer20UL16RECOAPV_preVFP'
+tag = 'ZJetsToNuNu_Zpt-200toInf_BPSFilter_RunIISummer20UL16RECOAPV_preVFP'
 
 #tag = 'WJetsToLNu_HT-200To400_RunIISummer20UL16RECOAPV_preVFP'
 #tag = 'WJetsToLNu_HT-70To100_RunIISummer20UL16RECOAPV_preVFP'
 #tag = 'WJetsToLNu_HT-100to200_RunIISummer20UL16RECOAPV_preVFP'
-#tag = 'WJetsToLNu_HT-600to800_RunIISummer20UL16RECOAPV_preVFP'
 #tag = 'WJetsToLNu_HT-400to600_RunIISummer20UL16RECOAPV_preVFP'
+#tag = 'WJetsToLNu_HT-600to800_RunIISummer20UL16RECOAPV_preVFP'
 #tag = 'WJetsToLNu_HT-800to1200_RunIISummer20UL16RECOAPV_preVFP'
 #tag = 'WJetsToLNu_HT-1200to2500_RunIISummer20UL16RECOAPV_preVFP'
 #tag = 'WJetsToLNu_HT-2500toInf_RunIISummer20UL16RECOAPV_preVFP'
 
+#tag = 'ZJetsTNuNu_HT-200To400_RunIISummer20UL16RECOAPV_preVFP'
+#tag = 'ZJetsTNuNu_HT-800To1200_RunIISummer20UL16RECOAPV_preVFP'
+#tag = 'ZJetsTNuNu_HT-1200To2500_RunIISummer20UL16RECOAPV_preVFP'
+#tag = 'ZJetsTNuNu_HT-2500ToInf_RunIISummer20UL16RECOAPV_preVFP'
+
 #tag = 'SingleMuon_Run2016B_ver1_UL2016_HIPM'
 #tag = 'SingleMuon_Run2016B_ver2_UL2016_HIPM'
+#tag = 'Test_MET_Run2016E-21Feb2020_UL2016_HIPM'
+
+
+#tag = 'MET_Run2016B-21Feb2020_ver1_UL2016_HIPM'
+#tag = 'MET_Run2016B-21Feb2020_ver2_UL2016_HIPM'
+#tag = 'MET_Run2016C-21Feb2020_UL2016_HIPM'
+#tag = 'MET_Run2016D-21Feb2020_UL2016_HIPM'
+#tag = 'MET_Run2016E-21Feb2020_UL2016_HIPM'
+#tag = 'MET_Run2016F-21Feb2020_UL2016_HIPM'
+#tag = 'MET_Run2016F-21Feb2020_UL2016'
+#tag = 'MET_Run2016G-21Feb2020_UL2016'
+#tag = 'MET_Run2016H-21Feb2020_UL2016'
+
+#tag = 'ZJetsToNuNu_Zpt-200toInf_BPSFilter_RunIISummer20UL16RECO'
 #
 
 ## era 16_07Aug17
@@ -40,10 +57,13 @@ config.JobType.pluginName = 'Analysis'
 config.JobType.psetName = 'construct_secondary_vertices_cfg.py'
 
 ## era 16_UL
-config.JobType.scriptArgs = ['tag=crab,era16_UL_APV']
-#config.JobType.scriptArgs = ['tag=crab,era16_UL_APV,ZJetsToNuNu_Zpt-200toInf_UL16_preVFP']
-#config.JobType.scriptArgs = ['tag=crab,era16_UL_APV,cleanleptons']
-#config.JobType.scriptArgs = ['tag=crab,era16_UL,data,cleanleptons']
+#config.JobType.scriptArgs = ['tag=crab,era16_UL_APV']
+config.JobType.scriptArgs = ['tag=crab,genmatchalltracks,era16_UL_APV','dataset=/ZJetsToNuNu_Zpt-200toInf_BPSFilter_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM']
+#config.JobType.scriptArgs = ['tag=crab,era16_UL_APV,TTJets_DiLept']
+#config.JobType.scriptArgs = ['tag=crab,genmatchalltracks,era16_UL_APV,ZJetsToNuNu_Zpt-200toInf_UL16_preVFP']
+#config.JobType.scriptArgs = ['tag=crab,genmatchalltracks,era16_UL,ZJetsToNuNu_Zpt-200toInf_UL16']
+#config.JobType.scriptArgs = ['tag=crab,era16_UL_APV,cleanleptons,DYJetsToLL_M-50_Zpt-200toInf_UL16_preVFP']
+#config.JobType.scriptArgs = ['tag=crab,era16_UL,data']
 
 
 ## era 16_07Aug17
@@ -52,435 +72,8 @@ config.JobType.scriptArgs = ['tag=crab,era16_UL_APV']
  
 config.JobType.inputFiles = ['/nfs/dust/cms/user/tewsalex/CMSSW_10_2_18/src/ntuplizer/plantTrees.py', # if use absolute paths here, only the filename is needed in NTupleizer; not the full path again, max. 120 MB to sandbox
 '/nfs/dust/cms/user/tewsalex/CMSSW_10_2_18/src/ntuplizer/commons.py',
-'/nfs/dust/cms/user/wolfmor/NTupleStuff/goldenjson_era16_07Aug17.json',
-'/nfs/dust/cms/user/wolfmor/NTupleStuff/goldenjson_era16_UL.json',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L1FastJet_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L1FastJet_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L1FastJet_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L1FastJet_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L1FastJet_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L1FastJet_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L1FastJet_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L1FastJet_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L1JPTOffset_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L1RC_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L1RC_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L1RC_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L1RC_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2L3Residual_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2L3Residual_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2L3Residual_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2L3Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2L3Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2L3Residual_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2L3Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2L3Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Relative_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Relative_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Relative_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Relative_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Relative_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Relative_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Relative_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Relative_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Residual_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Residual_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Residual_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Residual_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L2Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L3Absolute_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L3Absolute_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L3Absolute_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L3Absolute_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L3Absolute_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L3Absolute_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L3Absolute_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_L3Absolute_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_UncertaintySources_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_UncertaintySources_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_UncertaintySources_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_UncertaintySources_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_UncertaintySources_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_UncertaintySources_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_UncertaintySources_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_UncertaintySources_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_Uncertainty_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_Uncertainty_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_Uncertainty_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_Uncertainty_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_Uncertainty_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_Uncertainty_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_Uncertainty_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_Uncertainty_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L1FastJet_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L1FastJet_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L1FastJet_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L1FastJet_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L1FastJet_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L1FastJet_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L1FastJet_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L1FastJet_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L1JPTOffset_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L1RC_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L1RC_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L1RC_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L1RC_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2L3Residual_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2L3Residual_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2L3Residual_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2L3Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2L3Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2L3Residual_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2L3Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2L3Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Relative_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Relative_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Relative_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Relative_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Relative_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Relative_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Relative_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Relative_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Residual_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Residual_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Residual_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Residual_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L2Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L3Absolute_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L3Absolute_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L3Absolute_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L3Absolute_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L3Absolute_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L3Absolute_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L3Absolute_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_L3Absolute_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_UncertaintySources_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_UncertaintySources_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_UncertaintySources_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_UncertaintySources_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_UncertaintySources_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_UncertaintySources_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_UncertaintySources_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_UncertaintySources_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_Uncertainty_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_Uncertainty_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_Uncertainty_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_Uncertainty_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_Uncertainty_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_Uncertainty_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_Uncertainty_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017EF_V11_DATA/Summer16_07Aug2017EF_V11_DATA_Uncertainty_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L1FastJet_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L1FastJet_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L1FastJet_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L1FastJet_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L1FastJet_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L1FastJet_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L1FastJet_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L1FastJet_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L1JPTOffset_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L1RC_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L1RC_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L1RC_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L1RC_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2L3Residual_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2L3Residual_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2L3Residual_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2L3Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2L3Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2L3Residual_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2L3Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2L3Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Relative_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Relative_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Relative_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Relative_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Relative_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Relative_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Relative_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Relative_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Residual_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Residual_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Residual_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Residual_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L2Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L3Absolute_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L3Absolute_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L3Absolute_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L3Absolute_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L3Absolute_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L3Absolute_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L3Absolute_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_L3Absolute_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_UncertaintySources_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_Uncertainty_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_Uncertainty_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_Uncertainty_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_Uncertainty_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_Uncertainty_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_Uncertainty_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_Uncertainty_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017GH_V11_DATA/Summer16_07Aug2017GH_V11_DATA_Uncertainty_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L1FastJet_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L1FastJet_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L1FastJet_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L1FastJet_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L1FastJet_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L1FastJet_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L1FastJet_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L1FastJet_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L1JPTOffset_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L1RC_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L1RC_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L1RC_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L1RC_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2L3Residual_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2L3Residual_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2L3Residual_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2L3Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2L3Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2L3Residual_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2L3Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2L3Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2Relative_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2Relative_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2Relative_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2Relative_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2Relative_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2Relative_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2Relative_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2Relative_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2Residual_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2Residual_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L2Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L3Absolute_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L3Absolute_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L3Absolute_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L3Absolute_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L3Absolute_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L3Absolute_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L3Absolute_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_L3Absolute_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_UncertaintySources_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_UncertaintySources_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_UncertaintySources_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_UncertaintySources_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_UncertaintySources_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_Uncertainty_AK4Calo.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_Uncertainty_AK4JPT.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_Uncertainty_AK4PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_Uncertainty_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_Uncertainty_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_Uncertainty_AK8PF.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_Uncertainty_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_Uncertainty_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L1FastJet_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L1FastJet_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L1FastJet_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L1FastJet_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L2L3Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L2L3Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L2L3Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L2L3Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L2Relative_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L2Relative_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L2Relative_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L2Relative_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L2Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L2Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L2Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L2Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L3Absolute_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L3Absolute_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L3Absolute_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_L3Absolute_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_Uncertainty_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_Uncertainty_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_Uncertainty_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_Uncertainty_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_DataMcSF_L1RC_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_DataMcSF_L1RC_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L1FastJet_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L1FastJet_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L1FastJet_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L1FastJet_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L1RC_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L1RC_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L2L3Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L2L3Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L2L3Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L2L3Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L2Relative_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L2Relative_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L2Relative_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L2Relative_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L2Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L2Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L2Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L2Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L3Absolute_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L3Absolute_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L3Absolute_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_L3Absolute_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_UncertaintySources_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_UncertaintySources_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_UncertaintySources_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_UncertaintySources_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_Uncertainty_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_Uncertainty_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_Uncertainty_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunBCD_V7_DATA/Summer19UL16APV_RunBCD_V7_DATA_Uncertainty_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_DataMcSF_L1RC_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_DataMcSF_L1RC_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L1FastJet_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L1FastJet_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L1FastJet_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L1FastJet_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L1RC_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L1RC_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L2L3Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L2L3Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L2L3Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L2L3Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L2Relative_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L2Relative_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L2Relative_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L2Relative_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L2Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L2Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L2Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L2Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L3Absolute_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L3Absolute_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L3Absolute_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_L3Absolute_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_UncertaintySources_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_UncertaintySources_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_UncertaintySources_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_UncertaintySources_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_Uncertainty_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_Uncertainty_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_Uncertainty_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_RunEF_V7_DATA/Summer19UL16APV_RunEF_V7_DATA_Uncertainty_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L1FastJet_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L1FastJet_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L1FastJet_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L1FastJet_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L1RC_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L1RC_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L2L3Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L2L3Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L2L3Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L2L3Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L2Relative_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L2Relative_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L2Relative_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L2Relative_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L2Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L2Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L2Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L2Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L3Absolute_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L3Absolute_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L3Absolute_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L3Absolute_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_UncertaintySources_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_UncertaintySources_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_UncertaintySources_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_UncertaintySources_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_Uncertainty_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_Uncertainty_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_Uncertainty_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_Uncertainty_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_DataMcSF_L1RC_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_DataMcSF_L1RC_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L1FastJet_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L1FastJet_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L1FastJet_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L1FastJet_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L1RC_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L1RC_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L2L3Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L2L3Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L2L3Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L2L3Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L2Relative_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L2Relative_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L2Relative_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L2Relative_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L2Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L2Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L2Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L2Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L3Absolute_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L3Absolute_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L3Absolute_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_L3Absolute_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_UncertaintySources_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_UncertaintySources_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_UncertaintySources_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_UncertaintySources_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_Uncertainty_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_Uncertainty_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_Uncertainty_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_RunFGH_V7_DATA/Summer19UL16_RunFGH_V7_DATA_Uncertainty_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L1FastJet_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L1FastJet_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L1FastJet_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L1FastJet_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L1RC_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L1RC_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L2L3Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L2L3Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L2L3Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L2L3Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L2Relative_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L2Relative_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L2Relative_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L2Relative_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L2Residual_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L2Residual_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L2Residual_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L2Residual_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L3Absolute_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L3Absolute_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L3Absolute_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L3Absolute_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_UncertaintySources_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_UncertaintySources_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_UncertaintySources_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_UncertaintySources_AK8PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_Uncertainty_AK4PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_Uncertainty_AK4PFchs.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_Uncertainty_AK8PFPuppi.txt',
-'/nfs/dust/cms/user/tewsalex/JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_Uncertainty_AK8PFchs.txt',
-'/nfs/dust/cms/user/wolfmor/NTupleStuff/BkgCrossSections.json',
-'/nfs/dust/cms/user/wolfmor/NTupleStuff/simEventNumbers_Bkg.json',
-'/nfs/dust/cms/user/wolfmor/TES/TauES_dm_MVAoldDM2017v2_2016Legacy.root',
-'/nfs/dust/cms/user/wolfmor/NTupleStuff/PUweights.root'
-]
+'/nfs/dust/cms/user/wolfmor/NTupleStuff/']
+
 config.JobType.allowUndistributedCMSSW = True
 #config.JobType.maxMemoryMB = 3500
 config.JobType.scriptExe = 'allinonejob.sh'
@@ -489,20 +82,41 @@ config.JobType.scriptExe = 'allinonejob.sh'
 config.JobType.outputFiles = ['crab_NTuple.root']
 
 ## era 16_UL
+
 #config.Data.inputDataset = '/WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8_ext1-v1/AODSIM'
-#config.Data.inputDataset = '/WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8_ext1-v1/AODSIM'
-#config.Data.inputDataset = '/WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8_ext1-v1/AODSIM'
+#config.Data.inputDataset = '/WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM'
+#config.Data.inputDataset = '/WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM'
+#config.Data.inputDataset = '/WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM'
 #config.Data.inputDataset = '/WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM'
-#config.Data.inputDataset = '/WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8_ext1-v1/AODSIM'
+#config.Data.inputDataset = '/WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM'
 #config.Data.inputDataset = '/WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM'
 #config.Data.inputDataset = '/WJetsToLNu_HT-70To100_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM'
 #config.Data.inputDataset = '/WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM'
 
-config.Data.inputDataset = '/TTJets_DiLept_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v2/AODSIM'
+#config.Data.inputDataset = '/TTJets_DiLept_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v2/AODSIM'
 #config.Data.inputDataset = '/DYJetsToLL_M-50_Zpt-200toInf_BPSFilter_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM'
-#config.Data.inputDataset = '/ZJetsToNuNu_Zpt-200toInf_BPSFilter_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM'
+
+config.Data.inputDataset = '/ZJetsToNuNu_Zpt-200toInf_BPSFilter_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM'
+
+#config.Data.inputDataset = '/ZJetsToNuNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM'
+#config.Data.inputDataset = '/ZJetsToNuNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v3/AODSIM'
+#config.Data.inputDataset = '/ZJetsToNuNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM'
+#config.Data.inputDataset = '/ZJetsToNuNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v3/AODSIM'
+
 #config.Data.inputDataset = '/SingleMuon/Run2016B-21Feb2020_ver1_UL2016_HIPM-v1/AOD'
 #config.Data.inputDataset = '/SingleMuon/Run2016B-21Feb2020_ver2_UL2016_HIPM-v1/AOD'
+
+#config.Data.inputDataset = '/MET/Run2016B-21Feb2020_ver1_UL2016_HIPM-v1/AOD'
+#config.Data.inputDataset = '/MET/Run2016B-21Feb2020_ver2_UL2016_HIPM-v1/AOD'
+#config.Data.inputDataset = '/MET/Run2016C-21Feb2020_UL2016_HIPM-v1/AOD'
+#config.Data.inputDataset = '/MET/Run2016D-21Feb2020_UL2016_HIPM-v1/AOD'
+#config.Data.inputDataset = '/MET/Run2016E-21Feb2020_UL2016_HIPM-v1/AOD'
+#config.Data.inputDataset = '/MET/Run2016F-21Feb2020_UL2016_HIPM-v1/AOD'
+#config.Data.inputDataset = '/MET/Run2016F-21Feb2020_UL2016-v1/AOD'
+#config.Data.inputDataset = '/MET/Run2016G-21Feb2020_UL2016-v1/AOD'
+#config.Data.inputDataset = '/MET/Run2016H-21Feb2020_UL2016-v2/AOD'
+
+#config.Data.inputDataset = '/ZJetsToNuNu_Zpt-200toInf_BPSFilter_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECO-106X_mcRun2_asymptotic_v13-v1/AODSIM'
 
 ## era 16_07Aug17
 #config.Data.inputDataset = '/SingleMuon/Run2016B-07Aug17_ver2-v1/AOD'
@@ -511,9 +125,8 @@ config.Data.inputDataset = '/TTJets_DiLept_TuneCP5_13TeV-madgraphMLM-pythia8/Run
 
 config.Data.inputDBS = 'global'
 
-config.Data.splitting = 'Automatic'
-#config.Data.splitting = 'EventAwareLumiBased'
-#config.Data.unitsPerJob = 10
+config.Data.splitting = 'FileBased'
+config.Data.unitsPerJob = 1
 #NJOBS = 1
 #NJOBS = 1000
 #config.Data.totalUnits = config.Data.unitsPerJob * NJOBS
