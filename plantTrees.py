@@ -29,7 +29,7 @@ fastsim -> FastSim correction for MET/JEC
 data -> check trigger flags and runnum/lumisec, save json file
 cleanleptons -> perform DY cleaning
 pmssm -> save pMSSM IDs
-signal -> save signal information, if signal files is in inputFiles  # TODO: do we want to use this tag or the dataset name?
+signal -> save signal information, if signal files is in inputFiles e.g. tag="signal era16_UL" or tag="signal SignalV1"
 
 skipSVs -> skip collections from SV building, do not save sv information 
 max50SVs -> save only 50 svs per event
@@ -130,8 +130,9 @@ def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, second
 
         for nSV, secondary in enumerate(secondaries):
             for k in range(secondary.numberOfDaughters()):
-                _, ClassicIdx, ClassicDrmin, _ = findMinDr_track(secondary.daughter(k), l, 20.)
-                if ClassicIdx != -1 and ClassicDrmin < 0.2:  # TODO: 0.2 seems to be quite loose, the tracks should have a smaller dR, right?
+                #_, ClassicIdx, ClassicDrmin, _ = findMinDr_track(secondary.daughter(k), l, 20.)
+                ClassicDrmin = deltaR(l.eta(),secondary.daughter(k).eta(), l.phi(),secondary.daughter(k).phi())
+                if ClassicDrmin < 0.05:  
                     badsvs.append(nSV)
 
 
@@ -381,9 +382,10 @@ if True:
         , ('n_tau_20', 'I'), ('n_tau_20_vloose', 'I'), ('n_tau_20_loose', 'I'), ('n_tau_20_medium', 'I'), ('n_tau_20_tight', 'I'), ('n_tau_20_vtight', 'I'), ('n_tau_20_vvtight', 'I')
         , ('n_track_total', 'I'), ('n_track_basic', 'I'), ('n_track', 'I')
         
-        , ('numSVs', 'I'), ('n_sv_total', 'I'), ('n_sv', 'I'), ('n_sv_weighted_rebin', 'F'), ('n_sv_weighted', 'F')
+        , ('numSVs', 'I'), ('n_sv_total', 'I'), ('n_sv', 'I')
         , ('n_sv_daughter', 'I')
         , ('n_selTracks' , 'I')
+        ,('hasSignalSV', 'F')
         ]
     event_level_var_names += var_names_event
 
@@ -514,7 +516,7 @@ if True:
         , 'triggerfired'
     ]
 
-    if 'SingleMuon' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
+    if 'SingleMuon' in options.dataset:
         trigger_hlt = [
             'HLT_IsoMu24_v'
             , 'HLT_IsoMu27_v'
@@ -566,7 +568,7 @@ if True:
 		('mZstar', 'F'),('abspZstar', 'F'),('absnormalVector', 'F'),
 		('beta', 'F'), # angle from normal Vector to pZstar
 		('ZstarBoost', 'F'),('Chi01Boost', 'F'),('Chi02Boost', 'F'),
-		('num', 'F'),('hasSignalSV', 'F'),
+		('num', 'F'),
 		('mtransverse2', 'F'),('mtransverse2_paper', 'F'),('ptZstar', 'F')
         ]
 
@@ -966,7 +968,7 @@ if True:
         ('IPsignificancePU_High','F'),('IPxyzPU_High','F'), ('IPxyPU_High','F'),  ('IPzPU_High','F'), 
         ('log10IPsignificancePU_High','F'),('log10IPxyzPU_High','F'), ('log10IPxyPU_High','F'),  ('log10IPzPU_High','F'), 
 
-        ('hasTrackMatch_Low', 'F'),('hasTrackMatch_High', 'F'), #ToDo move to gen SV set of variables
+        ('hasTrackMatch_Low', 'F'),('hasTrackMatch_High', 'F'), 
         ('hasGenMatch_Low', 'F'),('hasGenMatch_High', 'F'), 
         ('hasGenMatchWithSameMother', 'F'),
         ('events_hasGenMatchWithSameMother1', 'F'),
@@ -1024,22 +1026,10 @@ if True:
         , ('svdaughter_trackMatching_drminold', 'F'), ('svdaughter_trackMatching_drminoldrandom', 'F')
     ]
 
-    SVDaughter_level_var = {}   # TODO: this is not used, but should be fine to reuse the SV_level_var_array
     for n in SVDaughter_level_var_names:
         if 'max50SVs' in options.tag: SV_level_var_array[n[0]] = array('f', 2*51*[0.])
         else: SV_level_var_array[n[0]] = array('f', 2*1000*[0.])
         tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv_daughter]/F')
-    
-    
-    var_names_selected_tracks = [
-        ('selTracks_pt' , 'F'),
-        ('id' , 'I')
-    ]
-    
-    selected_tracks_var_array = {}
-    for n in var_names_selected_tracks:
-        selected_tracks_var_array[n[0]] = array('f', nMaxTracksPerEvent*[0.])
-        tEvent.Branch(nice_string(n[0]), selected_tracks_var_array[n[0]], nice_string(n[0])+ '[n_selTracks]/F')
     
     # cutflow histos
 
@@ -1185,7 +1175,7 @@ if True:
         else:
             raise NotImplementedError('tauIDalgo unknown or not specified')
 
-    ### toDO: not updated to usage with CRAB
+    ### ToDo: not updated to 17UL and 18UL
     elif 'era17_17Nov2017' in options.tag:
 
         # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
@@ -1214,7 +1204,6 @@ if True:
         else:
             raise NotImplementedError('tauIDalgo unknown or not specified')
 
-    ### toDO: not updated to usage with CRAB
     elif 'era18_17Sep2018' in options.tag:
 
         # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions18/13TeV/ReReco/Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt
@@ -1257,7 +1246,7 @@ if True:
 if 'pmssm' in options.tag:
     handle_lumis = Handle('GenLumiInfoHeader')
     
-elif 'fastsim' not in options.tag:  # TODO: why elif?
+if 'fastsim' not in options.tag:
 
     handle_trigger_hlt = Handle('edm::TriggerResults')
     label_trigger_hlt = ('TriggerResults', '', 'HLT')
@@ -1352,9 +1341,6 @@ label_dca = ('SecondaryVerticesFromLooseTracks','DcaKshort', 'SVS')
 
 handle_mva = Handle("std::vector<float>")
 label_mva = ('TrackTag1', 'mvaScore', 'SVS')
-
-handle_selected_tracks = Handle("std::vector<int>")
-label_selected_tracks = ('TrackTag1' , 'selectedTrackIDs', 'SVS')
 
 
 runs = {}
@@ -1491,7 +1477,8 @@ print 'n input files: ' + str(len(options.inputFiles))
 
 for ifile, f in enumerate(options.inputFiles):
 
-    print ''
+
+    print 'AOD filename'
     print f
 
     '''
@@ -1515,10 +1502,8 @@ for ifile, f in enumerate(options.inputFiles):
         fname = 'root://' + redir + '/' + f.strip()
         
         if 'crab' in options.tag: 
-            fname = 'root://' + redir + '/' + '/pnfs/desy.de/cms/tier2' +  f.strip()  # TODO: does this mean that you try opening the file from desy and if it doesn't work use xrd?
+            fname = 'root://' + redir + '/' + '/pnfs/desy.de/cms/tier2' +  f.strip()  # TODO: maybe this always fails? And xrd is used 
         
-        print ''
-        print fname
             
         fin = ROOT.TFile.Open(fname)
 
@@ -1587,8 +1572,7 @@ for ifile, f in enumerate(options.inputFiles):
         if ievent % printevery == 0: print 'analyzing event %d of %d' % (ievent, nevents)
 
         # TODO: shouldn't this be -1 and the next cutflow=0?
-        cutflow = 0
-        hCutflow.Fill(cutflow)
+
 
         random.seed()
         event_level_var_array['random'][0] = random.randrange(10)
@@ -1603,16 +1587,17 @@ for ifile, f in enumerate(options.inputFiles):
         lumisec = event.eventAuxiliary().luminosityBlock()
         eventnum = event.eventAuxiliary().event()
         event_id = str(event.eventAuxiliary().run())+"_"+str(event.eventAuxiliary().luminosityBlock())+"_"+str(event.eventAuxiliary().event())
-        #print "filenumber", ifile, "event", ievent, "event no", event.eventAuxiliary().event(), " run num", event.eventAuxiliary().run(), "lumi section", event.eventAuxiliary().luminosityBlock()
-        
+  
         if 'crab' in options.tag and 'skipSVs' not in options.tag:
-            
-            hCutflow.Fill(cutflow)  # TODO: fill after "cutflow" is set?
-            if event_id not in filesWithSV[0].keys(): continue
-            #if event_id not in filesWithSV[ifile].keys(): continue
-            nevents +=1
             cutflow = -1
-            
+            hCutflow.Fill(cutflow)  
+            if event_id not in filesWithSV[0].keys(): continue
+            nevents +=1
+
+        
+        cutflow = 0
+        hCutflow.Fill(cutflow)
+        
         tCounter.Fill()
         
         if 'pmssm' in options.tag:
@@ -1731,7 +1716,6 @@ for ifile, f in enumerate(options.inputFiles):
 
         allfine = True
 
-        # TODO: do this also for MC??
         if 'data' in options.tag:
 
             event.getByLabel(label_trigger_flags, handle_trigger_flags)
@@ -1857,7 +1841,6 @@ for ifile, f in enumerate(options.inputFiles):
         event.getByLabel(label_taudiscriminatorMuonRej, handle_taudiscriminatorMuonRej)
         taudiscriminatorMuonRej = handle_taudiscriminatorMuonRej.product()
 
-        tauswithdiscriminators = []  # TODO: why?
         tauswithdiscriminators = [
             (tau, taudiscriminatorDM.value(itau)
                 , taudiscriminatorMVAraw.value(itau)
@@ -2278,12 +2261,15 @@ for ifile, f in enumerate(options.inputFiles):
                 elif (pt > minPt2):
                     minPt2 = pt
                     lJet2 = jet
+                    eta2 = eta
                 elif (pt > minPt3):
                     minPt3 = pt
                     lJet3 = jet
+                    eta3 = eta
                 elif (pt > minPt4):
                     minPt4 = pt
                     lJet4 = jet
+                    eta4 = eta
                     
             if abs(jet.eta()) < 2.4 and jet.pt() > 30: ht += jet.pt()
             if abs(jet.eta()) < 5. and jet.pt() > 30:
@@ -2327,9 +2313,9 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['JetPt4'][0] = minPt4
 
         event_level_var_array['JetEta1'][0] = eta1
-        event_level_var_array['JetEta2'][0] = eta1  # TODO: adapt to the other jets
-        event_level_var_array['JetEta3'][0] = eta1
-        event_level_var_array['JetEta4'][0] = eta1
+        event_level_var_array['JetEta2'][0] = eta2 
+        event_level_var_array['JetEta3'][0] = eta3
+        event_level_var_array['JetEta4'][0] = eta4
 
         event_level_var_array['n_jet'][0] = numjets
         event_level_var_array['n_jet_15'][0] = numjets15
@@ -2511,7 +2497,7 @@ for ifile, f in enumerate(options.inputFiles):
         numZgammaDaughters = 0
         decayZtau = -1
         ptsumZgammaNeutrinos = -1
-        if 'ZJetsToNuNu' in options.tag or 'DYJetsToLL' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
+        if 'ZJetsToNuNu' in options.dataset or 'DYJetsToLL' in options.dataset:
 
             Zgammas = [gp for gp in genparticles if gp.isLastCopy() and gp.statusFlags().fromHardProcess()
                        and (abs(gp.pdgId()) == 22 or abs(gp.pdgId()) == 23)]
@@ -2585,7 +2571,7 @@ for ifile, f in enumerate(options.inputFiles):
         etaVisWtau = -1
         phiVisWtau = -1
         thetau = None
-        if 'WJetsToLNu' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
+        if 'WJetsToLNu' in options.dataset:  
 
             Ws = [gp for gp in genparticles if gp.isLastCopy() and gp.statusFlags().fromHardProcess()
                   and abs(gp.pdgId()) == 24]
@@ -2903,7 +2889,11 @@ for ifile, f in enumerate(options.inputFiles):
                     chiN2_var_array['deltaEtaChi0sToLeptons'][igp] = summedLeptons.Eta()-PVSV.Eta()
                     chiN2_var_array['absdeltaEtaChi0sToLeptons'][igp] = abs(summedLeptons.Eta()-PVSV.Eta()) #TODO> remove abs version, do that bz hnd later
                     chiN2_var_array['deltaPhiChi0sToLeptons'][igp] = deltaPhi(summedLeptons.Phi(), PVSV.Phi())
-
+                
+                else:
+                   chiN2_var_array['leptonID'][igp] = 0
+                   ### toDo make default fill for all
+                   
             for igp, gp in enumerate(N1s):
                 chiN1_var_array['chiN1_pt'][igp] = gp.pt()
                 chiN1_var_array['chiN1_eta'][igp] = gp.eta()
@@ -2919,8 +2909,8 @@ for ifile, f in enumerate(options.inputFiles):
             chipmnumdaughters = len(c1daughters)
             chiN2numdaughters = len(n2daughters)
             numchidaughters = chipmnumdaughters + chiN2numdaughters
-            # TODO: why in two loops and not "for ichid, chid in enumerate(c1daughters + n2daughters):"? the way it is now, the second loop will overwrite the first loop
-            for ichid, chid in enumerate(c1daughters):
+
+            for ichid, chid in enumerate(c1daughters+n2daughters):
                 chidaughter_var_array['chiDaughter_pdgIdMother'][ichid] = chid.mother(0).pdgId()
                 chidaughter_var_array['chiDaughter_pdgId'][ichid] = chid.pdgId()
                 chidaughter_var_array['chiDaughter_pt'][ichid] = chid.pt()
@@ -2937,25 +2927,9 @@ for ifile, f in enumerate(options.inputFiles):
                         if drminchid < matchingDrThreshold and dxyzminchid < matchingDxyzThreshold:
                             susytracks[idxchid] = (chid.mother(0).pdgId(), chid.pdgId())
                             chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 1
-                            
-            for ichid, chid in enumerate(n2daughters):
-                chidaughter_var_array['chiDaughter_pdgIdMother'][ichid] = chid.mother(0).pdgId()
-                chidaughter_var_array['chiDaughter_pdgId'][ichid] = chid.pdgId()
-                chidaughter_var_array['chiDaughter_pt'][ichid] = chid.pt()
-                chidaughter_var_array['chiDaughter_eta'][ichid] = chid.eta()
-                chidaughter_var_array['chiDaughter_phi'][ichid] = chid.phi()
-
-                chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 0
-                
-                if chid.charge() != 0:
-
-                    idxchid, dxyzminchid, _, drminchid = findMatch_track_new(chid, tracks)
-                    if not idxchid == -1:
-                        if (drminchid < 0.02)  or (dxyzminchid < 0.02 and drminchid < 0.04):
+                         elif (drminchid < 0.02)  or (dxyzminchid < 0.02 and drminchid < 0.04):  ## toDo check matching criteria
                             susytracks[idxchid] = (chid.mother(0).pdgId(), chid.pdgId())
-                            chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 1
-                            print "matching track gen level", idxchid
-
+                            chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 2 
 
             stops = [gp for gp in genparticles if gp.isLastCopy() and gp.pdgId() == 1000006]
             antistops = [gp for gp in genparticles if gp.isLastCopy() and gp.pdgId() == -1000006]
@@ -3049,7 +3023,7 @@ for ifile, f in enumerate(options.inputFiles):
         crossSection = 1.
         numSimEvents = 1.
 
-        if 'SignalV1' in options.tag or 'SignalV2' in options.tag or 'SignalFullV2' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
+        if 'signal' in options.tag and 'SignalStopV3' not in options.tag: 
 
             # from https://twiki.cern.ch/twiki/bin/view/LHCPhysics/SUSYCrossSections13TeVhino
             higgsinoxsecfile = ROOT.TFile(localpath + 'CN_hino_13TeV.root')
@@ -3082,13 +3056,13 @@ for ifile, f in enumerate(options.inputFiles):
 
             fSimEventNumbers_Signal = None
             hSimEventNumbers_Signal = None
-            if 'SignalV1' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
+            if 'SignalV1' in options.tag:  
                 fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_AOD_v1.root')
                 hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_AOD_v1')  # is TH2F with sim. event numbers for each model point
-            elif 'SignalV2' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
+            elif 'SignalV2' in options.tag:  
                 fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_AOD_v2.root')
                 hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_AOD_v2') 
-            elif 'SignalFullV2' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
+            elif 'SignalFullV2' in options.tag:  
                 fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_FullSim_AOD_v2.root')
                 hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_FullSim_AOD_v2') 
             elif 'era16_UL' in options.tag:
@@ -3110,13 +3084,13 @@ for ifile, f in enumerate(options.inputFiles):
 
                 fSimEventNumbers_Signal.Close()
 
-        elif 'SignalStopV3' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
+        elif 'SignalStopV3' in options.tag:  ##ToDo add num of sim events
 
             with open(localpath + 'SUSYCrossSections13TeVstopsbottom.json') as stopxsecfile:
                 stopxsec = json.load(stopxsecfile)
                 crossSection = stopxsec[str(int(mstopFILE))][0]
 
-        else:  # TODO: add "if not 'data' in options.tag"?
+        elif 'data' not in options.tag: 
 
             processid = None
             if'era16_07Aug17' in options.tag:
@@ -3151,8 +3125,6 @@ for ifile, f in enumerate(options.inputFiles):
                 processid = dataset
 
             if processid is not None:
-
-                # TODO: better use x-secs from AN-21-197?
 
                 if 'era16_07Aug17' in options.tag:
                     with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
@@ -3673,6 +3645,7 @@ for ifile, f in enumerate(options.inputFiles):
         n_sv_total = 0
         n_sv_daughter = 0
         numSVs = 0
+        hasSignalSV= 0
 
         if not 'skipSVs' in options.tag:
             n_sv_total = len(filesWithSV[ifile][event_id]) 
@@ -3704,7 +3677,7 @@ for ifile, f in enumerate(options.inputFiles):
 
                 for k in range(secondary.numberOfDaughters()):
                     
-                    n_sv_daughter += 1
+
                     
                     print "SV no. ", nSV, "daughter no. ", k, " charge ", secondary.daughter(k).charge()
                     
@@ -3712,14 +3685,13 @@ for ifile, f in enumerate(options.inputFiles):
                     _, dxyzminrandom, _, drminrandom = findMatch_track_new_random(secondary.daughter(k), tracks)
                     print "dxyzmin", dxyzmin, "drmin", drmin
 
-                    # TODO: the index here should be n_sv_daughter-1 instead of k, otherwise it will overwrite
-                    SV_level_var_array['svdaughter_trackMatching_tmin'][k] = tminmatching
-                    SV_level_var_array['svdaughter_trackMatching_dxyzmin'][k] = dxyzmin
-                    SV_level_var_array['svdaughter_trackMatching_drmin'][k] = drmin
-                    SV_level_var_array['svdaughter_trackMatching_dxyzminrandom'][k] = dxyzminrandom
-                    SV_level_var_array['svdaughter_trackMatching_drminrandom'][k] = drminrandom
-                    SV_level_var_array['svdaughter_trackMatching_drminold'][k] = drmin
-                    SV_level_var_array['svdaughter_trackMatching_drminoldrandom'][k] = drminrandom
+                    SV_level_var_array['svdaughter_trackMatching_tmin'][n_sv_daughter] = tminmatching
+                    SV_level_var_array['svdaughter_trackMatching_dxyzmin'][n_sv_daughter] = dxyzmin
+                    SV_level_var_array['svdaughter_trackMatching_drmin'][n_sv_daughter] = drmin
+                    SV_level_var_array['svdaughter_trackMatching_dxyzminrandom'][n_sv_daughter] = dxyzminrandom
+                    SV_level_var_array['svdaughter_trackMatching_drminrandom'][n_sv_daughter] = drminrandom
+                    SV_level_var_array['svdaughter_trackMatching_drminold'][n_sv_daughter] = drmin
+                    SV_level_var_array['svdaughter_trackMatching_drminoldrandom'][n_sv_daughter] = drminrandom
 
                     if not idx == -1:
                         if (drmin < 0.02)  or (dxyzmin < 0.02 and drmin < 0.04):
@@ -3729,13 +3701,13 @@ for ifile, f in enumerate(options.inputFiles):
                             
                             if matchingTrk[0] == None: matchingTrk[0] = tracks[idx]
                             else: matchingTrk[1] = tracks[idx]
-                
+                    n_sv_daughter += 1
+                    
                 if matchingTrkIdx[0] > -1 and matchingTrkIdx[1] > -1 and 'debug' in options.tag: print "SV has two matching tracks", matchingTrkIdx[0], matchingTrkIdx[1]
                 
                 if matchingTrkIdx[0] in susytracks and matchingTrkIdx[1] in susytracks: 
-                    print "SV is signal"
                     isSignal = 1
-                    hasSignalSV = 1  # TODO: this is not used
+                    hasSignalSV= 1
                     signalIdx = nSV
 
                 ######################################
@@ -4080,32 +4052,28 @@ for ifile, f in enumerate(options.inputFiles):
                     numDaughtersOfMother_new = [-1, -1]
                     ignoreIndices = []
                     
-                    if not isSignal and  nSV != signalIdx:  # TODO: why the second condition?
-                        
-                        if secondary.numberOfDaughters()> 2: continue  # TODO: see above about the dangers of continue
-                        
-                        ### first element is always high PT track	
-                        ### if 1st is higher in pt put first at first position
-                        if secondary.daughter(0).pt() > secondary.daughter(1).pt():
-                                    idxGP[0],  pdgIds[0], pdgIdsMother[0], drminGP[0], tlvMother[0], hasEWancestors[0], numDaughtersOfMother[0] = findMinDr_ancestors(secondary.daughter(0),genparticles, ignoreIndices)
-                                    if drminGP[0] < 0.01 and idxGP[0] not in ignoreIndices: ignoreIndices.append(idxGP[0])
-                                    idxGP_new[0], dxyzmin[0], pdgIds_new[0], pdgIdsMother_new[0], drminGP_new[0], tlvMother_new[0], hasEWancestors_new[0], numDaughtersOfMother_new[0]= findMatch_ancestor_new(secondary.daughter(0),genparticles, ignoreIndices)
-                                    if dxyzmin[0] < 0.03 and drminGP_new[0] < 0.01 and idxGP_new[0] not in ignoreIndices: ignoreIndices.append(idxGP_new[0])
-                                    
-                                    idxGP[1],  pdgIds[1], pdgIdsMother[1], drminGP[1], tlvMother[1], hasEWancestors[1], numDaughtersOfMother[1]  = findMinDr_ancestors(secondary.daughter(1),genparticles,  ignoreIndices)
-                                    idxGP_new[1], dxyzmin[1], pdgIds_new[1], pdgIdsMother_new[1], drminGP_new[1], tlvMother_new[1], hasEWancestors_new[1], numDaughtersOfMother_new[1]= findMatch_ancestor_new(secondary.daughter(1),genparticles, ignoreIndices)
+                    ### first element is always high PT track	
+                    ### if 1st is higher in pt put first at first position
+                    if secondary.daughter(0).pt() > secondary.daughter(1).pt():
+                                idxGP[0],  pdgIds[0], pdgIdsMother[0], drminGP[0], tlvMother[0], hasEWancestors[0], numDaughtersOfMother[0] = findMinDr_ancestors(secondary.daughter(0),genparticles, ignoreIndices)
+                                if drminGP[0] < 0.01 and idxGP[0] not in ignoreIndices: ignoreIndices.append(idxGP[0])
+                                idxGP_new[0], dxyzmin[0], pdgIds_new[0], pdgIdsMother_new[0], drminGP_new[0], tlvMother_new[0], hasEWancestors_new[0], numDaughtersOfMother_new[0]= findMatch_ancestor_new(secondary.daughter(0),genparticles, ignoreIndices)
+                                if dxyzmin[0] < 0.03 and drminGP_new[0] < 0.01 and idxGP_new[0] not in ignoreIndices: ignoreIndices.append(idxGP_new[0])
+                                
+                                idxGP[1],  pdgIds[1], pdgIdsMother[1], drminGP[1], tlvMother[1], hasEWancestors[1], numDaughtersOfMother[1]  = findMinDr_ancestors(secondary.daughter(1),genparticles,  ignoreIndices)
+                                idxGP_new[1], dxyzmin[1], pdgIds_new[1], pdgIdsMother_new[1], drminGP_new[1], tlvMother_new[1], hasEWancestors_new[1], numDaughtersOfMother_new[1]= findMatch_ancestor_new(secondary.daughter(1),genparticles, ignoreIndices)
 
-                        ### else if 2nd is higher inpt, put 2nd at 1st position
-                        else:
-                            idxGP[1],  pdgIds[1], pdgIdsMother[1], drminGP[1] , tlvMother[1], hasEWancestors[1], numDaughtersOfMother[1] = findMinDr_ancestors(secondary.daughter(0),genparticles, ignoreIndices)
-                            if drminGP[1] < 0.01 and idxGP[1] not in ignoreIndices: ignoreIndices.append(idxGP[1])
-                            idxGP_new[1], dxyzmin[1], pdgIds_new[1], pdgIdsMother_new[1], drminGP_new[1] , tlvMother_new[1], hasEWancestors_new[1], numDaughtersOfMother_new[1] = findMatch_ancestor_new(secondary.daughter(0),genparticles, ignoreIndices)
-                            if dxyzmin[1] < 0.03 and drminGP_new[1] < 0.01 and idxGP_new[1] not in ignoreIndices: ignoreIndices.append(idxGP_new[1])	
-                                                        
-                            idxGP[0],  pdgIds[0], pdgIdsMother[0], drminGP[0] , tlvMother[0], hasEWancestors[0], numDaughtersOfMother[0] = findMinDr_ancestors(secondary.daughter(1),genparticles, ignoreIndices)		
-                            idxGP_new[0], dxyzmin[0], pdgIds_new[0], pdgIdsMother_new[0], drminGP_new[0] , tlvMother_new[0], hasEWancestors_new[0], numDaughtersOfMother_new[0] = findMatch_ancestor_new(secondary.daughter(1),genparticles, ignoreIndices)		
+                    ### else if 2nd is higher inpt, put 2nd at 1st position
+                    else:
+                        idxGP[1],  pdgIds[1], pdgIdsMother[1], drminGP[1] , tlvMother[1], hasEWancestors[1], numDaughtersOfMother[1] = findMinDr_ancestors(secondary.daughter(0),genparticles, ignoreIndices)
+                        if drminGP[1] < 0.01 and idxGP[1] not in ignoreIndices: ignoreIndices.append(idxGP[1])
+                        idxGP_new[1], dxyzmin[1], pdgIds_new[1], pdgIdsMother_new[1], drminGP_new[1] , tlvMother_new[1], hasEWancestors_new[1], numDaughtersOfMother_new[1] = findMatch_ancestor_new(secondary.daughter(0),genparticles, ignoreIndices)
+                        if dxyzmin[1] < 0.03 and drminGP_new[1] < 0.01 and idxGP_new[1] not in ignoreIndices: ignoreIndices.append(idxGP_new[1])	
+                                                    
+                        idxGP[0],  pdgIds[0], pdgIdsMother[0], drminGP[0] , tlvMother[0], hasEWancestors[0], numDaughtersOfMother[0] = findMinDr_ancestors(secondary.daughter(1),genparticles, ignoreIndices)		
+                        idxGP_new[0], dxyzmin[0], pdgIds_new[0], pdgIdsMother_new[0], drminGP_new[0] , tlvMother_new[0], hasEWancestors_new[0], numDaughtersOfMother_new[0] = findMatch_ancestor_new(secondary.daughter(1),genparticles, ignoreIndices)		
 
-                            
+                        
 
                     if (drminGP[0] < -1 or (dxyzmin[0] < -1 and drminGP_new[0]<-1)): SV_level_var_array['hasGenMatch_High'][nSV] = -1 #higher Pt is signal
                     elif (drminGP[0] < 0.01 or (dxyzmin[0] < 0.03 and drminGP_new[0]<0.01)): SV_level_var_array['hasGenMatch_High'][nSV] = 1 #higherPt is gen matched (alwazs first value in dR [x,x]
@@ -4201,7 +4169,7 @@ for ifile, f in enumerate(options.inputFiles):
 
                     if not leptons[0] == None and not leptons[1]==None and not theChi01 == None and not theChi02 == None:
                         SV_level_var_array['mtransverse2_hybrid'][nSV] = mZstar_reco_muoncase*mZstar_reco_muoncase + ((v_pZstar_reco.Cross(normalvector))*(v_pZstar_reco.Cross(normalvector)))
-                        if isSignal and  nSV == signalIdx:  # TODO: why the second condition?
+                        if isSignal and  nSV == signalIdx:
                             event_level_var_array['res_vx'][0] = secondary.vx() - theChi01.vx()
                             event_level_var_array['res_vy'][0] = secondary.vy() - theChi01.vy()
                             event_level_var_array['res_vz'][0] = secondary.vz() - theChi01.vz()
@@ -4250,9 +4218,8 @@ for ifile, f in enumerate(options.inputFiles):
                 numsvsfinalpreselection += 1
 
         event_level_var_array['n_sv'][0] = numsvsfinalpreselection
-        if 'fastsim' in options.tag: event_level_var_array['n_sv_weighted_rebin'][0] = numsvsfinalpreselection*weight_PU_FastFull_rebin  # TODO: this will just scale the number of SVs but not apply a weight
-        if 'fastsim' in options.tag: event_level_var_array['n_sv_weighted'][0] = numsvsfinalpreselection*weight_PU_FastFull  # TODO: this will just scale the number of SVs but not apply a weight
 
+        event_level_var_array['hasSignalSV'][0] = hasSignalSV
         event_level_var_array['numSVs'][0] = numSVs
         event_level_var_array['n_sv_total'][0] = n_sv_total
         event_level_var_array['n_sv_daughter'][0] = n_sv_daughter
