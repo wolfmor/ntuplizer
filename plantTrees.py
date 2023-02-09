@@ -29,7 +29,7 @@ fastsim -> FastSim correction for MET/JEC
 data -> check trigger flags and runnum/lumisec, save json file
 cleanleptons -> perform DY cleaning
 pmssm -> save pMSSM IDs
-signal -> save signal information, if signal files is in inputFiles
+signal -> save signal information, if signal files is in inputFiles  # TODO: do we want to use this tag or the dataset name?
 
 skipSVs -> skip collections from SV building, do not save sv information 
 max50SVs -> save only 50 svs per event
@@ -44,8 +44,8 @@ genmatchtracks -> try to find GEN match to every 10th track
 genmatchalltracks -> try to find GEN match to every track
 
 era16_07Aug17 -> use corresponding golden json, JECs, jetID, working points,...
-era16_UL -> before HIP problem
-era16_UL_APV -> after / with HIP problem, preVFP samples
+era16_UL -> after HIP problem
+era16_UL_APV -> with HIP problem, preVFP samples
 
 era17_UL -> ...
 era18_UL -> ...
@@ -67,6 +67,8 @@ import re
 import random
 import numpy as np
 from array import array
+from copy import copy, deepcopy
+from math import ceil, fabs, sqrt, acos, cos, asin, degrees, sin, pi
 
 import ROOT
 
@@ -78,16 +80,12 @@ ROOT.gSystem.Load('libDataFormatsFWLite.so')
 ROOT.FWLiteEnabler.enable()
 
 from ROOT import gROOT, gSystem, FWLiteEnabler, TFile, TH1F, TMath, TLorentzVector, TH2F, TTree, TVector3, TRandom, TCanvas, TLegend, TColor, TEfficiency, Math, TMVA
-from math import ceil,  fabs, sqrt, acos, cos, asin, degrees, sin, pi
-import random
-import re
-import sys
 
 from DataFormats.FWLite import Events, Lumis, Handle
 from FWCore.ParameterSet.VarParsing import VarParsing
 from DataFormats.Candidate import *
+
 from commons import *
-from copy import copy, deepcopy
 
 def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, secondaries, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet):
     """DY cleaning: replace leptons with "neutrinos" and update collections: clean jets, tracks, pfcands and adapt MET.
@@ -133,7 +131,7 @@ def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, second
         for nSV, secondary in enumerate(secondaries):
             for k in range(secondary.numberOfDaughters()):
                 _, ClassicIdx, ClassicDrmin, _ = findMinDr_track(secondary.daughter(k), l, 20.)
-                if ClassicIdx != -1 and ClassicDrmin < 0.2:
+                if ClassicIdx != -1 and ClassicDrmin < 0.2:  # TODO: 0.2 seems to be quite loose, the tracks should have a smaller dR, right?
                     badsvs.append(nSV)
 
 
@@ -263,9 +261,9 @@ if True:
         nameout = 'NTuple'
         if len(options.inputFiles) == 1: nameout = options.inputFiles[0].split('/')[-1].strip().replace('.root', '') + '_' + nameout
 
-        if isTest: nameout += '_test'
         if 'skipSVs' in options.tag: nameout += '_noSVs'
         if 'cleanleptons' in options.tag: nameout += '_DYCleaned'
+        if isTest: nameout += '_test'
       
         if 'crab' in options.tag: fout = ROOT.TFile('crab_NTuple.root', 'recreate')
         #if 'pnfs' in options.tag: fout = ROOT.TFile( '/pnfs/desy.de/cms/tier2/store/user/altews/Signal/'+nameout + '.root', 'recreate')
@@ -333,7 +331,7 @@ if True:
         , ('cleaning_l1dBetaAbsIso', 'F'), ('cleaning_l2dBetaAbsIso', 'F')
         , ('cleaning_l1dBetaRelIso', 'F'), ('cleaning_l2dBetaRelIso', 'F')
         , ('cleaning_metPtBeforeCleaning', 'F'), ('cleaning_metPhiBeforeCleaning', 'F')
-    ]
+        ]
     event_level_var_names += var_names_cleaning
 
     var_names_event = [
@@ -347,7 +345,7 @@ if True:
         
         , ('weight_PU_MCData', 'F')
 
-        , ('n_pv', 'I'),  ('n_trueInteractions', 'F'),('rho', 'F')
+        , ('n_pv', 'I'), ('n_trueInteractions', 'F'), ('rho', 'F')
 
         , ('met_pt', 'F'), ('met_phi', 'F')
         , ('met_ptNoFastSimCorr', 'F'), ('met_phiNoFastSimCorr', 'F')
@@ -360,9 +358,10 @@ if True:
         , ('badJets_lepVeto_n', 'I'), ('badJets_lepVeto_minEta', 'F'), ('badJets_lepVeto_nForEventVeto', 'I')
 
         , ('hasISRJet', 'I'), ('leadingJet_pt', 'F'), ('leadingJet_eta', 'F'), ('leadingJet_phi', 'F')
-        ,('JetMetdeltaPhi1', 'F'),('JetMetdeltaPhi2', 'F'),('JetMetdeltaPhi3', 'F'),('JetMetdeltaPhi4', 'F')
-        ,('JetPt1', 'F'),('JetPt2', 'F'),('JetPt3', 'F'),('JetPt4', 'F')
-        ,('JetEta1', 'F'),('JetEta2', 'F'),('JetEta3', 'F'),('JetEta4', 'F')
+        , ('JetMetdeltaPhi1', 'F'), ('JetMetdeltaPhi2', 'F'), ('JetMetdeltaPhi3', 'F'), ('JetMetdeltaPhi4', 'F')
+        , ('JetPt1', 'F'), ('JetPt2', 'F'), ('JetPt3', 'F'), ('JetPt4', 'F')
+        , ('JetEta1', 'F'), ('JetEta2', 'F'), ('JetEta3', 'F'), ('JetEta4', 'F')
+        
         , ('n_jet', 'I')
         , ('n_jet_15', 'I'), ('n_jet_30', 'I'), ('n_jet_50', 'I'), ('n_jet_100', 'I'), ('n_jet_200', 'I')
 
@@ -383,8 +382,8 @@ if True:
         , ('n_track_total', 'I'), ('n_track_basic', 'I'), ('n_track', 'I')
         
         , ('numSVs', 'I'), ('n_sv_total', 'I'), ('n_sv', 'I'), ('n_sv_weighted_rebin', 'F'), ('n_sv_weighted', 'F')
-        ,('n_sv_daughter', 'I')
-        ,('n_selTracks' , 'I')
+        , ('n_sv_daughter', 'I')
+        , ('n_selTracks' , 'I')
         ]
     event_level_var_names += var_names_event
 
@@ -439,9 +438,9 @@ if True:
             #, 'hfNoisyHitsFilter'
         ]
     elif 'era17_17Nov2017' in options.tag:
-        pass
+        raise NotImplementedError('MET filters: not implemented for', 'era17_17Nov2017')
     elif 'era18_17Sep2018' in options.tag:
-        pass
+        raise NotImplementedError('MET filters: not implemented for', 'era18_17Sep2018')
     else:
         raise NotImplementedError('MET filters: era unknown or not specified', options.tag)
 
@@ -515,7 +514,7 @@ if True:
         , 'triggerfired'
     ]
 
-    if 'SingleMuon' in options.tag:
+    if 'SingleMuon' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
         trigger_hlt = [
             'HLT_IsoMu24_v'
             , 'HLT_IsoMu27_v'
@@ -548,11 +547,11 @@ if True:
 
     var_names_chiN2 = [
         ('chiN2_pt', 'F'), ('chiN2_eta', 'F'), ('chiN2_phi', 'F')
-        ,('chiN2_mass', 'F')
+        , ('chiN2_mass', 'F')
         , ('chiN2_decaylengthXYZ', 'F'), ('chiN2_decaylengthXY', 'F'), ('chiN2_chidecaylengthZ', 'F')
         , ('chiN2_log10(decaylengthXYZ)', 'F'), ('chiN2_log10(decaylengthXY)', 'F'), ('chiN2_log10(chidecaylengthZ)', 'F')
 
-		,('chi02_pz', 'F')
+		, ('chi02_pz', 'F')  # TODO: change 02 to N2?
         ]
     
     chiN2_var_array = {}
@@ -590,9 +589,9 @@ if True:
         
     var_names_chiN1 = [
         ('chiN1_pt', 'F'), ('chiN1_eta', 'F'), ('chiN1_phi', 'F')
-       ,('chiN1_mass', 'F')
+       , ('chiN1_mass', 'F')
                
-        ,('chi01_vx', 'F'),('chi01_vy', 'F'),('chi01_vz', 'F')
+        ,('chi01_vx', 'F'),('chi01_vy', 'F'),('chi01_vz', 'F')  # TODO: change 01 to N1?
 		,('chi01_dx', 'F'),('chi01_dy', 'F'),('chi01_dz', 'F')
         ]
     
@@ -1025,7 +1024,7 @@ if True:
         , ('svdaughter_trackMatching_drminold', 'F'), ('svdaughter_trackMatching_drminoldrandom', 'F')
     ]
 
-    SVDaughter_level_var = {}
+    SVDaughter_level_var = {}   # TODO: this is not used, but should be fine to reuse the SV_level_var_array
     for n in SVDaughter_level_var_names:
         if 'max50SVs' in options.tag: SV_level_var_array[n[0]] = array('f', 2*51*[0.])
         else: SV_level_var_array[n[0]] = array('f', 2*1000*[0.])
@@ -1104,8 +1103,6 @@ if True:
 '''
 
 if True:
-
-
 
     jettype = 'AK4PFchs'
 
@@ -1260,7 +1257,7 @@ if True:
 if 'pmssm' in options.tag:
     handle_lumis = Handle('GenLumiInfoHeader')
     
-elif 'fastsim' not in options.tag:
+elif 'fastsim' not in options.tag:  # TODO: why elif?
 
     handle_trigger_hlt = Handle('edm::TriggerResults')
     label_trigger_hlt = ('TriggerResults', '', 'HLT')
@@ -1518,7 +1515,7 @@ for ifile, f in enumerate(options.inputFiles):
         fname = 'root://' + redir + '/' + f.strip()
         
         if 'crab' in options.tag: 
-            fname = 'root://' + redir + '/' + '/pnfs/desy.de/cms/tier2' +  f.strip()
+            fname = 'root://' + redir + '/' + '/pnfs/desy.de/cms/tier2' +  f.strip()  # TODO: does this mean that you try opening the file from desy and if it doesn't work use xrd?
         
         print ''
         print fname
@@ -1589,6 +1586,7 @@ for ifile, f in enumerate(options.inputFiles):
 
         if ievent % printevery == 0: print 'analyzing event %d of %d' % (ievent, nevents)
 
+        # TODO: shouldn't this be -1 and the next cutflow=0?
         cutflow = 0
         hCutflow.Fill(cutflow)
 
@@ -1609,7 +1607,7 @@ for ifile, f in enumerate(options.inputFiles):
         
         if 'crab' in options.tag and 'skipSVs' not in options.tag:
             
-            hCutflow.Fill(cutflow)
+            hCutflow.Fill(cutflow)  # TODO: fill after "cutflow" is set?
             if event_id not in filesWithSV[0].keys(): continue
             #if event_id not in filesWithSV[ifile].keys(): continue
             nevents +=1
@@ -1859,7 +1857,7 @@ for ifile, f in enumerate(options.inputFiles):
         event.getByLabel(label_taudiscriminatorMuonRej, handle_taudiscriminatorMuonRej)
         taudiscriminatorMuonRej = handle_taudiscriminatorMuonRej.product()
 
-        tauswithdiscriminators = []
+        tauswithdiscriminators = []  # TODO: why?
         tauswithdiscriminators = [
             (tau, taudiscriminatorDM.value(itau)
                 , taudiscriminatorMVAraw.value(itau)
@@ -2329,7 +2327,7 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['JetPt4'][0] = minPt4
 
         event_level_var_array['JetEta1'][0] = eta1
-        event_level_var_array['JetEta2'][0] = eta1
+        event_level_var_array['JetEta2'][0] = eta1  # TODO: adapt to the other jets
         event_level_var_array['JetEta3'][0] = eta1
         event_level_var_array['JetEta4'][0] = eta1
 
@@ -2513,7 +2511,7 @@ for ifile, f in enumerate(options.inputFiles):
         numZgammaDaughters = 0
         decayZtau = -1
         ptsumZgammaNeutrinos = -1
-        if 'ZJetsToNuNu' in options.tag or 'DYJetsToLL' in options.tag:
+        if 'ZJetsToNuNu' in options.tag or 'DYJetsToLL' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
 
             Zgammas = [gp for gp in genparticles if gp.isLastCopy() and gp.statusFlags().fromHardProcess()
                        and (abs(gp.pdgId()) == 22 or abs(gp.pdgId()) == 23)]
@@ -2587,7 +2585,7 @@ for ifile, f in enumerate(options.inputFiles):
         etaVisWtau = -1
         phiVisWtau = -1
         thetau = None
-        if 'WJetsToLNu' in options.tag:
+        if 'WJetsToLNu' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
 
             Ws = [gp for gp in genparticles if gp.isLastCopy() and gp.statusFlags().fromHardProcess()
                   and abs(gp.pdgId()) == 24]
@@ -2846,7 +2844,7 @@ for ifile, f in enumerate(options.inputFiles):
                 n2daughters += findDaughters(gp)
                 
                 leptons[0],leptons[1] = findLeptons(gp)
-                if not leptons[0] == None and not leptons[1]==None: 
+                if not leptons[0] == None and not leptons[1]==None:  # TODO: does this need an else-block where dummy values are filled or are we sure that there always will be two leptons?
 
 
                     chiN2_var_array['leptonID'][igp] = leptons[0].pdgId()
@@ -2868,7 +2866,7 @@ for ifile, f in enumerate(options.inputFiles):
                     mtransverse2_paper = 2*(leptons[0].pt())*(leptons[1].pt())*(1-cos(TLV_l1.Angle(TLV_l2.Vect())))
                     
                     chiN2_var_array['leptonBoost'][igp] = TLV_l1.Gamma()
-                    chiN2_var_array['leptonBoost'][igp] = TLV_l2.Gamma()
+                    chiN2_var_array['leptonBoost'][igp] = TLV_l2.Gamma()  # TODO: this just overwrites the line above
                     if TLV_l1.Pt() > TLV_l2.Pt():
                         chiN2_var_array['lepton_High_pt'][igp] = TLV_l1.Pt()
                         chiN2_var_array['lepton_High_eta'][igp] = TLV_l1.Eta()
@@ -2921,6 +2919,7 @@ for ifile, f in enumerate(options.inputFiles):
             chipmnumdaughters = len(c1daughters)
             chiN2numdaughters = len(n2daughters)
             numchidaughters = chipmnumdaughters + chiN2numdaughters
+            # TODO: why in two loops and not "for ichid, chid in enumerate(c1daughters + n2daughters):"? the way it is now, the second loop will overwrite the first loop
             for ichid, chid in enumerate(c1daughters):
                 chidaughter_var_array['chiDaughter_pdgIdMother'][ichid] = chid.mother(0).pdgId()
                 chidaughter_var_array['chiDaughter_pdgId'][ichid] = chid.pdgId()
@@ -3050,7 +3049,7 @@ for ifile, f in enumerate(options.inputFiles):
         crossSection = 1.
         numSimEvents = 1.
 
-        if 'SignalV1' in options.tag or 'SignalV2' in options.tag or 'SignalFullV2' in options.tag:
+        if 'SignalV1' in options.tag or 'SignalV2' in options.tag or 'SignalFullV2' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
 
             # from https://twiki.cern.ch/twiki/bin/view/LHCPhysics/SUSYCrossSections13TeVhino
             higgsinoxsecfile = ROOT.TFile(localpath + 'CN_hino_13TeV.root')
@@ -3083,13 +3082,13 @@ for ifile, f in enumerate(options.inputFiles):
 
             fSimEventNumbers_Signal = None
             hSimEventNumbers_Signal = None
-            if 'SignalV1' in options.tag:
+            if 'SignalV1' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
                 fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_AOD_v1.root')
                 hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_AOD_v1')  # is TH2F with sim. event numbers for each model point
-            elif 'SignalV2' in options.tag:
+            elif 'SignalV2' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
                 fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_AOD_v2.root')
                 hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_AOD_v2') 
-            elif 'SignalFullV2' in options.tag:
+            elif 'SignalFullV2' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
                 fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_FullSim_AOD_v2.root')
                 hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_FullSim_AOD_v2') 
             elif 'era16_UL' in options.tag:
@@ -3111,13 +3110,13 @@ for ifile, f in enumerate(options.inputFiles):
 
                 fSimEventNumbers_Signal.Close()
 
-        elif 'SignalStopV3' in options.tag:
+        elif 'SignalStopV3' in options.tag:  # TODO: this should probably be "dataset" instead of "options.tag"
 
             with open(localpath + 'SUSYCrossSections13TeVstopsbottom.json') as stopxsecfile:
                 stopxsec = json.load(stopxsecfile)
                 crossSection = stopxsec[str(int(mstopFILE))][0]
 
-        else:
+        else:  # TODO: add "if not 'data' in options.tag"?
 
             processid = None
             if'era16_07Aug17' in options.tag:
@@ -3153,6 +3152,8 @@ for ifile, f in enumerate(options.inputFiles):
 
             if processid is not None:
 
+                # TODO: better use x-secs from AN-21-197?
+
                 if 'era16_07Aug17' in options.tag:
                     with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
                         bkgxsec = json.load(bkgxsecfile)
@@ -3172,12 +3173,11 @@ for ifile, f in enumerate(options.inputFiles):
                         numSimEvents = bkgnsim[processid]
                         
                 elif 'era16_UL' in options.tag:
-                    ### ToDo: update json files here for 16UL
-                    with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
+                    with open(localpath + 'crossSections_Bkg_era16_UL.json') as bkgxsecfile:
                         bkgxsec = json.load(bkgxsecfile)
                         crossSection = bkgxsec[processid]
 
-                    with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
+                    with open(localpath + 'simEventNumbers_Bkg_era16_UL.json') as bkgnsimfile:
                         bkgnsim = json.load(bkgnsimfile)
                         numSimEvents = bkgnsim[processid]
 
@@ -3243,7 +3243,7 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['weight_PU_SigBkg_rebin'][0] = weight_PU_SigBkg_rebin
 
         weight_PU_DataMC = 1.
-        if not 'data' in options.tag and not 'signal' in options.tag:
+        if not 'data' in options.tag and not 'signal' in options.tag:  # TODO: also for signal?
 
             ### https://twiki.cern.ch/twiki/bin/view/CMS/PileupReweighting
             ###'/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-69200ub-99bins.root'
@@ -3711,7 +3711,8 @@ for ifile, f in enumerate(options.inputFiles):
                     idx, dxyzmin, tminmatching, drmin = findMatch_track_new(secondary.daughter(k), tracks)
                     _, dxyzminrandom, _, drminrandom = findMatch_track_new_random(secondary.daughter(k), tracks)
                     print "dxyzmin", dxyzmin, "drmin", drmin
-                    
+
+                    # TODO: the index here should be n_sv_daughter-1 instead of k, otherwise it will overwrite
                     SV_level_var_array['svdaughter_trackMatching_tmin'][k] = tminmatching
                     SV_level_var_array['svdaughter_trackMatching_dxyzmin'][k] = dxyzmin
                     SV_level_var_array['svdaughter_trackMatching_drmin'][k] = drmin
@@ -3734,7 +3735,7 @@ for ifile, f in enumerate(options.inputFiles):
                 if matchingTrkIdx[0] in susytracks and matchingTrkIdx[1] in susytracks: 
                     print "SV is signal"
                     isSignal = 1
-                    hasSignalSV = 1
+                    hasSignalSV = 1  # TODO: this is not used
                     signalIdx = nSV
 
                 ######################################
@@ -3750,7 +3751,10 @@ for ifile, f in enumerate(options.inputFiles):
                         
                     #numsvsfinalpreselection += 1
                     continue
-                    
+                    # TODO: doing it this way with "continue" and not filling dummy values can be dangerous because you always(!) have to make sure to select only(!) the SVs with hasTrackMatch_Low==1&&hasTrackMatch_High==1
+                    # TODO: because the other entries of the vector that are not filled in this iteration for nSV (because "continue") will still be filled with the old values from the previous event
+
+
                 SV_level_var_array['hasTrackMatch_Low'][nSV] = 1
                 SV_level_var_array['hasTrackMatch_High'][nSV] = 1
                 SV_level_var_array['isSignal'][nSV] = isSignal
@@ -4076,9 +4080,9 @@ for ifile, f in enumerate(options.inputFiles):
                     numDaughtersOfMother_new = [-1, -1]
                     ignoreIndices = []
                     
-                    if not isSignal and  nSV != signalIdx:
+                    if not isSignal and  nSV != signalIdx:  # TODO: why the second condition?
                         
-                        if secondary.numberOfDaughters()> 2: continue
+                        if secondary.numberOfDaughters()> 2: continue  # TODO: see above about the dangers of continue
                         
                         ### first element is always high PT track	
                         ### if 1st is higher in pt put first at first position
@@ -4197,7 +4201,7 @@ for ifile, f in enumerate(options.inputFiles):
 
                     if not leptons[0] == None and not leptons[1]==None and not theChi01 == None and not theChi02 == None:
                         SV_level_var_array['mtransverse2_hybrid'][nSV] = mZstar_reco_muoncase*mZstar_reco_muoncase + ((v_pZstar_reco.Cross(normalvector))*(v_pZstar_reco.Cross(normalvector)))
-                        if isSignal and  nSV == signalIdx:
+                        if isSignal and  nSV == signalIdx:  # TODO: why the second condition?
                             event_level_var_array['res_vx'][0] = secondary.vx() - theChi01.vx()
                             event_level_var_array['res_vy'][0] = secondary.vy() - theChi01.vy()
                             event_level_var_array['res_vz'][0] = secondary.vz() - theChi01.vz()
@@ -4246,8 +4250,8 @@ for ifile, f in enumerate(options.inputFiles):
                 numsvsfinalpreselection += 1
 
         event_level_var_array['n_sv'][0] = numsvsfinalpreselection
-        if 'fastsim' in options.tag: event_level_var_array['n_sv_weighted_rebin'][0] = numsvsfinalpreselection*weight_PU_FastFull_rebin
-        if 'fastsim' in options.tag: event_level_var_array['n_sv_weighted'][0] = numsvsfinalpreselection*weight_PU_FastFull
+        if 'fastsim' in options.tag: event_level_var_array['n_sv_weighted_rebin'][0] = numsvsfinalpreselection*weight_PU_FastFull_rebin  # TODO: this will just scale the number of SVs but not apply a weight
+        if 'fastsim' in options.tag: event_level_var_array['n_sv_weighted'][0] = numsvsfinalpreselection*weight_PU_FastFull  # TODO: this will just scale the number of SVs but not apply a weight
 
         event_level_var_array['numSVs'][0] = numSVs
         event_level_var_array['n_sv_total'][0] = n_sv_total
