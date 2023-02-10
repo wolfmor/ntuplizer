@@ -13,6 +13,7 @@ python plantTrees.py inputFiles="/pnfs/desy.de/cms/tier2/store/user/sbein/Common
 python plantTrees.py inputFiles="/nfs/dust/cms/user/beinsam/CommonSamples/MC_BSM/CompressedHiggsino/RadiativeMu_2016Full/v2/higgsino94xfull_susyall_mChipm115GeV_dm0p768GeV_pu35_part22of100.root" tag="local, era16_07Aug17, signal"
 python plantTrees.py inputFiles="/nfs/dust/cms/user/wolfmor/testsamples/ZJetsToNuNu_Zpt-200toInf/B044CEA0-F8C9-E611-8F67-0CC47AD990C4.root" tag="test, local, era16_07Aug17"
 python plantTrees.py inputFiles="/nfs/dust/cms/user/wolfmor/testsamples/WJetsToLNu/80A3D525-0FBC-E611-AF19-549F35AC7EA4.root" tag="local, era16_07Aug17"
+python /nfs/dust/cms/user/tewsalex/CMSSW_10_2_18/src/ntuplizer/plantTrees.py inputFiles="/nfs/dust/cms/user/tewsalex/CRAB3-tutorial/CMSSW_10_6_18/src/06475BE3-CAB1-B044-ADFB-3FD0983B451B.root" tag="era16_UL_APV,local" dataset="/DYJetsToLL_M-50_Zpt-200toInf_BPSFilter_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM"
 ----------------------------------------------------------------------
 
 tags:
@@ -579,7 +580,7 @@ if True:
         
     var_names_chiN2Leptons = [
 		('leptonID', 'I'),
-		('leptonBoost', 'F'),
+		('leptonBoost_Low', 'F'),('leptonBoost_High', 'F'),
 		('lepton_Low_eta', 'F'),('lepton_High_eta', 'F'),
 		('lepton_Low_pt', 'F'),('lepton_High_pt', 'F') 
 		]
@@ -1570,9 +1571,6 @@ for ifile, f in enumerate(options.inputFiles):
         if saveOutputFile and ievent % 100 == 0: fout.Write('', ROOT.TObject.kWriteDelete)
 
         if ievent % printevery == 0: print 'analyzing event %d of %d' % (ievent, nevents)
-
-        # TODO: shouldn't this be -1 and the next cutflow=0?
-
 
         random.seed()
         event_level_var_array['random'][0] = random.randrange(10)
@@ -2850,15 +2848,17 @@ for ifile, f in enumerate(options.inputFiles):
                     v_pZstar = TVector3(leptons[0].px()+leptons[1].px(), leptons[0].py()+leptons[1].py(), leptons[0].pz()+leptons[1].pz())
                     mtransverse2 = mZstar*mZstar+ ((v_pZstar.Cross(normalvector))*(v_pZstar.Cross(normalvector)))
                     mtransverse2_paper = 2*(leptons[0].pt())*(leptons[1].pt())*(1-cos(TLV_l1.Angle(TLV_l2.Vect())))
-                    
-                    chiN2_var_array['leptonBoost'][igp] = TLV_l1.Gamma()
-                    chiN2_var_array['leptonBoost'][igp] = TLV_l2.Gamma()  # TODO: this just overwrites the line above
+
                     if TLV_l1.Pt() > TLV_l2.Pt():
                         chiN2_var_array['lepton_High_pt'][igp] = TLV_l1.Pt()
                         chiN2_var_array['lepton_High_eta'][igp] = TLV_l1.Eta()
                         chiN2_var_array['lepton_Low_pt'][igp] = TLV_l2.Pt()
                         chiN2_var_array['lepton_Low_eta'][igp] = TLV_l2.Eta()
+                        chiN2_var_array['leptonBoost_Low'][igp] = TLV_l1.Gamma()
+                        chiN2_var_array['leptonBoost_Low'][igp] = TLV_l2.Gamma()
                     else:
+                        chiN2_var_array['leptonBoost_High'][igp] = TLV_l1.Gamma()
+                        chiN2_var_array['leptonBoost_High'][igp] = TLV_l2.Gamma()
                         chiN2_var_array['lepton_High_pt'][igp] = TLV_l2.Pt()
                         chiN2_var_array['lepton_High_eta'][igp] = TLV_l2.Eta()
                         chiN2_var_array['lepton_Low_pt'][igp] = TLV_l1.Pt()
@@ -2891,8 +2891,28 @@ for ifile, f in enumerate(options.inputFiles):
                     chiN2_var_array['deltaPhiChi0sToLeptons'][igp] = deltaPhi(summedLeptons.Phi(), PVSV.Phi())
                 
                 else:
-                   chiN2_var_array['leptonID'][igp] = 0
-                   ### toDo make default fill for all
+                    chiN2_var_array['leptonID'][igp] = 0
+                    chiN2_var_array['leptonBoost_Low'][igp] = -1
+                    chiN2_var_array['leptonBoost_High'][igp] = -1
+                    chiN2_var_array['lepton_High_pt'][igp] = -1
+                    chiN2_var_array['lepton_High_eta'][igp] = 999
+                    chiN2_var_array['lepton_Low_pt'][igp] = -1
+                    chiN2_var_array['lepton_Low_eta'][igp] = 999
+                    chiN2_var_array['ZstarBoost'][igp] = -1
+                    chiN2_var_array['mZstar'][igp] = -1
+                    chiN2_var_array['ptZstar'][igp] = -1
+                    chiN2_var_array['abspZstar'][igp] = -1
+                    chiN2_var_array['absnormalVector'][igp] = -1
+                    chiN2_var_array['mtransverse2'][igp] = -1
+                    chiN2_var_array['mtransverse2_paper'][igp] = -1
+                    chiN2_var_array['beta'][igp] = 999
+                    chiN2_var_array['Chi01Boost'][igp] = -1
+                    chiN2_var_array['Chi02Boost'][igp] = -1
+                    chiN2_var_array['Chi0sToPV_eta'][igp] = 999
+                    chiN2_var_array['Chi0sToPV_phi'][igp] = 999
+                    chiN2_var_array['deltaEtaChi0sToLeptons'][igp] = 999
+                    chiN2_var_array['absdeltaEtaChi0sToLeptons'][igp] = -1
+                    chiN2_var_array['deltaPhiChi0sToLeptons'][igp] = 999
                    
             for igp, gp in enumerate(N1s):
                 chiN1_var_array['chiN1_pt'][igp] = gp.pt()
@@ -3721,11 +3741,45 @@ for ifile, f in enumerate(options.inputFiles):
                         SV_level_var_array['hasTrackMatch_Low'][nSV] = 0
                         SV_level_var_array['hasTrackMatch_High'][nSV] = 1
                         
+                    for var in ['deltaPhiMetSumPt','deltaPhiLeadingJetSumPt', 'deltaEtaLeadingJetSumPt', 'deltaEtaPVVtxToTrack_High',
+                    'deltaEtaPVVtxToTrack_Low','deltaEtaPVVtxToTrackSum','absdeltaEtaPVVtxToTrackSum','deltaPhiPVVtxToTrack_High',
+                    'deltaPhiPVVtxToTrack_Low','deltaPhiPVVtxToTrackSum','PVVtxEta','PVVtxPhi','vtxiso','vtxdrmin','vtxnumneighbours',
+                    'deltaEtaPVVtxToMET','absdeltaEtaPVVtxToMET','deltaPhiPVVtxToMET','absdeltaPhiPVVtxToMET',
+                    'dxyPVMuon_High','dzPVMuon_High',
+                    'dxyPVMuon_Low','dzPVMuon_Low',
+                    'ptZstar_reco','abspZstar_reco','absnormalVector_reco','beta_reco','mtransverse2_reco_muon','mZstar_reco_muon',
+                    'theta_reco','error_mtransverse2_reco_muon','mZstar_reco_electron','mtransverse2_reco_electron',
+                    'IPsignificance_High','IPxyz_High','IPxy_High','IPz_High','log10IPsignificance_High','log10IPxy_High','log10IPxyz_High','log10IPz_High',
+                    'IPsignificance_Low','IPxyz_Low','IPxy_Low','IPz_Low','log10IPsignificance_Low','log10IPxy_Low','log10IPxyz_Low','log10IPz_Low',
+                    'eta_Low','log10dxy_Low','log10dz_Low',
+                    'eta_High','log10dxy_High','log10dz_High',
+                    'deltaPhi','deltaR','deltaEta','invMass','sumCharge'
+                    ]:
+                         SV_level_var_array[var][nSV] = 999
+                         
+                    for var in ['muonMatched_High','isSoftMuon_High','isGlobalMuon_High','isTrackerMuon_High',
+                    'muonMatched_Low','isSoftMuon_Low','isGlobalMuon_Low','isTrackerMuon_Low'
+                    ]:
+                        
+                        SV_level_var_array[var][nSV] = 0
+                        
+                    for var in ['numberOfChambers_High','numberOfMatchedStations_High','normalizedChi2Muon_High','trackerLayersWithMeasurementMuon_High',
+                    'numberOfChambers_Low','numberOfMatchedStations_Low','normalizedChi2Muon_Low','trackerLayersWithMeasurementMuon_Low',
+                    'pixelLayersWithMeasurementMuon_High',
+                    'pixelLayersWithMeasurementMuon_Low',
+                    'pt_Low','log10PttrackerrorPttrack_Low','nvalidhits_Low','absChi2_Low','quality_Low','log10dxyerrorDxy_Low','log10dzerrorDz_Low',
+                    'pt_High','log10PttrackerrorPttrack_High','nvalidhits_High','absChi2_High','quality_High','log10dxyerrorDxy_High','log10dzerrorDz_High',
+                    'trackiso_Low','trackdrmin_Low','tracknumneighbours_Low','trackisoLoose_Low','trackdrminLoose_Low','tracknumneighboursLoose_Low',
+                    'trackiso_High','trackdrmin_High','tracknumneighbours_High','trackisoLoose_High','trackdrminLoose_High','tracknumneighboursLoose_High',
+                    'jetrelpt_High','jetdrmin_High','jetnum_High',
+                    'jetrelpt_Low','jetdrmin_Low','jetnum_Low',
+                    'vectorSumPt','vectorSumPxy'
+                    ]:
+                        
+                        SV_level_var_array[var][nSV] = -1
+     
                     #numsvsfinalpreselection += 1
                     continue
-                    # TODO: doing it this way with "continue" and not filling dummy values can be dangerous because you always(!) have to make sure to select only(!) the SVs with hasTrackMatch_Low==1&&hasTrackMatch_High==1
-                    # TODO: because the other entries of the vector that are not filled in this iteration for nSV (because "continue") will still be filled with the old values from the previous event
-
 
                 SV_level_var_array['hasTrackMatch_Low'][nSV] = 1
                 SV_level_var_array['hasTrackMatch_High'][nSV] = 1
