@@ -2927,7 +2927,7 @@ for ifile, f in enumerate(options.inputFiles):
                         if drminchid < matchingDrThreshold and dxyzminchid < matchingDxyzThreshold:
                             susytracks[idxchid] = (chid.mother(0).pdgId(), chid.pdgId())
                             chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 1
-                         elif (drminchid < 0.02)  or (dxyzminchid < 0.02 and drminchid < 0.04):  ## toDo check matching criteria
+                        elif (drminchid < 0.02)  or (dxyzminchid < 0.02 and drminchid < 0.04):  ## toDo check matching criteria
                             susytracks[idxchid] = (chid.mother(0).pdgId(), chid.pdgId())
                             chidaughter_var_array['chiDaughter_hasMatchedTrack'][ichid] = 2 
 
