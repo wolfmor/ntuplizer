@@ -2828,7 +2828,7 @@ for ifile, f in enumerate(options.inputFiles):
                 n2daughters += findDaughters(gp)
                 
                 leptons[0],leptons[1] = findLeptons(gp)
-                if not leptons[0] == None and not leptons[1]==None:  # TODO: does this need an else-block where dummy values are filled or are we sure that there always will be two leptons?
+                if not leptons[0] == None and not leptons[1]==None: 
 
 
                     chiN2_var_array['leptonID'][igp] = leptons[0].pdgId()
@@ -4266,8 +4266,6 @@ for ifile, f in enumerate(options.inputFiles):
                             event_level_var_array['res_alphan'][0] = -999
                             event_level_var_array['res_mtransverse2'][0] = -999
                             event_level_var_array['res_mtransverse'][0] = -999  
-
-
 
                 numsvsfinalpreselection += 1
 
