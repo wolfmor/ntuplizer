@@ -582,7 +582,13 @@ if True:
 		('leptonID', 'I'),
 		('leptonBoost_Low', 'F'),('leptonBoost_High', 'F'),
 		('lepton_Low_eta', 'F'),('lepton_High_eta', 'F'),
-		('lepton_Low_pt', 'F'),('lepton_High_pt', 'F') 
+		('lepton_Low_pt', 'F'),('lepton_High_pt', 'F'), 
+        ('lepton_Low_charge', 'I'), ('lepton_High_charge', 'I'),
+        ('chiN2_lepToTrackMatching_tmin_Low', 'F'), ('chiN2_lepToTrackMatching_dxyzmin_Low', 'F'), ('chiN2_lepToTrackMatching_drmin_Low', 'F'), ('chiN2_lepToTrackMatching_dxyzminrandom_Low', 'F'), 
+        ('chiN2_lepToTrackMatching_drminrandom_Low', 'F'), ('chiN2_lepToTrackMatching_drminold_Low', 'F'), ('chiN2_lepToTrackMatching_drminoldrandom_Low', 'F'), 
+        ('chiN2_lepToTrackMatching_tmin_High', 'F'), ('chiN2_lepToTrackMatching_dxyzmin_High', 'F'), ('chiN2_lepToTrackMatching_drmin_High', 'F'), ('chiN2_lepToTrackMatching_dxyzminrandom_High', 'F'), 
+        ('chiN2_lepToTrackMatching_drminrandom_High', 'F'), ('chiN2_lepToTrackMatching_drminold_High', 'F'), ('chiN2_lepToTrackMatching_drminoldrandom_High', 'F'), 
+        ('chiN2_hasMatchedTrackLeptons', 'I'), ('chiN2_hasLeptons', 'I')
 		]
 
     for n in var_names_chiN2Leptons:
@@ -1742,7 +1748,7 @@ for ifile, f in enumerate(options.inputFiles):
 
         cutflow = 3
         hCutflow.Fill(cutflow)
-
+                
         trigger_hlt_accept = {}
         for t_hlt in trigger_hlt:
             if t_hlt == 'triggerfired': continue
@@ -2825,72 +2831,27 @@ for ifile, f in enumerate(options.inputFiles):
                     chiN2_var_array['chiN2_log10(decaylengthXY)'][igp] = -10.
                     chiN2_var_array['chiN2_log10(chidecaylengthZ)'][igp] = -10.
 
+                #### toDo: match gp to SV 
+
                 n2daughters += findDaughters(gp)
+
+                hasLeptons = 0
+                hasMatchedTrackLeptons = 0
+                matchedTrackIdxLeptons = [-1, -1]
                 
-                leptons[0],leptons[1] = findLeptons(gp)
-                if not leptons[0] == None and not leptons[1]==None: 
+                hasMatchedSVDaughtersLeptons = 0
+                matchedSVDaughtersIdxLeptons = [-1, -1]
 
+                for n2d in n2daughters:
 
-                    chiN2_var_array['leptonID'][igp] = leptons[0].pdgId()
-                    TLV_l1 = TLorentzVector()
-                    TLV_l1.SetPxPyPzE(leptons[0].px(),leptons[0].py(),leptons[0].pz(),leptons[0].energy())
-                    TLV_l2 = TLorentzVector()
-                    TLV_l2.SetPxPyPzE(leptons[1].px(),leptons[1].py(),leptons[1].pz(),leptons[1].energy())
+                    if abs(n2d.pdgId()) == 13 or abs(n2d.pdgId()) == 11:
+                        hasLeptons +=1
+                        if leptons[0] == None: leptons[0] = n2d
+                        elif leptons[1] == None: leptons[1] = n2d
+                        
+                chiN2_var_array['chiN2_hasLeptons'][igp] = hasLeptons
                 
-                    v_chi02 = TVector3(gp.vx(), gp.vy(), gp.vz())
-                    v_chi01 = TVector3(gp.daughter(0).vx(), gp.daughter(0).vy(), gp.daughter(0).vz())
-                    v_normal = v_chi01-v_chi02
-                    normalvector = v_normal.Unit()
-                    
-            
-                    ptZstar = leptons[0].pt()+leptons[1].pt()
-                    mZstar = sqrt((TLV_l1+TLV_l2)*(TLV_l1+TLV_l2))
-                    v_pZstar = TVector3(leptons[0].px()+leptons[1].px(), leptons[0].py()+leptons[1].py(), leptons[0].pz()+leptons[1].pz())
-                    mtransverse2 = mZstar*mZstar+ ((v_pZstar.Cross(normalvector))*(v_pZstar.Cross(normalvector)))
-                    mtransverse2_paper = 2*(leptons[0].pt())*(leptons[1].pt())*(1-cos(TLV_l1.Angle(TLV_l2.Vect())))
-
-                    if TLV_l1.Pt() > TLV_l2.Pt():
-                        chiN2_var_array['lepton_High_pt'][igp] = TLV_l1.Pt()
-                        chiN2_var_array['lepton_High_eta'][igp] = TLV_l1.Eta()
-                        chiN2_var_array['lepton_Low_pt'][igp] = TLV_l2.Pt()
-                        chiN2_var_array['lepton_Low_eta'][igp] = TLV_l2.Eta()
-                        chiN2_var_array['leptonBoost_Low'][igp] = TLV_l1.Gamma()
-                        chiN2_var_array['leptonBoost_Low'][igp] = TLV_l2.Gamma()
-                    else:
-                        chiN2_var_array['leptonBoost_High'][igp] = TLV_l1.Gamma()
-                        chiN2_var_array['leptonBoost_High'][igp] = TLV_l2.Gamma()
-                        chiN2_var_array['lepton_High_pt'][igp] = TLV_l2.Pt()
-                        chiN2_var_array['lepton_High_eta'][igp] = TLV_l2.Eta()
-                        chiN2_var_array['lepton_Low_pt'][igp] = TLV_l1.Pt()
-                        chiN2_var_array['lepton_Low_eta'][igp] = TLV_l1.Eta()
-                    
-                    
-                    chiN2_var_array['ZstarBoost'][igp] = (TLV_l1+TLV_l2).Gamma()
-
-                    chiN2_var_array['mZstar'][igp] = mZstar
-                    chiN2_var_array['ptZstar'][igp] = ptZstar
-                    chiN2_var_array['abspZstar'][igp] = v_pZstar.Mag()
-                    chiN2_var_array['absnormalVector'][igp] = normalvector.Mag()
-                    chiN2_var_array['mtransverse2'][igp] = mtransverse2
-                    chiN2_var_array['mtransverse2_paper'][igp] = mtransverse2_paper
-                    chiN2_var_array['beta'][igp] = v_pZstar.Angle(normalvector)	
-
-                    TLV_theChi01 = TLorentzVector()
-                    TLV_theChi01.SetPxPyPzE(gp.daughter(0).px(), gp.daughter(0).py(), gp.daughter(0).pz(), gp.daughter(0).energy())
-                    chiN2_var_array['Chi01Boost'][igp] = TLV_theChi01.Gamma()
-                    TLV_theChi02 = TLorentzVector()
-                    TLV_theChi02.SetPxPyPzE(gp.px(), gp.py(), gp.pz(), gp.energy())			
-                    chiN2_var_array['Chi02Boost'][igp] = TLV_theChi02.Gamma()
-                                                
-                    PVSV = TVector3(gp.daughter(0).vx()-pv_pos.x(), gp.daughter(0).vy()-pv_pos.y(), gp.daughter(0).vz()-pv_pos.z())		
-                    chiN2_var_array['Chi0sToPV_eta'][igp] = PVSV.Eta()
-                    chiN2_var_array['Chi0sToPV_phi'][igp] = PVSV.Phi()					
-                    summedLeptons = TLV_l1+TLV_l2
-                    chiN2_var_array['deltaEtaChi0sToLeptons'][igp] = summedLeptons.Eta()-PVSV.Eta()
-                    chiN2_var_array['absdeltaEtaChi0sToLeptons'][igp] = abs(summedLeptons.Eta()-PVSV.Eta()) #TODO> remove abs version, do that bz hnd later
-                    chiN2_var_array['deltaPhiChi0sToLeptons'][igp] = deltaPhi(summedLeptons.Phi(), PVSV.Phi())
-                
-                else:
+                if leptons[0] == None or leptons[1]==None: 
                     chiN2_var_array['leptonID'][igp] = 0
                     chiN2_var_array['leptonBoost_Low'][igp] = -1
                     chiN2_var_array['leptonBoost_High'][igp] = -1
@@ -2898,6 +2859,8 @@ for ifile, f in enumerate(options.inputFiles):
                     chiN2_var_array['lepton_High_eta'][igp] = 999
                     chiN2_var_array['lepton_Low_pt'][igp] = -1
                     chiN2_var_array['lepton_Low_eta'][igp] = 999
+                    chiN2_var_array['lepton_Low_charge'][igp] = 999
+                    chiN2_var_array['lepton_High_charge'][igp] = 999
                     chiN2_var_array['ZstarBoost'][igp] = -1
                     chiN2_var_array['mZstar'][igp] = -1
                     chiN2_var_array['ptZstar'][igp] = -1
@@ -2913,7 +2876,128 @@ for ifile, f in enumerate(options.inputFiles):
                     chiN2_var_array['deltaEtaChi0sToLeptons'][igp] = 999
                     chiN2_var_array['absdeltaEtaChi0sToLeptons'][igp] = -1
                     chiN2_var_array['deltaPhiChi0sToLeptons'][igp] = 999
-                   
+                    
+                    continue
+
+                ## ToDo put gen matching to SVs here, also from SV loop
+                chiN2_var_array['leptonID'][igp] = leptons[0].pdgId()
+                TLV_l1 = TLorentzVector()
+                TLV_l1.SetPxPyPzE(leptons[0].px(),leptons[0].py(),leptons[0].pz(),leptons[0].energy())
+                TLV_l2 = TLorentzVector()
+                TLV_l2.SetPxPyPzE(leptons[1].px(),leptons[1].py(),leptons[1].pz(),leptons[1].energy())
+            
+                v_chi02 = TVector3(gp.vx(), gp.vy(), gp.vz())
+                v_chi01 = TVector3(gp.daughter(0).vx(), gp.daughter(0).vy(), gp.daughter(0).vz())
+                v_normal = v_chi01-v_chi02
+                normalvector = v_normal.Unit()
+                
+        
+                ptZstar = leptons[0].pt()+leptons[1].pt()
+                mZstar = sqrt((TLV_l1+TLV_l2)*(TLV_l1+TLV_l2))
+                v_pZstar = TVector3(leptons[0].px()+leptons[1].px(), leptons[0].py()+leptons[1].py(), leptons[0].pz()+leptons[1].pz())
+                mtransverse2 = mZstar*mZstar+ ((v_pZstar.Cross(normalvector))*(v_pZstar.Cross(normalvector)))
+                mtransverse2_paper = 2*(leptons[0].pt())*(leptons[1].pt())*(1-cos(TLV_l1.Angle(TLV_l2.Vect())))
+
+                if TLV_l1.Pt() > TLV_l2.Pt(): 
+                    lepLow = leptons[1]
+                    lepHigh = leptons[0]
+                    TLV_Low = TLV_l2
+                    TLV_High = TLV_l1
+                else:
+                    lepLow = leptons[0]
+                    lepHigh = leptons[1]
+                    TLV_Low = TLV_l1
+                    TLV_High = TLV_l2
+                    
+                chiN2_var_array['lepton_High_pt'][igp] = TLV_High.Pt()
+                chiN2_var_array['lepton_High_eta'][igp] = TLV_High.Eta()
+                chiN2_var_array['lepton_Low_pt'][igp] = TLV_Low.Pt()
+                chiN2_var_array['lepton_Low_eta'][igp] = TLV_Low.Eta()
+                chiN2_var_array['leptonBoost_High'][igp] = TLV_High.Gamma()
+                chiN2_var_array['leptonBoost_Low'][igp] = TLV_Low.Gamma()
+                chiN2_var_array['lepton_Low_charge'][igp] = lepLow.charge()
+                chiN2_var_array['lepton_High_charge'][igp] = lepHigh.charge()
+
+                
+                chiN2_var_array['ZstarBoost'][igp] = (TLV_l1+TLV_l2).Gamma()
+
+                chiN2_var_array['mZstar'][igp] = mZstar
+                chiN2_var_array['ptZstar'][igp] = ptZstar
+                chiN2_var_array['abspZstar'][igp] = v_pZstar.Mag()
+                chiN2_var_array['absnormalVector'][igp] = normalvector.Mag()
+                chiN2_var_array['mtransverse2'][igp] = mtransverse2
+                chiN2_var_array['mtransverse2_paper'][igp] = mtransverse2_paper
+                chiN2_var_array['beta'][igp] = v_pZstar.Angle(normalvector)	
+
+                TLV_theChi01 = TLorentzVector()
+                TLV_theChi01.SetPxPyPzE(gp.daughter(0).px(), gp.daughter(0).py(), gp.daughter(0).pz(), gp.daughter(0).energy())
+                chiN2_var_array['Chi01Boost'][igp] = TLV_theChi01.Gamma()
+                TLV_theChi02 = TLorentzVector()
+                TLV_theChi02.SetPxPyPzE(gp.px(), gp.py(), gp.pz(), gp.energy())			
+                chiN2_var_array['Chi02Boost'][igp] = TLV_theChi02.Gamma()
+                                            
+                PVSV = TVector3(gp.daughter(0).vx()-pv_pos.x(), gp.daughter(0).vy()-pv_pos.y(), gp.daughter(0).vz()-pv_pos.z())		
+                chiN2_var_array['Chi0sToPV_eta'][igp] = PVSV.Eta()
+                chiN2_var_array['Chi0sToPV_phi'][igp] = PVSV.Phi()					
+                summedLeptons = TLV_l1+TLV_l2
+                chiN2_var_array['deltaEtaChi0sToLeptons'][igp] = summedLeptons.Eta()-PVSV.Eta()
+                chiN2_var_array['absdeltaEtaChi0sToLeptons'][igp] = abs(summedLeptons.Eta()-PVSV.Eta()) #TODO> remove abs version, do that bz hnd later
+                chiN2_var_array['deltaPhiChi0sToLeptons'][igp] = deltaPhi(summedLeptons.Phi(), PVSV.Phi())
+                
+                idxold = [-1, -1]
+                drminold = [-1, -1]
+                drminoldrandom = [-1, -1]
+                
+                idx = [-1, -1]
+                drmin = [-1, -1]
+                drminrandom = [-1, -1]
+                dxyzmin = [-1, -1]
+                dxyzminrandom = [-1, -1]
+                tminmatching = [-1, -1]
+                
+                idxold[0], drminold[0] = findMatch_track_old(lepLow, tracks)
+                _, drminoldrandom[0] = findMatch_track_old_random(lepLow, tracks)
+
+                idx[0], dxyzmin[0], tminmatching[0], drmin[0] = findMatch_track_new(lepLow, tracks)
+                _, dxyzminrandom[0], _, drminrandom[0] = findMatch_track_new_random(lepLow, tracks)
+
+                chiN2_var_array['chiN2_lepToTrackMatching_tmin_Low'][igp] = tminmatching[0]
+                chiN2_var_array['chiN2_lepToTrackMatching_dxyzmin_Low'][igp] = dxyzmin[0]
+                chiN2_var_array['chiN2_lepToTrackMatching_drmin_Low'][igp] = drmin[0]
+                chiN2_var_array['chiN2_lepToTrackMatching_dxyzminrandom_Low'][igp] = dxyzminrandom[0]
+                chiN2_var_array['chiN2_lepToTrackMatching_drminrandom_Low'][igp] = drminrandom[0]
+                chiN2_var_array['chiN2_lepToTrackMatching_drminold_Low'][igp] = drminold[0]
+                chiN2_var_array['chiN2_lepToTrackMatching_drminoldrandom_Low'][igp] = drminoldrandom[0]
+                
+                idxold[1], drminold[1] = findMatch_track_old(lepHigh, tracks)
+                _, drminoldrandom[1] = findMatch_track_old_random(lepHigh, tracks)
+
+                idx[1], dxyzmin[1], tminmatching[1], drmin[1] = findMatch_track_new(lepHigh, tracks)
+                _, dxyzminrandom[1], _, drminrandom[1] = findMatch_track_new_random(lepHigh, tracks)
+                
+                chiN2_var_array['chiN2_lepToTrackMatching_tmin_High'][igp] = tminmatching[1]
+                chiN2_var_array['chiN2_lepToTrackMatching_dxyzmin_High'][igp] = dxyzmin[1]
+                chiN2_var_array['chiN2_lepToTrackMatching_drmin_High'][igp] = drmin[1]
+                chiN2_var_array['chiN2_lepToTrackMatching_dxyzminrandom_High'][igp] = dxyzminrandom[1]
+                chiN2_var_array['chiN2_lepToTrackMatching_drminrandom_High'][igp] = drminrandom[1]
+                chiN2_var_array['chiN2_lepToTrackMatching_drminold_High'][igp] = drminold[1]
+                chiN2_var_array['chiN2_lepToTrackMatching_drminoldrandom_High'][igp] = drminoldrandom[1]
+
+                if not idx[0] == -1:
+                    if drmin[0] < matchingDrThreshold and dxyzmin[0] < matchingDxyzThreshold:
+
+                        hasMatchedTrackLeptons += 1
+                        matchedTrackIdxLeptons[0] = idx
+                        
+                if not idx[1] == -1:
+                    if drmin[1] < matchingDrThreshold and dxyzmin[1] < matchingDxyzThreshold:
+
+                        hasMatchedTrackLeptons += 1
+                        matchedTrackIdxLeptons[1] = idx
+                
+                chiN2_var_array['chiN2_hasMatchedTrackLeptons'][igp] = hasMatchedTrackLeptons
+                
+
             for igp, gp in enumerate(N1s):
                 chiN1_var_array['chiN1_pt'][igp] = gp.pt()
                 chiN1_var_array['chiN1_eta'][igp] = gp.eta()
@@ -3827,8 +3911,8 @@ for ifile, f in enumerate(options.inputFiles):
                 SV_level_var_array['vtxiso'][nSV] , SV_level_var_array['vtxdrmin'][nSV], SV_level_var_array['vtxnumneighbours'][nSV] = calcIso_vtx(secondary, secondaryVertices)	
                 SV_level_var_array['deltaEtaPVVtxToMET'][nSV] = met.eta()-PVVtx.Eta()
                 SV_level_var_array['absdeltaEtaPVVtxToMET'][nSV] = abs(met.eta()-PVVtx.Eta())
-                SV_level_var_array['deltaPhiPVVtxToMET'][nSV] = met.phi()-PVVtx.Phi()
-                SV_level_var_array['absdeltaPhiPVVtxToMET'][nSV] = abs(met.phi()-PVVtx.Phi())
+                SV_level_var_array['deltaPhiPVVtxToMET'][nSV] = deltaPhi(met.phi(),PVVtx.Phi())
+                SV_level_var_array['absdeltaPhiPVVtxToMET'][nSV] = abs(deltaPhi(met.phi(),PVVtx.Phi()))
 
                 v_normal_reco = TVector3(secondary.vx()-pv_pos.x(),secondary.vy()-pv_pos.y(),secondary.vz()-pv_pos.z())
                 normalvector_reco = v_normal_reco.Unit()
@@ -4224,48 +4308,48 @@ for ifile, f in enumerate(options.inputFiles):
                     if not leptons[0] == None and not leptons[1]==None and not theChi01 == None and not theChi02 == None:
                         SV_level_var_array['mtransverse2_hybrid'][nSV] = mZstar_reco_muoncase*mZstar_reco_muoncase + ((v_pZstar_reco.Cross(normalvector))*(v_pZstar_reco.Cross(normalvector)))
                         if isSignal and  nSV == signalIdx:
-                            event_level_var_array['res_vx'][0] = secondary.vx() - theChi01.vx()
-                            event_level_var_array['res_vy'][0] = secondary.vy() - theChi01.vy()
-                            event_level_var_array['res_vz'][0] = secondary.vz() - theChi01.vz()
-                            event_level_var_array['res_PVx'][0] = (pv_pos.x() - theChi02.vx())
-                            event_level_var_array['res_PVy'][0] = (pv_pos.y() - theChi02.vy())
-                            event_level_var_array['res_PVz'][0] = (pv_pos.z() - theChi02.vz())
-                            event_level_var_array['res_dx'][0] = (secondary.vx() - pv_pos.x()) - (theChi01.vx() - theChi02.vx())
-                            event_level_var_array['res_dy'][0] = (secondary.vy() - pv_pos.x()) - (theChi01.vy() - theChi02.vx())
-                            event_level_var_array['res_dz'][0] = (secondary.vz() - pv_pos.x()) - (theChi01.vz() - theChi02.vx())
-                            event_level_var_array['res_theta'][0] = (degrees(asin((v_pZstar_reco.Cross(normalvector_reco)).Mag()/(v_pZstar_reco.Mag()))))-(degrees(asin((v_pZstar.Cross(normalvector)).Mag()/(v_pZstar.Mag()))))
-                            event_level_var_array['gen_theta'][0] = (degrees(asin((v_pZstar.Cross(normalvector)).Mag()/(v_pZstar.Mag()))))
-                            event_level_var_array['reco_theta'][0] = (degrees(asin((v_pZstar_reco.Cross(normalvector_reco)).Mag()/(v_pZstar_reco.Mag()))))
-                            event_level_var_array['res_deltaEta'][0] = (summedLeptons.Eta()-PVSV.Eta()) - (summedTracks.Eta()-PVVtx.Eta())
-                            event_level_var_array['res_deltaPhi'][0] = deltaPhi(summedLeptons.Phi(), PVSV.Phi()) - deltaPhi(summedTracks.Phi(), PVVtx.Phi())
-                            event_level_var_array['res_eta'][0] = - PVVtx.Eta()
-                            event_level_var_array['res_phi'][0] = - PVVtx.Phi()
-                            event_level_var_array['res_ncrossn'][0] = (normalvector.Cross(normalvector_reco)).Mag()
-                            event_level_var_array['res_alphan'][0] = asin((normalvector.Cross(normalvector_reco).Mag()))
-                            event_level_var_array['res_mtransverse2'][0] = mtransverse2 - mtransverse2_reco_muoncase
-                            event_level_var_array['res_mtransverse'][0] = sqrt(mtransverse2)- sqrt(mtransverse2_reco_muoncase)
+                            SV_level_var_array['res_vx'][0] = secondary.vx() - theChi01.vx()
+                            SV_level_var_array['res_vy'][0] = secondary.vy() - theChi01.vy()
+                            SV_level_var_array['res_vz'][0] = secondary.vz() - theChi01.vz()
+                            SV_level_var_array['res_PVx'][0] = (pv_pos.x() - theChi02.vx())
+                            SV_level_var_array['res_PVy'][0] = (pv_pos.y() - theChi02.vy())
+                            SV_level_var_array['res_PVz'][0] = (pv_pos.z() - theChi02.vz())
+                            SV_level_var_array['res_dx'][0] = (secondary.vx() - pv_pos.x()) - (theChi01.vx() - theChi02.vx())
+                            SV_level_var_array['res_dy'][0] = (secondary.vy() - pv_pos.x()) - (theChi01.vy() - theChi02.vx())
+                            SV_level_var_array['res_dz'][0] = (secondary.vz() - pv_pos.x()) - (theChi01.vz() - theChi02.vx())
+                            SV_level_var_array['res_theta'][0] = (degrees(asin((v_pZstar_reco.Cross(normalvector_reco)).Mag()/(v_pZstar_reco.Mag()))))-(degrees(asin((v_pZstar.Cross(normalvector)).Mag()/(v_pZstar.Mag()))))
+                            SV_level_var_array['gen_theta'][0] = (degrees(asin((v_pZstar.Cross(normalvector)).Mag()/(v_pZstar.Mag()))))
+                            SV_level_var_array['reco_theta'][0] = (degrees(asin((v_pZstar_reco.Cross(normalvector_reco)).Mag()/(v_pZstar_reco.Mag()))))
+                            SV_level_var_array['res_deltaEta'][0] = (summedLeptons.Eta()-PVSV.Eta()) - (summedTracks.Eta()-PVVtx.Eta())
+                            SV_level_var_array['res_deltaPhi'][0] = deltaPhi(summedLeptons.Phi(), PVSV.Phi()) - deltaPhi(summedTracks.Phi(), PVVtx.Phi())
+                            SV_level_var_array['res_eta'][0] = - PVVtx.Eta()
+                            SV_level_var_array['res_phi'][0] = - PVVtx.Phi()
+                            SV_level_var_array['res_ncrossn'][0] = (normalvector.Cross(normalvector_reco)).Mag()
+                            SV_level_var_array['res_alphan'][0] = asin((normalvector.Cross(normalvector_reco).Mag()))
+                            SV_level_var_array['res_mtransverse2'][0] = mtransverse2 - mtransverse2_reco_muoncase
+                            SV_level_var_array['res_mtransverse'][0] = sqrt(mtransverse2)- sqrt(mtransverse2_reco_muoncase)
                     else:
-                            SV_level_var_array['mtransverse2_hybrid'][nSV] = -999
-                            event_level_var_array['res_vx'][0] = -999
-                            event_level_var_array['res_vy'][0] = -999
-                            event_level_var_array['res_vz'][0] = -999
-                            event_level_var_array['res_PVx'][0] = -999
-                            event_level_var_array['res_PVy'][0] = -999
-                            event_level_var_array['res_PVz'][0] = -999
-                            event_level_var_array['res_dx'][0] = -999
-                            event_level_var_array['res_dy'][0] = -999
-                            event_level_var_array['res_dz'][0] = -999
-                            event_level_var_array['res_theta'][0] = -999
-                            event_level_var_array['gen_theta'][0] = -999
-                            event_level_var_array['reco_theta'][0] = -999
-                            event_level_var_array['res_deltaEta'][0] = -999
-                            event_level_var_array['res_deltaPhi'][0] = -999
-                            event_level_var_array['res_eta'][0] = -999
-                            event_level_var_array['res_phi'][0] = -999
-                            event_level_var_array['res_ncrossn'][0] = -999
-                            event_level_var_array['res_alphan'][0] = -999
-                            event_level_var_array['res_mtransverse2'][0] = -999
-                            event_level_var_array['res_mtransverse'][0] = -999  
+                            SV_level_var_array['mtransverse2_hybrid'][0] = -999
+                            SV_level_var_array['res_vx'][0] = -999
+                            SV_level_var_array['res_vy'][0] = -999
+                            SV_level_var_array['res_vz'][0] = -999
+                            SV_level_var_array['res_PVx'][0] = -999
+                            SV_level_var_array['res_PVy'][0] = -999
+                            SV_level_var_array['res_PVz'][0] = -999
+                            SV_level_var_array['res_dx'][0] = -999
+                            SV_level_var_array['res_dy'][0] = -999
+                            SV_level_var_array['res_dz'][0] = -999
+                            SV_level_var_array['res_theta'][0] = -999
+                            SV_level_var_array['gen_theta'][0] = -999
+                            SV_level_var_array['reco_theta'][0] = -999
+                            SV_level_var_array['res_deltaEta'][0] = -999
+                            SV_level_var_array['res_deltaPhi'][0] = -999
+                            SV_level_var_array['res_eta'][0] = -999
+                            SV_level_var_array['res_phi'][0] = -999
+                            SV_level_var_array['res_ncrossn'][0] = -999
+                            SV_level_var_array['res_alphan'][0] = -999
+                            SV_level_var_array['res_mtransverse2'][0] = -999
+                            SV_level_var_array['res_mtransverse'][0] = -999  
 
                 numsvsfinalpreselection += 1
 

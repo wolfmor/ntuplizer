@@ -36,11 +36,35 @@ python -c "import PSet; print(PSet.process.dumpPython())"
 cmsRun -j FrameworkJobReport.xml -p PSet.py #config option crab 
 
 echo "================= producing the ntuples ===================="
+
+exitCode=1
+exitMessage="The Ntupelizer Failed"
+errorType="ntupelizer crash"
+
 CRABFILES=$(python -c "import PSet; print(','.join(PSet.process.source.fileNames.value()))" 2>/dev/null| tail -1)
-#python plantTrees.py inputFiles="$CRABFILES" tag="era16_07Aug17, crab, cleanleptons"
-#python plantTrees.py inputFiles="$CRABFILES" tag="era16_07Aug17, test, crab"
 echo $2
 python plantTrees.py inputFiles="$CRABFILES" $2 $3
 
-#python plantTrees.py inputFiles="$CRABFILES" tag="era16_07Aug17, crab"
-#python plantTrees.py inputFiles="$CRABFILES" tag="era16_07Aug17, test, crab, debug"
+# At the end of the script modify the FJR
+ret=$?
+if [ $ret -ne 0 ] && [ -e FrameworkJobReport.xml ]
+then
+	cat << EOF > FrameworkJobReport.xml.tmp
+<FrameworkJobReport>
+<FrameworkError ExitStatus="$exitCode" Type="$errorType" >
+$exitMessage
+</FrameworkError>
+EOF
+
+	tail -n+2 FrameworkJobReport.xml >> FrameworkJobReport.xml.tmp
+	mv FrameworkJobReport.xml.tmp FrameworkJobReport.xml
+elif [[ $ret -ne 0 ]]
+then
+	cat << EOF > FrameworkJobReport.xml
+<FrameworkJobReport>
+<FrameworkError ExitStatus="$exitCode" Type="$errorType" >
+$exitMessage
+</FrameworkError>
+</FrameworkJobReport>
+EOF
+fi
