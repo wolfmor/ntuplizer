@@ -2877,9 +2877,26 @@ for ifile, f in enumerate(options.inputFiles):
                     chiN2_var_array['absdeltaEtaChi0sToLeptons'][igp] = -1
                     chiN2_var_array['deltaPhiChi0sToLeptons'][igp] = 999
                     
+                    chiN2_var_array['chiN2_lepToTrackMatching_tmin_High'][igp] = -1
+                    chiN2_var_array['chiN2_lepToTrackMatching_dxyzmin_High'][igp] = -1
+                    chiN2_var_array['chiN2_lepToTrackMatching_drmin_High'][igp] = -1
+                    chiN2_var_array['chiN2_lepToTrackMatching_dxyzminrandom_High'][igp] = -1
+                    chiN2_var_array['chiN2_lepToTrackMatching_drminrandom_High'][igp] = -1
+                    chiN2_var_array['chiN2_lepToTrackMatching_drminold_High'][igp] = -1
+                    chiN2_var_array['chiN2_lepToTrackMatching_drminoldrandom_High'][igp] = -1
+                    
+                    chiN2_var_array['chiN2_lepToTrackMatching_tmin_Low'][igp] = -1
+                    chiN2_var_array['chiN2_lepToTrackMatching_dxyzmin_Low'][igp] = -1
+                    chiN2_var_array['chiN2_lepToTrackMatching_drmin_Low'][igp] = -1
+                    chiN2_var_array['chiN2_lepToTrackMatching_dxyzminrandom_Low'][igp] = -1
+                    chiN2_var_array['chiN2_lepToTrackMatching_drminrandom_Low'][igp] = -1
+                    chiN2_var_array['chiN2_lepToTrackMatching_drminold_Low'][igp] = -1
+                    chiN2_var_array['chiN2_lepToTrackMatching_drminoldrandom_Low'][igp] = -1
+                    
+                    chiN2_var_array['chiN2_hasMatchedTrackLeptons'][igp] = hasMatchedTrackLeptons
+                    
                     continue
 
-                ## ToDo put gen matching to SVs here, also from SV loop
                 chiN2_var_array['leptonID'][igp] = leptons[0].pdgId()
                 TLV_l1 = TLorentzVector()
                 TLV_l1.SetPxPyPzE(leptons[0].px(),leptons[0].py(),leptons[0].pz(),leptons[0].energy())
