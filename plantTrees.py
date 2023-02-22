@@ -1177,7 +1177,7 @@ if True:
         # tau energy scale (TES)
         # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
         if tauIDalgo == 'MVArun2v1DBoldDMwLT':
-            tesfile = ROOT.TFile(localpath + 'TES/TauES_dm_MVAoldDM2017v2_2016Legacy.root')  # TODO: this is not UL but ok...
+            tesfile = ROOT.TFile(localpath + 'TES/TauES_dm_MVAoldDM2017v2_2016Legacy.root')
             teshist = tesfile.Get('tes')
         else:
             raise NotImplementedError('tauIDalgo unknown or not specified')
@@ -3266,7 +3266,7 @@ for ifile, f in enumerate(options.inputFiles):
                         numSimEvents = bkgnsim[processid]
                         
                 elif 'era16_UL' in options.tag:
-                    with open(localpath + 'crossSections_Bkg_era16_UL.json') as bkgxsecfile:
+                    with open(localpath + 'crossSections_Bkg_era16_UL.json') as bkgxsecfile:  # these are just the same values as for era16_UL_APV
                         bkgxsec = json.load(bkgxsecfile)
                         crossSection = bkgxsec[processid]
 
@@ -3834,7 +3834,7 @@ for ifile, f in enumerate(options.inputFiles):
                 ######################################
                 #### "filling tree on SV level"
                 ######################################
-                if None in matchingTrk: 
+                if None in matchingTrk:
                     if matchingTrk[0] == matchingTrk[1]: 
                         SV_level_var_array['hasTrackMatch_Low'][nSV] = 0
                         SV_level_var_array['hasTrackMatch_High'][nSV] = 0

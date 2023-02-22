@@ -921,8 +921,8 @@ def findMinDr_track(aTrack, tracks, threshold):
                 matchingTrack = track
                 
 
-	if drmin < threshold: match = True
-	return match, idx, drmin, matchingTrack
+    if drmin < threshold: match = True
+    return match, idx, drmin, matchingTrack
 
 
 def getTauDecayMode(tau, decaymode):
