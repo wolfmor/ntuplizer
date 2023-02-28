@@ -346,6 +346,8 @@ if True:
         , ('weight_PU_SigBkg', 'F'), ('weight_PU_SigBkg_rebin', 'F')
         
         , ('weight_PU_MCData', 'F')
+        , ('weight_PU_SignalMC', 'F')
+        , ('weight_PU_SignalData', 'F')
 
         , ('n_pv', 'I'), ('n_trueInteractions', 'F'), ('rho', 'F')
 
@@ -377,7 +379,7 @@ if True:
         , ('n_photon', 'I'), ('n_photon_iso', 'I')
         , ('n_pfLepton', 'I'), ('n_pfLepton_iso', 'I')
         , ('n_electron', 'I'), ('n_electron_iso', 'I')
-        , ('n_muon', 'I'), ('n_muon_iso', 'I')
+        , ('n_muon', 'I'), ('n_muon_all', 'I'), ('n_muon_iso', 'I')
         , ('n_lepton', 'I'), ('n_lepton_iso', 'I')
         , ('n_tau', 'I'), ('n_tau_vloose', 'I'), ('n_tau_loose', 'I'), ('n_tau_medium', 'I'), ('n_tau_tight', 'I'), ('n_tau_vtight', 'I'), ('n_tau_vvtight', 'I')
         , ('n_tau_20', 'I'), ('n_tau_20_vloose', 'I'), ('n_tau_20_loose', 'I'), ('n_tau_20_medium', 'I'), ('n_tau_20_tight', 'I'), ('n_tau_20_vtight', 'I'), ('n_tau_20_vvtight', 'I')
@@ -1882,6 +1884,7 @@ for ifile, f in enumerate(options.inputFiles):
                      and e.pt() > 10
                      and abs(e.eta()) < 2.5]
 
+        allmuons = muons
         muons = [m for m in muons
                  if passesMuonID(m, wp='loose')
                  and m.pt() > 10
@@ -2442,6 +2445,7 @@ for ifile, f in enumerate(options.inputFiles):
 
 
         event_level_var_array['n_muon'][0] = len(muons)
+        event_level_var_array['n_muon_all'][0] = len(allmuons)
 
         nummuonsiso = 0
         for im, m in enumerate(muons):
@@ -3336,7 +3340,10 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['weight_PU_SigBkg_rebin'][0] = weight_PU_SigBkg_rebin
 
         weight_PU_DataMC = 1.
-        if not 'data' in options.tag and not 'signal' in options.tag:  # TODO: also for signal?
+        weight_PU_SignalMC = 1.
+        weight_PU_SignalData = 1.
+        #if not 'data' in options.tag and not 'signal' in options.tag:  
+        if not 'data' in options.tag:  
 
             ### https://twiki.cern.ch/twiki/bin/view/CMS/PileupReweighting
             ###'/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-69200ub-99bins.root'
@@ -3345,6 +3352,17 @@ for ifile, f in enumerate(options.inputFiles):
             ### https://github.com/CMS-LUMI-POG/PileupTools
 
             fPUdistribution = ROOT.TFile(localpath + 'pileupweights.root')
+            
+            if 'signal' in options.tag: # This should do as signal (fastsim) to MC (fullsim) weighting
+                if 'era16_UL' in options.tag: 
+                    hPUdistribution_signalMC = fPUdistribution.Get('puweight_signalMC_2016')
+                    hPUdistribution_signalData = fPUdistribution.Get('puweight_signalData_2016')
+                    
+                    binPUweight_signalMC = hPUdistribution_signalMC.GetXaxis().FindBin(n_trueInteractions)
+                    weight_PU_SignalMC = hPUdistribution_signalMC.GetBinContent(binPUweight_signalMC)
+                    
+                    binPUweight_signalData = hPUdistribution_signalData.GetXaxis().FindBin(n_trueInteractions)
+                    weight_PU_SignalData = hPUdistribution_signalData.GetBinContent(binPUweight_signalData)
                 
             if 'era16_UL_APV' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016_HIPM')
             #if 'era16_UL_APV' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016 HIPM')
@@ -3354,10 +3372,12 @@ for ifile, f in enumerate(options.inputFiles):
 
             binPUweight = hPUdistribution.GetXaxis().FindBin(n_trueInteractions)
             weight_PU_DataMC = hPUdistribution.GetBinContent(binPUweight)
-
+            
             fPUdistribution.Close()
 
         event_level_var_array['weight_PU_MCData'][0] = weight_PU_DataMC
+        event_level_var_array['weight_PU_SignalMC'][0] = weight_PU_SignalMC
+        event_level_var_array['weight_PU_SignalData'][0] = weight_PU_SignalData
 
 
         event_level_var_array['n_genParticle'][0] = 0
@@ -3797,9 +3817,7 @@ for ifile, f in enumerate(options.inputFiles):
                 matchingTrkIdx = [-1, -1]
 
                 for k in range(secondary.numberOfDaughters()):
-                    
-
-                    
+                                      
                     print "SV no. ", nSV, "daughter no. ", k, " charge ", secondary.daughter(k).charge()
                     
                     idx, dxyzmin, tminmatching, drmin = findMatch_track_new(secondary.daughter(k), tracks)
@@ -3889,8 +3907,10 @@ for ifile, f in enumerate(options.inputFiles):
                 if 'debug' in options.tag: print "filling tree on SV level, nSV", nSV
                 TLV1 = TLorentzVector()
                 TLV1.SetPxPyPzE(matchingTrk[0].px(),matchingTrk[0].py(),matchingTrk[0].pz(),matchingTrk[0].pt()*TMath.CosH(matchingTrk[0].eta()))
+                #TLV1.SetPxPyPzE(secondary.daughter(0).px(),secondary.daughter(0).py(),secondary.daughter(0).pz(),secondary.daughter(0).pt()*TMath.CosH(secondary.daughter(0).eta()))
                 TLV2 = TLorentzVector()
                 TLV2.SetPxPyPzE(matchingTrk[1].px(),matchingTrk[1].py(),matchingTrk[1].pz(),matchingTrk[1].pt()*TMath.CosH(matchingTrk[1].eta()))
+                #TLV2.SetPxPyPzE(secondary.daughter(1).px(),secondary.daughter(1).py(),secondary.daughter(1).pz(),secondary.daughter(1).pt()*TMath.CosH(secondary.daughter(1).eta()))
                 
                 PVVtx = TVector3(secondary.vx()-pv_pos.x(), secondary.vy()-pv_pos.y(), secondary.vz()-pv_pos.z())
                 summedTracks = TLV1+TLV2
@@ -4061,24 +4081,24 @@ for ifile, f in enumerate(options.inputFiles):
                     SV_level_var_array['log10IPzPU_High'][nSV] = -999
 
                 
-                mounMatch_Low, mounDR_Low = matchToMuon(trackLow, muons)
+                mounMatch_Low, mounDR_Low = matchToMuon(trackLow, allmuons)
                 if mounDR_Low < 0.01 : 
                     SV_level_var_array['muonMatched_Low'][nSV] = 1
-                    SV_level_var_array['numberOfChambers_Low'][nSV] = muons[mounMatch_Low].numberOfChambers()
-                    SV_level_var_array['numberOfMatchedStations_Low'][nSV] = muons[mounMatch_Low].numberOfMatchedStations()
-                    #SV_level_var_array['numberOfSegments_Low'][nSV] = muons[mounMatch_Low].numberOfSegments()
-                    SV_level_var_array['isGlobalMuon_Low'][nSV] = muons[mounMatch_Low].isGlobalMuon()
+                    SV_level_var_array['numberOfChambers_Low'][nSV] = allmuons[mounMatch_Low].numberOfChambers()
+                    SV_level_var_array['numberOfMatchedStations_Low'][nSV] = allmuons[mounMatch_Low].numberOfMatchedStations()
+                    #SV_level_var_array['numberOfSegments_Low'][nSV] = allmuons[mounMatch_Low].numberOfSegments()
+                    SV_level_var_array['isGlobalMuon_Low'][nSV] = allmuons[mounMatch_Low].isGlobalMuon()
 
                     
-                    if muons[mounMatch_Low].isTrackerMuon() and not muons[mounMatch_Low].innerTrack()==None:
+                    if allmuons[mounMatch_Low].isTrackerMuon() and not allmuons[mounMatch_Low].innerTrack()==None:
                         
                         SV_level_var_array['isTrackerMuon_Low'][nSV] = 1
-                        SV_level_var_array['normalizedChi2Muon_Low'][nSV] = muons[mounMatch_Low].innerTrack().normalizedChi2()
-                        SV_level_var_array['trackerLayersWithMeasurementMuon_Low'][nSV] = muons[mounMatch_Low].innerTrack().hitPattern().trackerLayersWithMeasurement()
-                        SV_level_var_array['pixelLayersWithMeasurementMuon_Low'][nSV] = muons[mounMatch_Low].innerTrack().hitPattern().pixelLayersWithMeasurement()
-                        SV_level_var_array['dxyPVMuon_Low'][nSV] = abs(muons[mounMatch_Low].innerTrack().dxy(pv_pos))
-                        SV_level_var_array['dzPVMuon_Low'][nSV] = abs(muons[mounMatch_Low].innerTrack().dz(pv_pos))	
-                        if ((muons[mounMatch_Low].innerTrack().hitPattern().trackerLayersWithMeasurement() > 10) and (muons[mounMatch_Low].innerTrack().hitPattern().pixelLayersWithMeasurement() > 2) and (muons[mounMatch_Low].innerTrack().normalizedChi2() < 1.8) and  (abs(muons[mounMatch_Low].innerTrack().dxy(pv_pos)) < 3) and (abs(muons[mounMatch_Low].innerTrack().dz(pv_pos)) < 20)):							
+                        SV_level_var_array['normalizedChi2Muon_Low'][nSV] = allmuons[mounMatch_Low].innerTrack().normalizedChi2()
+                        SV_level_var_array['trackerLayersWithMeasurementMuon_Low'][nSV] = allmuons[mounMatch_Low].innerTrack().hitPattern().trackerLayersWithMeasurement()
+                        SV_level_var_array['pixelLayersWithMeasurementMuon_Low'][nSV] = allmuons[mounMatch_Low].innerTrack().hitPattern().pixelLayersWithMeasurement()
+                        SV_level_var_array['dxyPVMuon_Low'][nSV] = abs(allmuons[mounMatch_Low].innerTrack().dxy(pv_pos))
+                        SV_level_var_array['dzPVMuon_Low'][nSV] = abs(allmuons[mounMatch_Low].innerTrack().dz(pv_pos))	
+                        if ((allmuons[mounMatch_Low].innerTrack().hitPattern().trackerLayersWithMeasurement() > 10) and (allmuons[mounMatch_Low].innerTrack().hitPattern().pixelLayersWithMeasurement() > 2) and (allmuons[mounMatch_Low].innerTrack().normalizedChi2() < 1.8) and  (abs(allmuons[mounMatch_Low].innerTrack().dxy(pv_pos)) < 3) and (abs(allmuons[mounMatch_Low].innerTrack().dz(pv_pos)) < 20)):							
                             SV_level_var_array['isSoftMuon_Low'][nSV] = 1
                             hasSoftMuon = 1	
                         else: SV_level_var_array['isSoftMuon_Low'][nSV] = 0
@@ -4099,24 +4119,24 @@ for ifile, f in enumerate(options.inputFiles):
                     SV_level_var_array['dxyPVMuon_Low'][nSV] = -999
                     SV_level_var_array['dzPVMuon_Low'][nSV] = -999
 
-                mounMatch_High, mounDR_High = matchToMuon(trackHigh, muons)
+                mounMatch_High, mounDR_High = matchToMuon(trackHigh, allmuons)
                 if mounDR_High < 0.01 : 
                     SV_level_var_array['muonMatched_High'][nSV] = 1
-                    SV_level_var_array['numberOfChambers_High'][nSV] = muons[mounMatch_High].numberOfChambers()
-                    SV_level_var_array['numberOfMatchedStations_High'][nSV] = muons[mounMatch_High].numberOfMatchedStations()
-                    #SV_level_var_array['numberOfSegments_High'][nSV] = muons[mounMatch_High].numberOfSegments()
-                    SV_level_var_array['isGlobalMuon_High'][nSV] = muons[mounMatch_High].isGlobalMuon()
-                    #SV_level_var_array['isGoodMuon_High'][nSV] = muons[mounMatch_High].isGoodMuon()
+                    SV_level_var_array['numberOfChambers_High'][nSV] = allmuons[mounMatch_High].numberOfChambers()
+                    SV_level_var_array['numberOfMatchedStations_High'][nSV] = allmuons[mounMatch_High].numberOfMatchedStations()
+                    #SV_level_var_array['numberOfSegments_High'][nSV] = allmuons[mounMatch_High].numberOfSegments()
+                    SV_level_var_array['isGlobalMuon_High'][nSV] = allmuons[mounMatch_High].isGlobalMuon()
+                    #SV_level_var_array['isGoodMuon_High'][nSV] = allmuons[mounMatch_High].isGoodMuon()
                     
-                    if muons[mounMatch_High].isTrackerMuon() and not muons[mounMatch_High].innerTrack()==None:
+                    if allmuons[mounMatch_High].isTrackerMuon() and not allmuons[mounMatch_High].innerTrack()==None:
 
                         SV_level_var_array['isTrackerMuon_High'][nSV] = 1
-                        SV_level_var_array['normalizedChi2Muon_High'][nSV] = muons[mounMatch_High].innerTrack().normalizedChi2()					
-                        SV_level_var_array['trackerLayersWithMeasurementMuon_High'][nSV] = muons[mounMatch_High].innerTrack().hitPattern().trackerLayersWithMeasurement()
-                        SV_level_var_array['pixelLayersWithMeasurementMuon_High'][nSV] = muons[mounMatch_High].innerTrack().hitPattern().pixelLayersWithMeasurement()	
-                        SV_level_var_array['dxyPVMuon_High'][nSV] = abs(muons[mounMatch_High].innerTrack().dxy(pv_pos))
-                        SV_level_var_array['dzPVMuon_High'][nSV] = abs(muons[mounMatch_High].innerTrack().dz(pv_pos))	
-                        if ((muons[mounMatch_High].innerTrack().hitPattern().trackerLayersWithMeasurement() > 10) and (muons[mounMatch_High].innerTrack().hitPattern().pixelLayersWithMeasurement() > 2) and (muons[mounMatch_High].innerTrack().normalizedChi2() < 1.8) and  (abs(muons[mounMatch_High].innerTrack().dxy(pv_pos)) < 3) and (abs(muons[mounMatch_High].innerTrack().dz(pv_pos)) < 20)):	
+                        SV_level_var_array['normalizedChi2Muon_High'][nSV] = allmuons[mounMatch_High].innerTrack().normalizedChi2()					
+                        SV_level_var_array['trackerLayersWithMeasurementMuon_High'][nSV] = allmuons[mounMatch_High].innerTrack().hitPattern().trackerLayersWithMeasurement()
+                        SV_level_var_array['pixelLayersWithMeasurementMuon_High'][nSV] = allmuons[mounMatch_High].innerTrack().hitPattern().pixelLayersWithMeasurement()	
+                        SV_level_var_array['dxyPVMuon_High'][nSV] = abs(allmuons[mounMatch_High].innerTrack().dxy(pv_pos))
+                        SV_level_var_array['dzPVMuon_High'][nSV] = abs(allmuons[mounMatch_High].innerTrack().dz(pv_pos))	
+                        if ((allmuons[mounMatch_High].innerTrack().hitPattern().trackerLayersWithMeasurement() > 10) and (allmuons[mounMatch_High].innerTrack().hitPattern().pixelLayersWithMeasurement() > 2) and (allmuons[mounMatch_High].innerTrack().normalizedChi2() < 1.8) and  (abs(allmuons[mounMatch_High].innerTrack().dxy(pv_pos)) < 3) and (abs(allmuons[mounMatch_High].innerTrack().dz(pv_pos)) < 20)):	
                             SV_level_var_array['isSoftMuon_High'][nSV] = 1	
                             hasSoftMuon = 1
                         else: SV_level_var_array['isSoftMuon_High'][nSV] = 0
