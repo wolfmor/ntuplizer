@@ -4427,6 +4427,7 @@ for ifile, f in enumerate(options.inputFiles):
                 'IPsignificance_Low','IPxyz_Low','IPxy_Low','IPz_Low','log10IPsignificance_Low','log10IPxy_Low','log10IPxyz_Low','log10IPz_Low',
                 'eta_Low','log10dxy_Low','log10dz_Low',
                 'eta_High','log10dxy_High','log10dz_High',
+                'log10dxyerrorDxy_Low','log10dzerrorDz_Low','log10dxyerrorDxy_High','log10dzerrorDz_High',
                 'deltaPhi','deltaR','deltaEta','invMass','sumCharge'
                 ]:
                      SV_level_var_array[var][nSV] = 999
@@ -4441,8 +4442,8 @@ for ifile, f in enumerate(options.inputFiles):
                 'numberOfChambers_Low','numberOfMatchedStations_Low','normalizedChi2Muon_Low','trackerLayersWithMeasurementMuon_Low',
                 'pixelLayersWithMeasurementMuon_High',
                 'pixelLayersWithMeasurementMuon_Low',
-                'pt_Low','log10PttrackerrorPttrack_Low','nvalidhits_Low','absChi2_Low','quality_Low','log10dxyerrorDxy_Low','log10dzerrorDz_Low',
-                'pt_High','log10PttrackerrorPttrack_High','nvalidhits_High','absChi2_High','quality_High','log10dxyerrorDxy_High','log10dzerrorDz_High',
+                'pt_Low','log10PttrackerrorPttrack_Low','nvalidhits_Low','absChi2_Low','quality_Low',
+                'pt_High','log10PttrackerrorPttrack_High','nvalidhits_High','absChi2_High','quality_High',
                 'trackiso_Low','trackdrmin_Low','tracknumneighbours_Low','trackisoLoose_Low','trackdrminLoose_Low','tracknumneighboursLoose_Low',
                 'trackiso_High','trackdrmin_High','tracknumneighbours_High','trackisoLoose_High','trackdrminLoose_High','tracknumneighboursLoose_High',
                 'jetrelpt_High','jetdrmin_High','jetnum_High',
@@ -4763,7 +4764,7 @@ for ifile, f in enumerate(options.inputFiles):
                     SV_level_var_array['svdaughter_trackMatching_drminoldrandom'][n_sv_daughter] = drminrandom
 
                     if not idx == -1:
-                        if (drmin < 0.02)  or (dxyzmin < 0.02 and drmin < 0.04):
+                        if (drmin < 0.02)  or (dxyzmin < 0.2 and drmin < 0.04):
                             
                             if matchingTrkIdx[0] == -1: matchingTrkIdx[0] = idx
                             else: matchingTrkIdx[1] = idx
