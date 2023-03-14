@@ -2115,7 +2115,10 @@ for ifile, f in enumerate(options.inputFiles):
                 l2absisodbeta = calcIso_dBeta(collection[l2Idx].pfIsolationR03())
                 l2relisodbeta = calcIso_dBeta(collection[l2Idx].pfIsolationR03()) / collection[l2Idx].pt()
 
-            collection, tracks, pfcands, jets, met , filesWithSV[ifile][event_id] = cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, jets, met, filesWithSV[ifile][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet)
+            if 'crab' in options.tag:
+                collection, tracks, pfcands, jets, met , filesWithSV[0][event_id] = cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, jets, met, filesWithSV[0][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet)
+            else:
+                collection, tracks, pfcands, jets, met , filesWithSV[ifile][event_id] = cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, jets, met, filesWithSV[ifile][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet)
 
             if tracks is None: continue
 
@@ -3787,8 +3790,12 @@ for ifile, f in enumerate(options.inputFiles):
         hasSignalSV= 0
 
         if not 'skipSVs' in options.tag:
-            n_sv_total = len(filesWithSV[ifile][event_id]) 
-            numSVs = len(filesWithSV[ifile][event_id]) 
+            if 'crab' in options.tag:
+                n_sv_total = len(filesWithSV[0][event_id])
+                numSVs = len(filesWithSV[0][event_id])
+            else:
+                n_sv_total = len(filesWithSV[ifile][event_id])
+                numSVs = len(filesWithSV[ifile][event_id])
 
             # for nSV, secondary in enumerate(filesWithSV[ifile][event_id]):
 
@@ -4387,10 +4394,12 @@ for ifile, f in enumerate(options.inputFiles):
                             # SV_level_var_array['res_mtransverse'][0] = -999  
 
                 # numsvsfinalpreselection += 1
-            
-            
-            
-            for nSV, secondary in enumerate(filesWithSV[ifile][event_id]):
+
+            if 'crab' in options.tag:
+                secondaries = filesWithSV[0][event_id]
+            else:
+                secondaries = filesWithSV[ifile][event_id]
+            for nSV, secondary in enumerate(secondaries):
 
                 isSignal = 0
                 proceed = False	
@@ -4435,7 +4444,7 @@ for ifile, f in enumerate(options.inputFiles):
                 for var in ['muonMatched_High','isSoftMuon_High','isGlobalMuon_High','isTrackerMuon_High',
                 'muonMatched_Low','isSoftMuon_Low','isGlobalMuon_Low','isTrackerMuon_Low',
                 ]:
-                    
+
                     SV_level_var_array[var][nSV] = 0
                     
                 for var in ['numberOfChambers_High','numberOfMatchedStations_High','normalizedChi2Muon_High','trackerLayersWithMeasurementMuon_High',
@@ -4749,11 +4758,11 @@ for ifile, f in enumerate(options.inputFiles):
 
                 for k in range(secondary.numberOfDaughters()):
                                       
-                    print "SV no. ", nSV, "daughter no. ", k, " charge ", secondary.daughter(k).charge()
+                    # print "SV no. ", nSV, "daughter no. ", k, " charge ", secondary.daughter(k).charge()
                     
                     idx, dxyzmin, tminmatching, drmin = findMatch_track_new(secondary.daughter(k), tracks)
                     _, dxyzminrandom, _, drminrandom = findMatch_track_new_random(secondary.daughter(k), tracks)
-                    print "dxyzmin", dxyzmin, "drmin", drmin
+                    # print "dxyzmin", dxyzmin, "drmin", drmin
 
                     SV_level_var_array['svdaughter_trackMatching_tmin'][n_sv_daughter] = tminmatching
                     SV_level_var_array['svdaughter_trackMatching_dxyzmin'][n_sv_daughter] = dxyzmin
