@@ -4397,6 +4397,7 @@ for ifile, f in enumerate(options.inputFiles):
 
             if 'crab' in options.tag:
                 secondaries = filesWithSV[0][event_id]
+
             else:
                 secondaries = filesWithSV[ifile][event_id]
             for nSV, secondary in enumerate(secondaries):
@@ -4409,8 +4410,12 @@ for ifile, f in enumerate(options.inputFiles):
                 ######################################
                 #### "filling tree on SV level"
                 ######################################
-                
-                SV_level_var_array['vtxDCA'][nSV] = filesWithDCA[ifile][event_id][nSV]
+
+                if 'crab' in options.tag:
+                    SV_level_var_array['vtxDCA'][nSV] = filesWithDCA[0][event_id][nSV]
+
+                else:
+                    SV_level_var_array['vtxDCA'][nSV] = filesWithDCA[ifile][event_id][nSV]
                 SV_level_var_array['log10vtxChi2'][nSV] = ROOT.TMath.Log10(secondary.vertexChi2())
                 SV_level_var_array['vtxChi2Ndof'][nSV] = ROOT.TMath.Log10(secondary.vertexNormalizedChi2())
                 SV_level_var_array['vtxVx'][nSV] = secondary.vx()
