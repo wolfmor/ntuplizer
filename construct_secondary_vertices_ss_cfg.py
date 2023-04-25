@@ -34,7 +34,7 @@ options.register('crab', True, VarParsing.multiplicity.singleton, VarParsing.var
 # any default options
 options.maxEvents = -1
 options.outputFile = "test.root"
-options.sameSign = False
+options.sameSign = True
 
 runOnData = False
 
