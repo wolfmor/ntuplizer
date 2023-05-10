@@ -97,7 +97,7 @@ process.SecondaryVerticesFromLooseTracks = process.generalV0Candidates.clone(
 
 	#tkDCACut = cms.double(0.004),
 	tkDCACut = cms.double(0.5),
-	mPiPiCut = cms.double(3), 
+	mPiPiCut = cms.double(3.5), 
 	innerHitPosCut = cms.double(-1),
 	cosThetaXYCut = cms.double(-1),
 	cosThetaXYZCut = cms.double(-1.),
