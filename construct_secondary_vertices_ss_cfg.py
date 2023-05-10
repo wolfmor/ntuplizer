@@ -30,18 +30,18 @@ process = cms.Process("SVS")
 options = VarParsing("analysis")
 
 options.register('crab', True, VarParsing.multiplicity.singleton, VarParsing.varType.bool)
+options.register('sameSign', True, VarParsing.multiplicity.singleton, VarParsing.varType.bool)
 
 # any default options
 options.maxEvents = -1
 options.outputFile = "test.root"
-options.sameSign = True
 
 runOnData = False
 
 options.parseArguments()
 
 # output name
-nameout = "svfiles_forCrab.root" ### needed for CRAB submission!
+nameout = "svfiles_ss_forCrab.root" ### needed for CRAB submission!
 if not (options.crab): nameout = options.outputFile
 
 process.source = cms.Source("PoolSource",
@@ -108,7 +108,7 @@ process.SecondaryVerticesFromLooseTracks = process.generalV0Candidates.clone(
 	lambdaMassCut = cms.double(999)
     )
                                      
-
+process.path = cms.Path(process.SecondaryVerticesFromLooseTracks)
 # Writer to a new file called output.root.  Save only the new K-shorts and the
 # primary vertices (for later exercises).
 process.output = cms.OutputModule(

@@ -30,11 +30,11 @@ process = cms.Process("SVS")
 options = VarParsing("analysis")
 
 options.register('crab', True, VarParsing.multiplicity.singleton, VarParsing.varType.bool)
+options.register('sameSign', False, VarParsing.multiplicity.singleton, VarParsing.varType.bool)
 
 # any default options
 options.maxEvents = -1
 options.outputFile = "test.root"
-options.sameSign = False
 
 runOnData = False
 
@@ -108,7 +108,7 @@ process.SecondaryVerticesFromLooseTracks = process.generalV0Candidates.clone(
 	lambdaMassCut = cms.double(999)
     )
                                      
-
+process.path = cms.Path(process.SecondaryVerticesFromLooseTracks)
 # Writer to a new file called output.root.  Save only the new K-shorts and the
 # primary vertices (for later exercises).
 process.output = cms.OutputModule(

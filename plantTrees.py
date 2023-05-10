@@ -243,8 +243,8 @@ else: isTest = False
 if 'crab' in options.tag: localpath = ''
 else: localpath = '/nfs/dust/cms/user/wolfmor/NTupleStuff/'
 
-nEventsTest = 100 # number of events that are analyzed in case of test
-printevery = 100
+nEventsTest = 10 # number of events that are analyzed in case of test
+printevery = 10
 
 # TODO: check thresholds for "new" matching
 matchingDrThreshold = 0.05
@@ -271,8 +271,8 @@ if True:
         if isTest: nameout += '_test'
         if 'samesign' in options.tag: nameout += '_ss'
       
-        if 'crab' in options.tag: fout = ROOT.TFile('crab_NTuple.root', 'recreate')
         if 'crab' in options.tag and 'samesign' in options.tag: fout = ROOT.TFile('crab_ss_NTuple.root', 'recreate') # todo test ss on crab
+        elif 'crab' in options.tag: fout = ROOT.TFile('crab_NTuple.root', 'recreate')
         #if 'pnfs' in options.tag: fout = ROOT.TFile( '/pnfs/desy.de/cms/tier2/store/user/altews/Signal/'+nameout + '.root', 'recreate')
         else: fout = ROOT.TFile(nameout + '.root', 'recreate')
 
