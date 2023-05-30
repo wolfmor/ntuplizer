@@ -4206,7 +4206,7 @@ for ifile, f in enumerate(options.inputFiles):
                     
                 if matchingTrkIdx[0] > -1 and matchingTrkIdx[1] > -1 and 'debug' in options.tag: print "SV has two matching tracks", matchingTrkIdx[0], matchingTrkIdx[1]
                 
-                if matchingTrkIdx[0] in susytracks and matchingTrkIdx[1] in susytracks and (matchingTrkIdx[1].charge()+matchingTrkIdx[2].charge()==0): 
+                if matchingTrkIdx[0] in susytracks and matchingTrkIdx[1] in susytracks and (matchingTrk[0].charge()+matchingTrk[1].charge()==0): 
                     isSignal = 1
                     hasSignalSV= 1
                     signalIdx = nSV
