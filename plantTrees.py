@@ -1189,7 +1189,7 @@ if True:
         else:
             raise NotImplementedError('tauIDalgo unknown or not specified')
 
-    ### ToDo: not updated to 17UL and 18UL
+    ### ToDo: not updated to 17UL
     elif 'era17_17Nov2017' in options.tag:
 
         # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
@@ -1245,6 +1245,42 @@ if True:
             teshist = tesfile.Get('tes')
         else:
             raise NotImplementedError('tauIDalgo unknown or not specified')
+
+    elif 'era18_UL' in options.tag:
+  
+        # TODO: implement goldenjson for 2018 UL
+        # # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt
+        # # from https://twiki.cern.ch/twiki/bin/viewauth/CMS/DCUserPage
+        # with open(localpath + 'goldenjson_era18_UL.json') as goldenjsonfile:
+        #         goldenjson = json.load(goldenjsonfile)
+        goldenjson = None
+
+        # from https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
+        # and https://twiki.cern.ch/twiki/bin/view/CMS/PdmVDataReprocessingUL2016
+        if 'data' in options.tag:  # data
+          raise NotImplementedError('no JECs yet for 2018 data')
+          # TODO: implement JECs for 2018 UL data
+          # jet_energy_corrections = []
+          # DataJECs = DataJEC(jet_energy_corrections, jettype)
+
+        elif 'fastsim' in options.tag:
+          ## toDo: same as for 'era18_17Sep2018'; not available so far
+          jecAK4 = createJEC(localpath + 'JECs/Autumn18_FastSimV1_MC/Autumn18_FastSimV1_MC',
+                             ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+
+        else:  # FullSim
+          raise NotImplementedError('no JECs yet for 2018 data')
+          # TODO: implement JECs for 2018 UL FullSim
+
+
+        # tau energy scale (TES)
+        # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
+        if tauIDalgo == 'MVArun2v1DBoldDMwLT':
+          #TODO: same as for 'era18_17Sep2018'; not available so far
+          tesfile = ROOT.TFile(localpath + 'TES/TauES_dm_MVAoldDM2017v2_2018ReReco.root')
+          teshist = tesfile.Get('tes')
+        else:
+          raise NotImplementedError('tauIDalgo unknown or not specified')
 
     else:
 
@@ -2805,7 +2841,7 @@ for ifile, f in enumerate(options.inputFiles):
             
             for igp, gp in enumerate(N2s):
                 
-                print "event has N2s"
+                # print "event has N2s"
 
                 chiN2mGEN = round(gp.mass(), 2)
 
