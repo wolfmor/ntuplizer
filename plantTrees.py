@@ -1247,7 +1247,7 @@ if True:
             raise NotImplementedError('tauIDalgo unknown or not specified')
 
     elif 'era18_UL' in options.tag:
-  
+
         # TODO: implement goldenjson for 2018 UL
         # # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt
         # # from https://twiki.cern.ch/twiki/bin/viewauth/CMS/DCUserPage
@@ -1258,29 +1258,29 @@ if True:
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
         # and https://twiki.cern.ch/twiki/bin/view/CMS/PdmVDataReprocessingUL2016
         if 'data' in options.tag:  # data
-          raise NotImplementedError('no JECs yet for 2018 data')
-          # TODO: implement JECs for 2018 UL data
-          # jet_energy_corrections = []
-          # DataJECs = DataJEC(jet_energy_corrections, jettype)
+            raise NotImplementedError('no JECs yet for 2018 data')
+            # TODO: implement JECs for 2018 UL data
+            # jet_energy_corrections = []
+            # DataJECs = DataJEC(jet_energy_corrections, jettype)
 
         elif 'fastsim' in options.tag:
-          ## toDo: same as for 'era18_17Sep2018'; not available so far
-          jecAK4 = createJEC(localpath + 'JECs/Autumn18_FastSimV1_MC/Autumn18_FastSimV1_MC',
-                             ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            ## toDo: same as for 'era18_17Sep2018'; not available so far
+            jecAK4 = createJEC(localpath + 'JECs/Autumn18_FastSimV1_MC/Autumn18_FastSimV1_MC',
+                               ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 
         else:  # FullSim
-          raise NotImplementedError('no JECs yet for 2018 data')
-          # TODO: implement JECs for 2018 UL FullSim
+            raise NotImplementedError('no JECs yet for 2018 data')
+            # TODO: implement JECs for 2018 UL FullSim
 
 
         # tau energy scale (TES)
         # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
         if tauIDalgo == 'MVArun2v1DBoldDMwLT':
-          #TODO: same as for 'era18_17Sep2018'; not available so far
-          tesfile = ROOT.TFile(localpath + 'TES/TauES_dm_MVAoldDM2017v2_2018ReReco.root')
-          teshist = tesfile.Get('tes')
+            #TODO: same as for 'era18_17Sep2018'; not available so far
+            tesfile = ROOT.TFile(localpath + 'TES/TauES_dm_MVAoldDM2017v2_2018ReReco.root')
+            teshist = tesfile.Get('tes')
         else:
-          raise NotImplementedError('tauIDalgo unknown or not specified')
+            raise NotImplementedError('tauIDalgo unknown or not specified')
 
     else:
 
@@ -3189,7 +3189,7 @@ for ifile, f in enumerate(options.inputFiles):
         crossSection = 1.
         numSimEvents = 1.
 
-        if 'signal' in options.tag and 'SignalStopV3' not in options.tag: 
+        if 'signal' in options.tag and 'SignalStop' not in options.tag:
 
             # from https://twiki.cern.ch/twiki/bin/view/LHCPhysics/SUSYCrossSections13TeVhino
             higgsinoxsecfile = ROOT.TFile(localpath + 'CN_hino_13TeV.root')
@@ -3250,11 +3250,29 @@ for ifile, f in enumerate(options.inputFiles):
 
                 fSimEventNumbers_Signal.Close()
 
-        elif 'SignalStopV3' in options.tag:  ##ToDo add num of sim events
+        elif 'SignalStop' in options.tag:
 
             with open(localpath + 'SUSYCrossSections13TeVstopsbottom.json') as stopxsecfile:
                 stopxsec = json.load(stopxsecfile)
                 crossSection = stopxsec[str(int(mstopFILE))][0]
+
+            fSimEventNumbers_Signal = None
+            hSimEventNumbers_Signal = None
+            if 'era18_UL' in options.tag:
+                pass
+                # TODO: implement stop signal num sim events
+                # fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_SignalStop_v4_era18_UL.root')
+                # hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_SignalStop_v4_era18_UL')
+
+            if fSimEventNumbers_Signal is not None and hSimEventNumbers_Signal is not None:
+
+                binx = hSimEventNumbers_Signal.GetXaxis().FindBin(mstopFILE)
+                biny = hSimEventNumbers_Signal.GetYaxis().FindBin(chipmmFILE)
+                binz = hSimEventNumbers_Signal.GetZaxis().FindBin(deltamFILE)
+                binglob = hSimEventNumbers_Signal.GetBin(binx, biny, binz)
+                numSimEvents = hSimEventNumbers_Signal.GetBinContent(binglob)
+
+                fSimEventNumbers_Signal.Close()
 
         elif 'data' not in options.tag: 
 
