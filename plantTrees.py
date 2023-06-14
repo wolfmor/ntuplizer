@@ -1012,7 +1012,7 @@ if True:
     SV_level_var_array = {}
     for n in SV_level_var_names:
         if 'max50SVs' in options.tag: SV_level_var_array[n[0]] = array('f', 51*[0.])
-        else: SV_level_var_array[n[0]] = array('f', 1000*[0.])
+        else: SV_level_var_array[n[0]] = array('f', 1000*[0.])  # TODO: 1000 seems to be not a safe upper bound for the max. number of SVs, if there are more than 1000, the job fails
         tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv_total]/F')
 
     # sv_vars = {}
@@ -1032,7 +1032,7 @@ if True:
     ]
     for n in var_names_sv_resolution:
         if 'max50SVs' in options.tag: SV_level_var_array[n[0]] = array('f', 51*[0.])
-        else: SV_level_var_array[n[0]] = array('f', 500*[0.])
+        else: SV_level_var_array[n[0]] = array('f', 500*[0.])  # TODO: see above
         tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv_total]/F')
 
     SVDaughter_level_var_names = [('svdaughter_trackMatching_tmin', 'F'), ('svdaughter_trackMatching_dxyzmin', 'F'), ('svdaughter_trackMatching_drmin', 'F')
@@ -1042,7 +1042,7 @@ if True:
 
     for n in SVDaughter_level_var_names:
         if 'max50SVs' in options.tag: SV_level_var_array[n[0]] = array('f', 2*51*[0.])
-        else: SV_level_var_array[n[0]] = array('f', 2*1000*[0.])
+        else: SV_level_var_array[n[0]] = array('f', 2*1000*[0.])  # TODO: see above
         tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv_daughter]/F')
     
     # cutflow histos
@@ -3367,6 +3367,7 @@ for ifile, f in enumerate(options.inputFiles):
             eventWeightFastSimBug = computeFastSimBugWeight(genjets, genparticles)
         event_level_var_array['weight_fastSimBug'][0] = eventWeightFastSimBug
 
+        # TODO: do we need additional PU weights for fastsim?
         weight_PU_FastFull = 1.
         weight_PU_FastFull_rebin = 1.
         weight_PU_SigBkg = 1.
@@ -4161,6 +4162,7 @@ for ifile, f in enumerate(options.inputFiles):
                     
                     if 'signal' in options.tag:
                         if not leptons[0] == None and not leptons[1]==None and not theChi01 == None and not theChi02 == None:
+                            # TODO: is the index in the following line not supposed to be [0] instead of [nSV]?
                             SV_level_var_array['mtransverse2_hybrid'][nSV] = mZstar_reco_muoncase*mZstar_reco_muoncase + ((v_pZstar_reco.Cross(normalvector))*(v_pZstar_reco.Cross(normalvector)))
                             if isSignal and  nSV == signalIdx:
                                 SV_level_var_array['res_vx'][0] = secondary.vx() - theChi01.vx()
@@ -4234,11 +4236,11 @@ for ifile, f in enumerate(options.inputFiles):
 
                 for k in range(secondary.numberOfDaughters()):
                                       
-                    print "SV no. ", nSV, "daughter no. ", k, " charge ", secondary.daughter(k).charge()
+                    if 'debug' in options.tag: print "SV no. ", nSV, "daughter no. ", k, " charge ", secondary.daughter(k).charge()
                     
                     idx, dxyzmin, tminmatching, drmin = findMatch_track_new(secondary.daughter(k), tracks)
                     _, dxyzminrandom, _, drminrandom = findMatch_track_new_random(secondary.daughter(k), tracks)
-                    print "dxyzmin", dxyzmin, "drmin", drmin
+                    if 'debug' in options.tag: print "dxyzmin", dxyzmin, "drmin", drmin
 
                     SV_level_var_array['svdaughter_trackMatching_tmin'][n_sv_daughter] = tminmatching
                     SV_level_var_array['svdaughter_trackMatching_dxyzmin'][n_sv_daughter] = dxyzmin
