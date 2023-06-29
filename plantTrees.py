@@ -243,7 +243,7 @@ else: isTest = False
 if 'crab' in options.tag: localpath = ''
 else: localpath = '/nfs/dust/cms/user/wolfmor/NTupleStuff/'
 
-nEventsTest = 10 # number of events that are analyzed in case of test
+nEventsTest = 30 # number of events that are analyzed in case of test
 printevery = 10
 
 # TODO: check thresholds for "new" matching
@@ -538,8 +538,8 @@ if True:
 
     var_names_chiC1 = [
         ('chiC1_pt', 'F'), ('chiC1_eta', 'F'), ('chiC1_phi', 'F')
-        , ('chiC1_decaylengthXYZ', 'F'), ('chiC1_decaylengthXY', 'F'), ('chiC1_chidecaylengthZ', 'F')
-        , ('chiC1_log10(decaylengthXYZ)', 'F'), ('chiC1_log10(decaylengthXY)', 'F'), ('chiC1_log10(chidecaylengthZ)', 'F')
+        , ('chiC1_decaylengthXYZ', 'F'), ('chiC1_decaylengthXY', 'F'), ('chiC1_decaylengthZ', 'F')
+        , ('chiC1_log10(decaylengthXYZ)', 'F'), ('chiC1_log10(decaylengthXY)', 'F'), ('chiC1_log10(decaylengthZ)', 'F')
 
         , ('chiC1_hasPion', 'I'), ('chiC1_hasMatchedTrackPion', 'I')
 
@@ -558,8 +558,8 @@ if True:
     var_names_chiN2 = [
         ('chiN2_pt', 'F'), ('chiN2_eta', 'F'), ('chiN2_phi', 'F')
         , ('chiN2_mass', 'F')
-        , ('chiN2_decaylengthXYZ', 'F'), ('chiN2_decaylengthXY', 'F'), ('chiN2_chidecaylengthZ', 'F')
-        , ('chiN2_log10(decaylengthXYZ)', 'F'), ('chiN2_log10(decaylengthXY)', 'F'), ('chiN2_log10(chidecaylengthZ)', 'F')
+        , ('chiN2_decaylengthXYZ', 'F'), ('chiN2_decaylengthXY', 'F'), ('chiN2_decaylengthZ', 'F')
+        , ('chiN2_log10(decaylengthXYZ)', 'F'), ('chiN2_log10(decaylengthXY)', 'F'), ('chiN2_log10(decaylengthZ)', 'F')
 
 		, ('chi02_pz', 'F')  # TODO: change 02 to N2?
         ]
@@ -901,6 +901,8 @@ if True:
         , ('track_numValidHits', 'I'), ('track_numLostHits', 'I')
 
         , ('track_isSignalTrack', 'I'), ('track_isSusyTrack', 'I'), ('track_susyTrackPdgIdMother', 'I'), ('track_susyTrackPdgId', 'I')
+        ,('track_isSVdaughter', 'I')
+        
 
         , ('track_hasGenMatch', 'I'), ('track_genMatchTmin', 'F')
         , ('track_genMatchPdgId', 'F'), ('track_genMatchPt', 'F'), ('track_genMatchStatus', 'F')
@@ -983,6 +985,7 @@ if True:
         ('log10IPsignificancePU_High','F'),('log10IPxyzPU_High','F'), ('log10IPxyPU_High','F'),  ('log10IPzPU_High','F'), 
 
         ('hasTrackMatch_Low', 'F'),('hasTrackMatch_High', 'F'), 
+        ('trackId_Low', 'I'), ('trackId_High', 'I'),
         ('hasGenMatch_Low', 'F'),('hasGenMatch_High', 'F'), 
         ('hasGenMatchWithSameMother', 'F'),
         ('events_hasGenMatchWithSameMother1', 'F'),
@@ -1012,7 +1015,7 @@ if True:
     SV_level_var_array = {}
     for n in SV_level_var_names:
         if 'max50SVs' in options.tag: SV_level_var_array[n[0]] = array('f', 51*[0.])
-        else: SV_level_var_array[n[0]] = array('f', 1000*[0.])
+        else: SV_level_var_array[n[0]] = array('f', 5000*[0.])
         tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv_total]/F')
 
     # sv_vars = {}
@@ -1032,7 +1035,7 @@ if True:
     ]
     for n in var_names_sv_resolution:
         if 'max50SVs' in options.tag: SV_level_var_array[n[0]] = array('f', 51*[0.])
-        else: SV_level_var_array[n[0]] = array('f', 500*[0.])
+        else: SV_level_var_array[n[0]] = array('f', 5000*[0.])
         tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv_total]/F')
 
     SVDaughter_level_var_names = [('svdaughter_trackMatching_tmin', 'F'), ('svdaughter_trackMatching_dxyzmin', 'F'), ('svdaughter_trackMatching_drmin', 'F')
@@ -1042,7 +1045,7 @@ if True:
 
     for n in SVDaughter_level_var_names:
         if 'max50SVs' in options.tag: SV_level_var_array[n[0]] = array('f', 2*51*[0.])
-        else: SV_level_var_array[n[0]] = array('f', 2*1000*[0.])
+        else: SV_level_var_array[n[0]] = array('f', 2*5000*[0.])
         tEvent.Branch(nice_string(n[0]), SV_level_var_array[n[0]], nice_string(n[0])+ '[n_sv_daughter]/F')
     
     # cutflow histos
@@ -1568,7 +1571,7 @@ for ifile, f in enumerate(options.inputFiles):
     '''
 
     for ievent, event in enumerate(events):
-            
+        
         if 'crab' in options.tag and isTest and nevents >= nEventsTest:
             print 'nEventsTest boundary'
             break
@@ -2739,20 +2742,20 @@ for ifile, f in enumerate(options.inputFiles):
                 chiC1_decaylengthXY = ROOT.TMath.Sqrt(pow(gp.vx() - gp.daughter(0).vx(), 2)
                                                       + pow(gp.vy() - gp.daughter(0).vy(), 2))
 
-                chiC1_chidecaylengthZ = abs(gp.vz() - gp.daughter(0).vz())
+                chiC1_decaylengthZ = abs(gp.vz() - gp.daughter(0).vz())
 
                 chiC1_var_array['chiC1_decaylengthXYZ'][igp] = chiC1_decaylengthXYZ
                 chiC1_var_array['chiC1_decaylengthXY'][igp] = chiC1_decaylengthXY
-                chiC1_var_array['chiC1_chidecaylengthZ'][igp] = chiC1_chidecaylengthZ
+                chiC1_var_array['chiC1_decaylengthZ'][igp] = chiC1_decaylengthZ
 
                 if chiC1_decaylengthXYZ > 0:
                     chiC1_var_array['chiC1_log10(decaylengthXYZ)'][igp] = ROOT.TMath.Log10(chiC1_decaylengthXYZ)
                     chiC1_var_array['chiC1_log10(decaylengthXY)'][igp] = ROOT.TMath.Log10(chiC1_decaylengthXY)
-                    chiC1_var_array['chiC1_log10(chidecaylengthZ)'][igp] = ROOT.TMath.Log10(chiC1_chidecaylengthZ)
+                    chiC1_var_array['chiC1_log10(decaylengthZ)'][igp] = ROOT.TMath.Log10(chiC1_decaylengthZ)
                 else:
                     chiC1_var_array['chiC1_log10(decaylengthXYZ)'][igp] = -10.
                     chiC1_var_array['chiC1_log10(decaylengthXY)'][igp] = -10.
-                    chiC1_var_array['chiC1_log10(chidecaylengthZ)'][igp] = -10.
+                    chiC1_var_array['chiC1_log10(decaylengthZ)'][igp] = -10.
 
                 thisc1daughters = findDaughters(gp)
                 c1daughters += thisc1daughters
@@ -2825,20 +2828,20 @@ for ifile, f in enumerate(options.inputFiles):
                 chiN2_decaylengthXY = ROOT.TMath.Sqrt(pow(gp.vx() - gp.daughter(0).vx(), 2)
                                                       + pow(gp.vy() - gp.daughter(0).vy(), 2))
 
-                chiN2_chidecaylengthZ = abs(gp.vz() - gp.daughter(0).vz())
+                chiN2_decaylengthZ = abs(gp.vz() - gp.daughter(0).vz())
 
                 chiN2_var_array['chiN2_decaylengthXYZ'][igp] = chiN2_decaylengthXYZ
                 chiN2_var_array['chiN2_decaylengthXY'][igp] = chiN2_decaylengthXY
-                chiN2_var_array['chiN2_chidecaylengthZ'][igp] = chiN2_chidecaylengthZ
+                chiN2_var_array['chiN2_decaylengthZ'][igp] = chiN2_decaylengthZ
 
                 if chiN2_decaylengthXYZ > 0:
                     chiN2_var_array['chiN2_log10(decaylengthXYZ)'][igp] = ROOT.TMath.Log10(chiN2_decaylengthXYZ)
                     chiN2_var_array['chiN2_log10(decaylengthXY)'][igp] = ROOT.TMath.Log10(chiN2_decaylengthXY)
-                    chiN2_var_array['chiN2_log10(chidecaylengthZ)'][igp] = ROOT.TMath.Log10(chiN2_chidecaylengthZ)
+                    chiN2_var_array['chiN2_log10(decaylengthZ)'][igp] = ROOT.TMath.Log10(chiN2_decaylengthZ)
                 else:
                     chiN2_var_array['chiN2_log10(decaylengthXYZ)'][igp] = -10.
                     chiN2_var_array['chiN2_log10(decaylengthXY)'][igp] = -10.
-                    chiN2_var_array['chiN2_log10(chidecaylengthZ)'][igp] = -10.
+                    chiN2_var_array['chiN2_log10(decaylengthZ)'][igp] = -10.
 
                 #### toDo: match gp to SV 
 
@@ -3792,6 +3795,9 @@ for ifile, f in enumerate(options.inputFiles):
         n_sv_daughter = 0
         numSVs = 0
         hasSignalSV= 0
+        
+        ### this is a dictionary that holds { SV nr.  X: [ matching track idx1, matching track idx1]}
+        trackSVPairs={}
 
         if not 'skipSVs' in options.tag:
             n_sv_total = len(filesWithSV[ifile][event_id]) 
@@ -4107,7 +4113,7 @@ for ifile, f in enumerate(options.inputFiles):
                     
                     if 'signal' in options.tag:
                         if not leptons[0] == None and not leptons[1]==None and not theChi01 == None and not theChi02 == None:
-                            SV_level_var_array['mtransverse2_hybrid'][nSV] = mZstar_reco_muoncase*mZstar_reco_muoncase + ((v_pZstar_reco.Cross(normalvector))*(v_pZstar_reco.Cross(normalvector)))
+                            SV_level_var_array['mtransverse2_hybrid'][0] = mZstar_reco_muoncase*mZstar_reco_muoncase + ((v_pZstar_reco.Cross(normalvector))*(v_pZstar_reco.Cross(normalvector)))
                             if isSignal and  nSV == signalIdx:
                                 SV_level_var_array['res_vx'][0] = secondary.vx() - theChi01.vx()
                                 SV_level_var_array['res_vy'][0] = secondary.vy() - theChi01.vy()
@@ -4179,23 +4185,36 @@ for ifile, f in enumerate(options.inputFiles):
                 matchingTrkIdx = [-1, -1]
 
                 for k in range(secondary.numberOfDaughters()):
-                                      
-                    print "SV no. ", nSV, "daughter no. ", k, " charge ", secondary.daughter(k).charge()
+                    idx_old= -1
+                    drmin_old = 999
+                    drminrandom_old = 999
+                    
+                    idx= -1
+                    dxyzmin = 999
+                    tminmatching= 999
+                    drmin = 999
+                    dxyzminrandom = 999
+                    drminrandom = 999         
+                       
+                    #print "SV no. ", nSV, "daughter no. ", k, " charge ", secondary.daughter(k).charge()
                     
                     idx, dxyzmin, tminmatching, drmin = findMatch_track_new(secondary.daughter(k), tracks)
                     _, dxyzminrandom, _, drminrandom = findMatch_track_new_random(secondary.daughter(k), tracks)
-                    print "dxyzmin", dxyzmin, "drmin", drmin
+                    #print "dxyzmin", dxyzmin, "drmin", drmin
 
                     SV_level_var_array['svdaughter_trackMatching_tmin'][n_sv_daughter] = tminmatching
                     SV_level_var_array['svdaughter_trackMatching_dxyzmin'][n_sv_daughter] = dxyzmin
                     SV_level_var_array['svdaughter_trackMatching_drmin'][n_sv_daughter] = drmin
                     SV_level_var_array['svdaughter_trackMatching_dxyzminrandom'][n_sv_daughter] = dxyzminrandom
                     SV_level_var_array['svdaughter_trackMatching_drminrandom'][n_sv_daughter] = drminrandom
-                    SV_level_var_array['svdaughter_trackMatching_drminold'][n_sv_daughter] = drmin
-                    SV_level_var_array['svdaughter_trackMatching_drminoldrandom'][n_sv_daughter] = drminrandom
 
-                    if not idx == -1:
-                        if (drmin < 0.02)  or (dxyzmin < 0.2 and drmin < 0.04):
+                   
+                    idx_old, drmin_old = findMatch_track_old(secondary.daughter(k), tracks)
+                    SV_level_var_array['svdaughter_trackMatching_drminold'][n_sv_daughter] = drmin_old
+                    SV_level_var_array['svdaughter_trackMatching_drminoldrandom'][n_sv_daughter] = drminrandom_old
+
+                    if not (idx + idx_old == -2):
+                        if (drmin_old < 0.02)  or (dxyzmin < 0.2 and drmin < 0.04):
                             
                             if matchingTrkIdx[0] == -1: matchingTrkIdx[0] = idx
                             else: matchingTrkIdx[1] = idx
@@ -4203,6 +4222,8 @@ for ifile, f in enumerate(options.inputFiles):
                             if matchingTrk[0] == None: matchingTrk[0] = tracks[idx]
                             else: matchingTrk[1] = tracks[idx]
                     n_sv_daughter += 1
+               
+                trackSVPairs[nSV] = [matchingTrkIdx[0],matchingTrkIdx[1]]
                     
                 if matchingTrkIdx[0] > -1 and matchingTrkIdx[1] > -1 and 'debug' in options.tag: print "SV has two matching tracks", matchingTrkIdx[0], matchingTrkIdx[1]
                 
@@ -4211,8 +4232,12 @@ for ifile, f in enumerate(options.inputFiles):
                     hasSignalSV= 1
                     signalIdx = nSV
                     
+
+                
                 if None in matchingTrk:
                     SV_level_var_array['isSignal'][nSV] = isSignal
+                    SV_level_var_array['trackId_Low'][nSV]= matchingTrkIdx[0]
+                    SV_level_var_array['trackId_High'][nSV]= matchingTrkIdx[1]
                     if matchingTrk[0] == matchingTrk[1]: 
                         SV_level_var_array['hasTrackMatch_Low'][nSV] = 0
                         SV_level_var_array['hasTrackMatch_High'][nSV] = 0
@@ -4233,6 +4258,8 @@ for ifile, f in enumerate(options.inputFiles):
                     trackHigh = matchingTrk[0]
                     idxHigh = matchingTrkIdx[0]
                     
+                SV_level_var_array['trackId_Low'][nSV] = idxLow
+                SV_level_var_array['trackId_High'][nSV] = idxHigh
                 SV_level_var_array['hasTrackMatch_Low'][nSV] = 1
                 SV_level_var_array['hasTrackMatch_High'][nSV] = 1
                 SV_level_var_array['isSignal'][nSV] = isSignal
@@ -4443,6 +4470,8 @@ for ifile, f in enumerate(options.inputFiles):
          
                 numsvsfinalpreselection += 1
 
+        #if len(trackSVPairs)> 0:  print "track SV pairs in the event", trackSVPairs
+        
         event_level_var_array['n_sv'][0] = numsvsfinalpreselection
 
         event_level_var_array['hasSignalSV'][0] = hasSignalSV
@@ -4505,17 +4534,23 @@ for ifile, f in enumerate(options.inputFiles):
         numtracksfinalpreselection = 0
 
         i = 0
+        ### this maps the track idx to the idx after the track preselection; key: itrack (index in the whole track collection), value: i (index in the cleaned collection of isolated tracks)
+        track_idx_map = {}
+        
         for itrack, track in enumerate(tracks):
-
+            
+            track_idx_map[itrack] = -1
             if not passesPreselection_basic_track(track): continue
 
             numtracksbasicpreselection += 1
 
             # TODO: adapt preselection
-            if not abs(track.dz(pv_pos)) < 1: continue
+            if not abs(track.dz(pv_pos)) < 10: continue
             jetiso30, jetisomulti30, jetdrmin30, jetisobtag30, jetminv30 = calcIso_jet_new(track, jetsforiso30, isTrack=True, btagvalues=btagvalues)
             if not jetdrmin30 > 0.4: continue
-
+            
+            track_idx_map[itrack] = i
+            
             numtracksfinalpreselection += 1
 
             track_level_var_array['track_random'][i] = random.randrange(10)
@@ -4995,7 +5030,17 @@ for ifile, f in enumerate(options.inputFiles):
 
             track_level_var_array['track_drminGenTauJet'][i] = gentaujetmatchdrmin
             track_level_var_array['track_genTauJetPt'][i] = gentaujetmatchpt
+            
+            #if len(trackSVPairs)> 0: print "track SV pairs in the event", trackSVPairs, "track", i, "itrack", itrack
+            track_isSVdaughter = 0
+            
+            list_of_tuples = trackSVPairs.values()
+            list_of_values = [value for sublist in list_of_tuples for value in sublist]
 
+            if itrack in list_of_values: track_isSVdaughter = 1
+            #if track_isSVdaughter ==1: print "horray"
+            track_level_var_array['track_isSVdaughter'][i] = track_isSVdaughter
+            
             issignaltrack = 0
             if itrack == matchedTrackIdxCharginoPion1 or itrack == matchedTrackIdxCharginoPion2: issignaltrack = 1
             track_level_var_array['track_isSignalTrack'][i] = issignaltrack
@@ -5017,6 +5062,20 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['n_track_total'][0] = len(tracks)
         event_level_var_array['n_track_basic'][0] = numtracksbasicpreselection
         event_level_var_array['n_track'][0] = numtracksfinalpreselection
+
+        ### need to adjust the index of the matched SV tracks (~itrack) to the cleaned index (i)
+        if not 'skipSVs' in options.tag:
+            n_sv_total = len(filesWithSV[ifile][event_id]) 
+            numSVs = len(filesWithSV[ifile][event_id]) 
+            
+            for nSV, secondary in enumerate(filesWithSV[ifile][event_id]):
+                    old_idx_Low =  SV_level_var_array['trackId_Low'][nSV]
+                    if not old_idx_Low==-1:
+                        new_idx_low = track_idx_map[old_idx_Low]
+                    else: new_idx_low = old_idx_Low
+                    SV_level_var_array['trackId_Low'][nSV] = new_idx_low
+                    
+                    #print "event", ievent, "sv no.", nSV, "old idx", old_idx_Low, "new idx", new_idx_low
 
         event_level_var_array['cutflow'][0] = cutflow
 
