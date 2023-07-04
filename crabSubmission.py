@@ -125,6 +125,7 @@ def submitToCrab():
     nJobs = 0
     for ijob, dataset in enumerate(datasets):
 
+        # TODO: include data era (B, C, D,...) in output folder name
         if data:
             task_tag = ((dataset.split('/')[1]).split("/")[0])+"_Run"+(dataset.split('/Run')[1]).split("/")[0]
         else:

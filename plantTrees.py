@@ -243,7 +243,7 @@ else: isTest = False
 if 'crab' in options.tag: localpath = ''
 else: localpath = '/nfs/dust/cms/user/wolfmor/NTupleStuff/'
 
-nEventsTest = 10 # number of events that are analyzed in case of test
+nEventsTest = 10  # number of events that are analyzed in case of test
 printevery = 10
 
 # TODO: check thresholds for "new" matching
@@ -810,6 +810,7 @@ if True:
         , ('track_ptError/pt', 'F'), ('track_log10(ptError/pt)', 'F')
         , ('track_eta', 'F'), ('track_phi', 'F')
         , ('track_etaError', 'F'), ('track_phiError', 'F')
+        , ('track_nLoops', 'I')
 
         , ('track_isPfCand', 'I')
         , ('track_pfCandPt', 'F'), ('track_pfCandEta', 'F'), ('track_pfCandPhi', 'F'), ('track_pfCandPdgId', 'F'), ('track_pfCandParticleId', 'F')
@@ -3412,8 +3413,8 @@ for ifile, f in enumerate(options.inputFiles):
             ### https://github.com/CMS-LUMI-POG/PileupTools
 
             fPUdistribution = ROOT.TFile(localpath + 'pileupweights.root')
-            
-            if 'signal' in options.tag: # This should do as signal (fastsim) to MC (fullsim) weighting
+
+            if 'signal' in options.tag: # This should do as signal (fastsim) to MC (fullsim) weighting  # TODO: but do we want to reweight to preVFP MC or pastVFP MC?
                 if 'era16_UL' in options.tag: 
                     hPUdistribution_signalMC = fPUdistribution.Get('puweight_signalMC_2016')
                     hPUdistribution_signalData = fPUdistribution.Get('puweight_signalData_2016')
@@ -4595,6 +4596,8 @@ for ifile, f in enumerate(options.inputFiles):
 
             track_level_var_array['track_etaError'][i] = track.etaError()
             track_level_var_array['track_phiError'][i] = track.phiError()
+
+            track_level_var_array['track_nLoops'][i] = ord(track.nLoops())
 
             ispfcand = False
             thepfcand = None
