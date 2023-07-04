@@ -3426,16 +3426,18 @@ for ifile, f in enumerate(options.inputFiles):
                     
                     binPUweight_signalData = hPUdistribution_signalData.GetXaxis().FindBin(n_trueInteractions)
                     weight_PU_SignalData = hPUdistribution_signalData.GetBinContent(binPUweight_signalData)
-                
-            if 'era16_UL_APV' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016_HIPM')
-            #if 'era16_UL_APV' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016 HIPM')
-            elif 'era16_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016')
-            elif 'era17_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2017')
-            elif 'era18_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2018')
 
-            binPUweight = hPUdistribution.GetXaxis().FindBin(n_trueInteractions)
-            weight_PU_DataMC = hPUdistribution.GetBinContent(binPUweight)
-            
+            else:
+                
+                if 'era16_UL_APV' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016_HIPM')
+                #if 'era16_UL_APV' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016 HIPM')
+                elif 'era16_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016')
+                elif 'era17_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2017')
+                elif 'era18_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2018')
+
+                binPUweight = hPUdistribution.GetXaxis().FindBin(n_trueInteractions)
+                weight_PU_DataMC = hPUdistribution.GetBinContent(binPUweight)
+
             fPUdistribution.Close()
 
         event_level_var_array['weight_PU_MCData'][0] = weight_PU_DataMC
