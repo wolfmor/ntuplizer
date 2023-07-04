@@ -810,7 +810,6 @@ if True:
         , ('track_ptError/pt', 'F'), ('track_log10(ptError/pt)', 'F')
         , ('track_eta', 'F'), ('track_phi', 'F')
         , ('track_etaError', 'F'), ('track_phiError', 'F')
-        , ('track_nLoops', 'I')
 
         , ('track_isPfCand', 'I')
         , ('track_pfCandPt', 'F'), ('track_pfCandEta', 'F'), ('track_pfCandPhi', 'F'), ('track_pfCandPdgId', 'F'), ('track_pfCandParticleId', 'F')
@@ -4629,8 +4628,6 @@ for ifile, f in enumerate(options.inputFiles):
 
             track_level_var_array['track_etaError'][i] = track.etaError()
             track_level_var_array['track_phiError'][i] = track.phiError()
-
-            track_level_var_array['track_nLoops'][i] = ord(track.nLoops())
 
             ispfcand = False
             thepfcand = None
