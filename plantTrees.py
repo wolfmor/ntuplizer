@@ -3370,12 +3370,11 @@ for ifile, f in enumerate(options.inputFiles):
             eventWeightFastSimBug = computeFastSimBugWeight(genjets, genparticles)
         event_level_var_array['weight_fastSimBug'][0] = eventWeightFastSimBug
 
-        # TODO: do we need additional PU weights for fastsim?
         weight_PU_FastFull = 1.
         weight_PU_FastFull_rebin = 1.
         weight_PU_SigBkg = 1.
         weight_PU_SigBkg_rebin = 1.
-        if 'fastsim' in options.tag and 'signal' in options.tag:
+        if 'fastsim' in options.tag and 'signal' in options.tag and '_UL' not in options.tag:  # only if not UL
 
             fPUweights = ROOT.TFile(localpath + 'PUweights.root')
 
@@ -3386,7 +3385,7 @@ for ifile, f in enumerate(options.inputFiles):
             hPUweightFastFull_rebin = fPUweights.Get('NPVsPerEvent_rebinFastFullSignalFull:SignalFast')
             binPUweightFastFull_rebin = hPUweightFastFull_rebin.GetXaxis().FindBin(n_pv)
             weight_PU_FastFull_rebin = hPUweightFastFull_rebin.GetBinContent(binPUweightFastFull_rebin)
-            
+
             hPUweightSigBkg = fPUweights.Get('NPVsPerEventZJetsToNuNu_Zpt-200toInf_16:SignalFast')
             binPUweightSigBkg = hPUweightSigBkg.GetXaxis().FindBin(n_pv)
             weight_PU_SigBkg = hPUweightSigBkg.GetBinContent(binPUweightSigBkg)
@@ -3414,12 +3413,13 @@ for ifile, f in enumerate(options.inputFiles):
             ###'/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2018-69200ub-99bins.root'
             ### https://github.com/CMS-LUMI-POG/PileupTools
 
-            fPUdistribution = ROOT.TFile(localpath + 'pileupweights.root')
+            if 'signal' in options.tag:  # This should do as signal (fastsim) to MC (fullsim) weighting  # TODO: how are these calculated and are they needed?
+                if 'era16_UL' in options.tag:
 
-            if 'signal' in options.tag: # This should do as signal (fastsim) to MC (fullsim) weighting  # TODO: but do we want to reweight to preVFP MC or pastVFP MC?
-                if 'era16_UL' in options.tag: 
-                    hPUdistribution_signalMC = fPUdistribution.Get('puweight_signalMC_2016')
-                    hPUdistribution_signalData = fPUdistribution.Get('puweight_signalData_2016')
+                    fPUdistribution_old = ROOT.TFile(localpath + 'pileupweights_old.root')
+
+                    hPUdistribution_signalMC = fPUdistribution_old.Get('puweight_signalMC_2016')
+                    hPUdistribution_signalData = fPUdistribution_old.Get('puweight_signalData_2016')
                     
                     binPUweight_signalMC = hPUdistribution_signalMC.GetXaxis().FindBin(n_trueInteractions)
                     weight_PU_SignalMC = hPUdistribution_signalMC.GetBinContent(binPUweight_signalMC)
@@ -3427,16 +3427,17 @@ for ifile, f in enumerate(options.inputFiles):
                     binPUweight_signalData = hPUdistribution_signalData.GetXaxis().FindBin(n_trueInteractions)
                     weight_PU_SignalData = hPUdistribution_signalData.GetBinContent(binPUweight_signalData)
 
-            else:
-                
-                if 'era16_UL_APV' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016_HIPM')
-                #if 'era16_UL_APV' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016 HIPM')
-                elif 'era16_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016')
-                elif 'era17_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2017')
-                elif 'era18_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2018')
+                    fPUdistribution_old.Close()
 
-                binPUweight = hPUdistribution.GetXaxis().FindBin(n_trueInteractions)
-                weight_PU_DataMC = hPUdistribution.GetBinContent(binPUweight)
+            fPUdistribution = ROOT.TFile(localpath + 'pileupweights.root')
+
+            if 'era16_UL_APV' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016_HIPM')
+            elif 'era16_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016')
+            elif 'era17_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2017')
+            elif 'era18_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2018')
+
+            binPUweight = hPUdistribution.GetXaxis().FindBin(n_trueInteractions)
+            weight_PU_DataMC = hPUdistribution.GetBinContent(binPUweight)
 
             fPUdistribution.Close()
 
