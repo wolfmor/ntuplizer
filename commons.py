@@ -731,6 +731,46 @@ def calcIso_pf_or_track_new(one, many, isMini=False, subtractObject=True):
     return ptsum, ptsum/one[0], dRmin, num
 
 
+@converter
+@jit(nopython=True)
+def calcIso_pf_or_track_new_withDrmin2nd(one, many, isMini=False, subtractObject=True):
+    """Calculates isolation variables for an object inside PFs or tracks.
+    Expects (list of) tuples of the form (pT, eta, phi).
+    """
+
+    conesize = 0.3
+
+    if isMini:
+        if one[0] <= 50: conesize = 0.2
+        elif one[0] <= 200: conesize = 10.0/one[0]
+        else: conesize = 0.05
+
+    if subtractObject:
+        ptsum = -one[0]
+        num = -1
+    else:
+        ptsum = 0
+        num = 0
+
+    dRmin = 9
+    dRmin2nd = 9
+
+    for i in range(len(many)):
+
+        dR = deltaR(one[1], many[i][1], one[2], many[i][2])
+
+        if dRmin > dR > 0.001:
+            dRmin = dR
+        elif dRmin2nd > dR > 0.001:
+            dRmin2nd = dR
+
+        if dR < conesize:
+            ptsum += many[i][0]
+            num += 1
+
+    return ptsum, ptsum/one[0], dRmin, dRmin2nd, num
+
+
 ###############################################################################################
 
 def getLastCopyStatusOne(gp):

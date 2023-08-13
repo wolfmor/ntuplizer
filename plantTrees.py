@@ -858,10 +858,10 @@ if True:
         , ('track_pfAbsIso', 'F'), ('track_pfRelIso', 'F'), ('track_drminPf', 'F'), ('track_numneighboursPf', 'I')
         , ('track_chPfAbsIso', 'F'), ('track_chPfRelIso', 'F'), ('track_drminChPf', 'F'), ('track_numneighboursChPf', 'I')
         
-        , ('track_tkAbsIso0', 'F'), ('track_tkRelIso0', 'F'), ('track_drminTrack0', 'F'), ('track_numneighboursTrack0', 'I')
-        , ('track_tkAbsIso1', 'F'), ('track_tkRelIso1', 'F'), ('track_drminTrack1', 'F'), ('track_numneighboursTrack1', 'I')
-        , ('track_tkAbsIso5', 'F'), ('track_tkRelIso5', 'F'), ('track_drminTrack5', 'F'), ('track_numneighboursTrack5', 'I')
-        , ('track_tkAbsIso10', 'F'), ('track_tkRelIso10', 'F'), ('track_drminTrack10', 'F'), ('track_numneighboursTrack10', 'I')
+        , ('track_tkAbsIso0', 'F'), ('track_tkRelIso0', 'F'), ('track_drminTrack0', 'F'), ('track_drmin2ndTrack0', 'F'), ('track_numneighboursTrack0', 'I')
+        , ('track_tkAbsIso1', 'F'), ('track_tkRelIso1', 'F'), ('track_drminTrack1', 'F'), ('track_drmin2ndTrack1', 'F'), ('track_numneighboursTrack1', 'I')
+        , ('track_tkAbsIso5', 'F'), ('track_tkRelIso5', 'F'), ('track_drminTrack5', 'F'), ('track_drmin2ndTrack5', 'F'), ('track_numneighboursTrack5', 'I')
+        , ('track_tkAbsIso10', 'F'), ('track_tkRelIso10', 'F'), ('track_drminTrack10', 'F'), ('track_drmin2ndTrack10', 'F'), ('track_numneighboursTrack10', 'I')
         
         , ('track_jetIso0', 'F'), ('track_jetIsoMulti0', 'F'), ('track_drminJet0', 'F'), ('track_btagJet0', 'F'), ('track_minvJet0', 'F')
         , ('track_jetIso10', 'F'), ('track_jetIsoMulti10', 'F'), ('track_drminJet10', 'F'), ('track_btagJet10', 'F'), ('track_minvJet10', 'F')
@@ -1380,6 +1380,7 @@ label_pv = ('offlinePrimaryVertices')
 handle_met = Handle('std::vector<reco::PFMET>')
 label_met = ('pfMet')
 
+# TODO: change to not ancient btag algo
 handle_btag = Handle('edm::AssociationVector<edm::RefToBaseProd<reco::Jet>,vector<float>,edm::RefToBase<reco::Jet>,unsigned int,edm::helper::AssociationIdenticalKeyReference>')
 label_btag = ('pfCombinedSecondaryVertexV2BJetTags')
 
@@ -4839,10 +4840,10 @@ for ifile, f in enumerate(options.inputFiles):
             track_level_var_array['track_pfAbsIso'][i], track_level_var_array['track_pfRelIso'][i], track_level_var_array['track_drminPf'][i], track_level_var_array['track_numneighboursPf'][i] = calcIso_pf_or_track_new(track, pfcandsforiso0, subtractObject=ispfcand)
             track_level_var_array['track_chPfAbsIso'][i], track_level_var_array['track_chPfRelIso'][i], track_level_var_array['track_drminChPf'][i], track_level_var_array['track_numneighboursChPf'][i] = calcIso_pf_or_track_new(track, chpfcandsforiso0, subtractObject=(ispfcand and abs(track.dxy(pv_pos)) < 0.1 and abs(track.dz(pv_pos)) < 0.1))
 
-            track_level_var_array['track_tkAbsIso0'][i], track_level_var_array['track_tkRelIso0'][i], track_level_var_array['track_drminTrack0'][i], track_level_var_array['track_numneighboursTrack0'][i] = calcIso_pf_or_track_new(track, tracksforiso0, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.))
-            track_level_var_array['track_tkAbsIso1'][i], track_level_var_array['track_tkRelIso1'][i], track_level_var_array['track_drminTrack1'][i], track_level_var_array['track_numneighboursTrack1'][i] = calcIso_pf_or_track_new(track, tracksforiso1, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=1.))
-            track_level_var_array['track_tkAbsIso5'][i], track_level_var_array['track_tkRelIso5'][i], track_level_var_array['track_drminTrack5'][i], track_level_var_array['track_numneighboursTrack5'][i] = calcIso_pf_or_track_new(track, tracksforiso5, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=5.))
-            track_level_var_array['track_tkAbsIso10'][i], track_level_var_array['track_tkRelIso10'][i], track_level_var_array['track_drminTrack10'][i], track_level_var_array['track_numneighboursTrack10'][i] = calcIso_pf_or_track_new(track, tracksforiso10, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=10.))
+            track_level_var_array['track_tkAbsIso0'][i], track_level_var_array['track_tkRelIso0'][i], track_level_var_array['track_drminTrack0'][i], track_level_var_array['track_drmin2ndTrack0'][i], track_level_var_array['track_numneighboursTrack0'][i] = calcIso_pf_or_track_new_withDrmin2nd(track, tracksforiso0, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.))
+            track_level_var_array['track_tkAbsIso1'][i], track_level_var_array['track_tkRelIso1'][i], track_level_var_array['track_drminTrack1'][i], track_level_var_array['track_drmin2ndTrack1'][i], track_level_var_array['track_numneighboursTrack1'][i] = calcIso_pf_or_track_new_withDrmin2nd(track, tracksforiso1, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=1.))
+            track_level_var_array['track_tkAbsIso5'][i], track_level_var_array['track_tkRelIso5'][i], track_level_var_array['track_drminTrack5'][i], track_level_var_array['track_drmin2ndTrack5'][i], track_level_var_array['track_numneighboursTrack5'][i] = calcIso_pf_or_track_new_withDrmin2nd(track, tracksforiso5, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=5.))
+            track_level_var_array['track_tkAbsIso10'][i], track_level_var_array['track_tkRelIso10'][i], track_level_var_array['track_drminTrack10'][i], track_level_var_array['track_drmin2ndTrack10'][i], track_level_var_array['track_numneighboursTrack10'][i] = calcIso_pf_or_track_new_withDrmin2nd(track, tracksforiso10, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=10.))
 
             track_level_var_array['track_jetIso0'][i], track_level_var_array['track_jetIsoMulti0'][i], track_level_var_array['track_drminJet0'][i], track_level_var_array['track_btagJet0'][i], track_level_var_array['track_minvJet0'][i] = calcIso_jet_new(track, jetsforiso0, isTrack=True, btagvalues=btagvalues)
             track_level_var_array['track_jetIso10'][i], track_level_var_array['track_jetIsoMulti10'][i], track_level_var_array['track_drminJet10'][i], track_level_var_array['track_btagJet10'][i], track_level_var_array['track_minvJet10'][i] = calcIso_jet_new(track, jetsforiso10, isTrack=True, btagvalues=btagvalues)
