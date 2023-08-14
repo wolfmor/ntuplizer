@@ -243,7 +243,7 @@ else: isTest = False
 if 'crab' in options.tag: localpath = ''
 else: localpath = '/nfs/dust/cms/user/wolfmor/NTupleStuff/'
 
-nEventsTest = 30 # number of events that are analyzed in case of test
+nEventsTest = 100  # number of events that are analyzed in case of test
 printevery = 10
 
 # TODO: check thresholds for "new" matching
@@ -370,6 +370,9 @@ if True:
         , ('JetMetdeltaPhi1', 'F'), ('JetMetdeltaPhi2', 'F'), ('JetMetdeltaPhi3', 'F'), ('JetMetdeltaPhi4', 'F')
         , ('JetPt1', 'F'), ('JetPt2', 'F'), ('JetPt3', 'F'), ('JetPt4', 'F')
         , ('JetEta1', 'F'), ('JetEta2', 'F'), ('JetEta3', 'F'), ('JetEta4', 'F')
+
+        , ('maxbtagJet_pt', 'F'), ('maxbtagJet_eta', 'F'), ('maxbtagJet_phi', 'F')
+        , ('maxbtagJet_btag', 'F'), ('maxbtagJet_btagDeepCSV', 'F')
         
         , ('n_jet', 'I')
         , ('n_jet_15', 'I'), ('n_jet_30', 'I'), ('n_jet_50', 'I'), ('n_jet_100', 'I'), ('n_jet_200', 'I')
@@ -377,6 +380,10 @@ if True:
         , ('n_jet_30_btagloose', 'I'), ('n_jet_15_btagloose', 'I')
         , ('n_jet_30_btagmedium', 'I'), ('n_jet_15_btagmedium', 'I')
         , ('n_jet_30_btagtight', 'I'), ('n_jet_15_btagtight', 'I')
+
+        , ('n_jet_30_btagDeepCSVloose', 'I'), ('n_jet_15_btagDeepCSVloose', 'I')
+        , ('n_jet_30_btagDeepCSVmedium', 'I'), ('n_jet_15_btagDeepCSVmedium', 'I')
+        , ('n_jet_30_btagDeepCSVtight', 'I'), ('n_jet_15_btagDeepCSVtight', 'I')
 
         , ('mtMetLeadingJet', 'F')
         , ('dphiminMetJets', 'F')
@@ -691,6 +698,7 @@ if True:
         , ('jet_eta', 'F'), ('jet_phi', 'F')
         , ('jet_numConstituents', 'I')
         , ('jet_btag', 'F')
+        , ('jet_btagDeepCSV', 'F'), ('jet_btagDeepCSV_probb', 'F'), ('jet_btagDeepCSV_probbb', 'F')
         , ('jet_drminLepton', 'F'), ('jet_ptClosestLepton', 'F'), ('jet_isLepton', 'F')
         , ('jet_drminGenJet', 'F'), ('jet_ptClosestGenJet', 'F'), ('jet_isGenJet', 'F')
         ]
@@ -1384,6 +1392,12 @@ label_met = ('pfMet')
 handle_btag = Handle('edm::AssociationVector<edm::RefToBaseProd<reco::Jet>,vector<float>,edm::RefToBase<reco::Jet>,unsigned int,edm::helper::AssociationIdenticalKeyReference>')
 label_btag = ('pfCombinedSecondaryVertexV2BJetTags')
 
+handle_btagDeepCSV_probb = Handle('edm::AssociationVector<edm::RefToBaseProd<reco::Jet>,vector<float>,edm::RefToBase<reco::Jet>,unsigned int,edm::helper::AssociationIdenticalKeyReference>')
+label_btagDeepCSV_probb = ('pfDeepCSVJetTags', 'probb', 'RECO')
+
+handle_btagDeepCSV_probbb = Handle('edm::AssociationVector<edm::RefToBaseProd<reco::Jet>,vector<float>,edm::RefToBase<reco::Jet>,unsigned int,edm::helper::AssociationIdenticalKeyReference>')
+label_btagDeepCSV_probbb = ('pfDeepCSVJetTags', 'probbb', 'RECO')
+
 handle_jets = Handle('std::vector<reco::PFJet>')
 label_jets = ('ak4PFJetsCHS')
 
@@ -1839,6 +1853,8 @@ for ifile, f in enumerate(options.inputFiles):
         event.getByLabel(label_jets, handle_jets)
         event.getByLabel(label_met, handle_met)
         event.getByLabel(label_btag, handle_btag)
+        event.getByLabel(label_btagDeepCSV_probb, handle_btagDeepCSV_probb)
+        event.getByLabel(label_btagDeepCSV_probbb, handle_btagDeepCSV_probbb)
         event.getByLabel(label_photons, handle_photons)
         event.getByLabel(label_electrons, handle_electrons)
         event.getByLabel(label_muons, handle_muons)
@@ -1855,6 +1871,10 @@ for ifile, f in enumerate(options.inputFiles):
         jets = handle_jets.product()
         met = handle_met.product().front()
         nbtags = len(handle_btag.product())
+        nbtagsDeepCSV_probb = len(handle_btagDeepCSV_probb.product())
+        nbtagsDeepCSV_probbb = len(handle_btagDeepCSV_probbb.product())
+        assert nbtagsDeepCSV_probb == nbtagsDeepCSV_probbb
+        nbtagsDeepCSV = nbtagsDeepCSV_probb
 
         photons = handle_photons.product()
         electrons = handle_electrons.product()
@@ -1911,6 +1931,7 @@ for ifile, f in enumerate(options.inputFiles):
 
         # first dummy entry needed for jitted jet iso calculation function
         btagvalues = [(-2., 0., 0.)]
+        btagvaluesDeepCSV = [(-2., 0., 0.)]
 
 
         '''
@@ -1971,11 +1992,18 @@ for ifile, f in enumerate(options.inputFiles):
             jetP4Corr = jetP4Raw * correction
             jetsP4Corr.append(jetP4Corr)
 
-            nhf = jet.neutralHadronEnergy() / jetP4Raw.E()
-            nef = jet.neutralEmEnergy() / jetP4Raw.E()
-            chf = jet.chargedHadronEnergy() / jetP4Raw.E()
-            cef = jet.chargedEmEnergy() / jetP4Raw.E()
-            mef = jet.muonEnergy() / jetP4Raw.E()
+            if jetP4Raw.E() > 0:
+                nhf = jet.neutralHadronEnergy() / jetP4Raw.E()
+                nef = jet.neutralEmEnergy() / jetP4Raw.E()
+                chf = jet.chargedHadronEnergy() / jetP4Raw.E()
+                cef = jet.chargedEmEnergy() / jetP4Raw.E()
+                mef = jet.muonEnergy() / jetP4Raw.E()
+            else:
+                nhf = 1.
+                nef = 1.
+                chf = 1.
+                cef = 1.
+                mef = 1.
             nconstituents = jet.numberOfDaughters()
             cm = jet.chargedMultiplicity()
             nm = jet.neutralMultiplicity()
@@ -2475,7 +2503,7 @@ for ifile, f in enumerate(options.inputFiles):
             electron_var_array['electron_pfAbsIsoMini'][ie], _, _, _ = calcIso_pf_or_track_new(e, pfcandsforiso0, isMini=True, subtractObject=True)
             electron_var_array['electron_chPfAbsIso'][ie], _, _, _ = calcIso_pf_or_track_new(e, chpfcandsforiso0, subtractObject=(abs(e.gsfTrack().dz(pv_pos)) < 0.1 and abs(e.gsfTrack().dxy(pv_pos)) < 0.1))
             electron_var_array['electron_chPfAbsIsoMini'][ie], _, _, _ = calcIso_pf_or_track_new(e, chpfcandsforiso0, isMini=True, subtractObject=(abs(e.gsfTrack().dz(pv_pos)) < 0.1 and abs(e.gsfTrack().dxy(pv_pos)) < 0.1))
-            electron_var_array['electron_jetIso'][ie], electron_var_array['electron_jetIsoMulti'][ie], electron_var_array['electron_drminJet'][ie], _, electron_var_array['electron_minvJet'][ie] = calcIso_jet_new(e, jetsforiso15, isTrack=False, btagvalues=btagvalues)
+            electron_var_array['electron_jetIso'][ie], electron_var_array['electron_jetIsoMulti'][ie], electron_var_array['electron_drminJet'][ie], _, electron_var_array['electron_minvJet'][ie] = calcIso_jet_new(e, jetsforiso15, isTrack=False, btagvalues=btagvaluesDeepCSV)
             electron_var_array['electron_chHadIso'][ie] = e.pfIsolationVariables().sumChargedHadronPt
             electron_var_array['electron_chAllIso'][ie] = e.pfIsolationVariables().sumChargedParticlePt
             electron_var_array['electron_neHadIso'][ie] = e.pfIsolationVariables().sumNeutralHadronEt
@@ -2509,7 +2537,7 @@ for ifile, f in enumerate(options.inputFiles):
             muon_var_array['muon_pfAbsIsoMini'][im], _, _, _ = calcIso_pf_or_track_new(m, pfcandsforiso0, isMini=True, subtractObject=True)
             muon_var_array['muon_chPfAbsIso'][im], _, _, _ = calcIso_pf_or_track_new(m, chpfcandsforiso0, subtractObject=(abs(m.muonBestTrack().dz(pv_pos)) < 0.1 and abs(m.muonBestTrack().dxy(pv_pos)) < 0.1))
             muon_var_array['muon_chPfAbsIsoMini'][im], _, _, _ = calcIso_pf_or_track_new(m, chpfcandsforiso0, isMini=True, subtractObject=(abs(m.muonBestTrack().dz(pv_pos)) < 0.1 and abs(m.muonBestTrack().dxy(pv_pos)) < 0.1))
-            muon_var_array['muon_jetIso'][im], muon_var_array['muon_jetIsoMulti'][im], muon_var_array['muon_drminJet'][im], _, muon_var_array['muon_minvJet'][im] = calcIso_jet_new(m, jetsforiso15, isTrack=False, btagvalues=btagvalues)
+            muon_var_array['muon_jetIso'][im], muon_var_array['muon_jetIsoMulti'][im], muon_var_array['muon_drminJet'][im], _, muon_var_array['muon_minvJet'][im] = calcIso_jet_new(m, jetsforiso15, isTrack=False, btagvalues=btagvaluesDeepCSV)
             muon_var_array['muon_chHadIso'][im] = m.pfIsolationR03().sumChargedHadronPt
             muon_var_array['muon_chAllIso'][im] = m.pfIsolationR03().sumChargedParticlePt
             muon_var_array['muon_neHadIso'][im] = m.pfIsolationR03().sumNeutralHadronEt
@@ -3505,7 +3533,7 @@ for ifile, f in enumerate(options.inputFiles):
             photon_var_array['photon_pfAbsIsoMini'][ip], _, _, _ = calcIso_pf_or_track_new(p, pfcandsforiso0, isMini=True, subtractObject=True)
             photon_var_array['photon_chPfAbsIso'][ip], _, _, _ = calcIso_pf_or_track_new(p, chpfcandsforiso0, subtractObject=False)
             photon_var_array['photon_chPfAbsIsoMini'][ip], _, _, _ = calcIso_pf_or_track_new(p, chpfcandsforiso0, isMini=True, subtractObject=False)
-            photon_var_array['photon_jetIso'][ip], photon_var_array['photon_jetIsoMulti'][ip], photon_var_array['photon_drminJet'][ip], _, photon_var_array['photon_minvJet'][ip] = calcIso_jet_new(p, jetsforiso15, isTrack=False, btagvalues=btagvalues)
+            photon_var_array['photon_jetIso'][ip], photon_var_array['photon_jetIsoMulti'][ip], photon_var_array['photon_drminJet'][ip], _, photon_var_array['photon_minvJet'][ip] = calcIso_jet_new(p, jetsforiso15, isTrack=False, btagvalues=btagvaluesDeepCSV)
             photon_var_array['photon_chHadIso'][ip] = p.chargedHadronIso()
             photon_var_array['photon_neHadIso'][ip] = p.neutralHadronIso()
             photon_var_array['photon_photIso'][ip] = p.photonIso()
@@ -3551,7 +3579,7 @@ for ifile, f in enumerate(options.inputFiles):
             _, pflepton_var_array['pfLepton_pfRelIsoMini'][il], _, _ = calcIso_pf_or_track_new(l, pfcandsforiso0, isMini=True)
             _, pflepton_var_array['pfLepton_chPfRelIso'][il], _, _ = calcIso_pf_or_track_new(l, chpfcandsforiso0)
             _, pflepton_var_array['pfLepton_chPfRelIsoMini'][il], _, _ = calcIso_pf_or_track_new(l, chpfcandsforiso0, isMini=True)
-            pflepton_var_array['pfLepton_jetIso'][il], pflepton_var_array['pfLepton_jetIsoMulti'][il], pflepton_var_array['pfLepton_drminJet'][il], _, pflepton_var_array['pfLepton_minvJet'][il] = calcIso_jet_new(l, jetsforiso15, isTrack=False, btagvalues=btagvalues)
+            pflepton_var_array['pfLepton_jetIso'][il], pflepton_var_array['pfLepton_jetIsoMulti'][il], pflepton_var_array['pfLepton_drminJet'][il], _, pflepton_var_array['pfLepton_minvJet'][il] = calcIso_jet_new(l, jetsforiso15, isTrack=False, btagvalues=btagvaluesDeepCSV)
 
             if pfrelisopflepton < 0.2: numpfleptonsiso += 1
 
@@ -3729,7 +3757,6 @@ for ifile, f in enumerate(options.inputFiles):
             pv_var_array['pv_z'][ipv] = pv.position().z()
             tracksByPV[ipv] = [pv.trackRefAt(i).get() for i in range(pv.tracksSize())]
 
-
         if 'era16' in options.tag:
             # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco
             loosewp = 0.5426
@@ -3748,8 +3775,32 @@ for ifile, f in enumerate(options.inputFiles):
         else:
             raise NotImplementedError('btag: era unknown or not specified')
 
+
+        # from: https://btv-wiki.docs.cern.ch/ScaleFactors/
+        if 'era16_UL_APV' in options.tag:
+            loosewpDeepCSV = 0.2027
+            mediumwpDeepCSV = 0.6001
+            tightwpDeepCSV = 0.8819
+        elif 'era16_UL' in options.tag:
+            loosewpDeepCSV = 0.1918
+            mediumwpDeepCSV = 0.5847
+            tightwpDeepCSV = 0.8767
+        elif 'era17_UL' in options.tag:
+            loosewpDeepCSV = 0.1355
+            mediumwpDeepCSV = 0.4506
+            tightwpDeepCSV = 0.7738
+        elif 'era18_UL' in options.tag:
+            loosewpDeepCSV = 0.1208
+            mediumwpDeepCSV = 0.4168
+            tightwpDeepCSV = 0.7665
+        else:
+            raise NotImplementedError('btag: era unknown or not specified')
+
         isleptonjetidxlist = []
         btaglist = []
+        btaglistDeepCSV = []
+        maxbtag = -1
+        idxmaxbtagjet = 0
         for ijet, jet in enumerate(jets):
 
             jet_var_array['jet_px'][ijet] = jet.px()
@@ -3773,6 +3824,27 @@ for ifile, f in enumerate(options.inputFiles):
             btaglist.append(thisbtag)
             btagvalues.append((thisbtag, jet.pt(), jet.eta()))
             hBtagjets.Fill(thisbtag)
+
+            dRmin = 0.1
+            thisbtagDeepCSV_probb = -1.
+            thisbtagDeepCSV_probbb = -1.
+            for ib in range(nbtagsDeepCSV):
+                dR = deltaR(handle_btagDeepCSV_probb.product().key(ib).get().eta(), jet.eta(), handle_btagDeepCSV_probb.product().key(ib).get().phi(), jet.phi())
+                if dR < dRmin:
+                    dRmin = dR
+                    thisbtagDeepCSV_probb = max(-0.5, handle_btagDeepCSV_probb.product().value(ib))
+                    thisbtagDeepCSV_probbb = max(-0.5, handle_btagDeepCSV_probbb.product().value(ib))
+
+            jet_var_array['jet_btagDeepCSV'][ijet] = thisbtagDeepCSV_probb + thisbtagDeepCSV_probbb
+            jet_var_array['jet_btagDeepCSV_probb'][ijet] = thisbtagDeepCSV_probb
+            jet_var_array['jet_btagDeepCSV_probbb'][ijet] = thisbtagDeepCSV_probbb
+
+            btaglistDeepCSV.append(thisbtagDeepCSV_probb + thisbtagDeepCSV_probbb)
+            btagvaluesDeepCSV.append((thisbtagDeepCSV_probb + thisbtagDeepCSV_probbb, jet.pt(), jet.eta()))
+
+            if (thisbtagDeepCSV_probb + thisbtagDeepCSV_probbb) > maxbtag and jet.pt() > 15 and abs(jet.eta()) < 2.4:
+                maxbtag = thisbtagDeepCSV_probb + thisbtagDeepCSV_probbb
+                idxmaxbtagjet = ijet
 
             drminleptonjet = 9.
             ptclosestleptonjet = -1.
@@ -3820,6 +3892,19 @@ for ifile, f in enumerate(options.inputFiles):
             jet_var_array['jet_isGenJet'][ijet] = isgenjetjet
 
 
+        if len(jets) > 0:
+            event_level_var_array['maxbtagJet_pt'][0] = jets[idxmaxbtagjet].pt()
+            event_level_var_array['maxbtagJet_eta'][0] = jets[idxmaxbtagjet].eta()
+            event_level_var_array['maxbtagJet_phi'][0] = jets[idxmaxbtagjet].phi()
+            event_level_var_array['maxbtagJet_btag'][0] = btaglist[idxmaxbtagjet]
+            event_level_var_array['maxbtagJet_btagDeepCSV'][0] = btaglistDeepCSV[idxmaxbtagjet]
+        else:
+            event_level_var_array['maxbtagJet_pt'][0] = -1
+            event_level_var_array['maxbtagJet_eta'][0] = -1
+            event_level_var_array['maxbtagJet_phi'][0] = -1
+            event_level_var_array['maxbtagJet_btag'][0] = -1
+            event_level_var_array['maxbtagJet_btagDeepCSV'][0] = -1
+
         event_level_var_array['n_jet_30_btagloose'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > loosewp and jetpt > 30 and abs(jeteta) < 2.4)])
         event_level_var_array['n_jet_15_btagloose'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > loosewp and jetpt > 15 and abs(jeteta) < 2.4)])
 
@@ -3830,6 +3915,17 @@ for ifile, f in enumerate(options.inputFiles):
         
         event_level_var_array['n_jet_30_btagtight'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > tightwp and jetpt > 30 and abs(jeteta) < 2.4)])
         event_level_var_array['n_jet_15_btagtight'][0] = len([bt for (bt, jetpt, jeteta) in btagvalues if (bt > tightwp and jetpt > 15 and abs(jeteta) < 2.4)])
+
+
+        event_level_var_array['n_jet_30_btagDeepCSVloose'][0] = len([bt for (bt, jetpt, jeteta) in btagvaluesDeepCSV if (bt > loosewpDeepCSV and jetpt > 30 and abs(jeteta) < 2.4)])
+        event_level_var_array['n_jet_15_btagDeepCSVloose'][0] = len([bt for (bt, jetpt, jeteta) in btagvaluesDeepCSV if (bt > loosewpDeepCSV and jetpt > 15 and abs(jeteta) < 2.4)])
+
+        event_level_var_array['n_jet_30_btagDeepCSVmedium'][0] = len([bt for (bt, jetpt, jeteta) in btagvaluesDeepCSV if (bt > mediumwpDeepCSV and jetpt > 30 and abs(jeteta) < 2.4)])
+        event_level_var_array['n_jet_15_btagDeepCSVmedium'][0] = len([bt for (bt, jetpt, jeteta) in btagvaluesDeepCSV if (bt > mediumwpDeepCSV and jetpt > 15 and abs(jeteta) < 2.4)])
+
+        event_level_var_array['n_jet_30_btagDeepCSVtight'][0] = len([bt for (bt, jetpt, jeteta) in btagvaluesDeepCSV if (bt > tightwpDeepCSV and jetpt > 30 and abs(jeteta) < 2.4)])
+        event_level_var_array['n_jet_15_btagDeepCSVtight'][0] = len([bt for (bt, jetpt, jeteta) in btagvaluesDeepCSV if (bt > tightwpDeepCSV and jetpt > 15 and abs(jeteta) < 2.4)])
+
 
         mtmetleadingjet = ROOT.TMath.Sqrt(2 * met.pt() * jets[idxhighestptjet].pt()
                                           * (1 - ROOT.TMath.Cos(deltaPhi(met.phi(), jets[idxhighestptjet].phi()))))
@@ -4567,17 +4663,17 @@ for ifile, f in enumerate(options.inputFiles):
                                          if passesPreselection_iso_jet(j, pt_threshold=15.) and ij not in isleptonjetidxlist])
 
         bjetsforisoLoose15 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
-                                       if passesPreselection_iso_jet(j, pt_threshold=15.) and btaglist[ij] > loosewp])
+                                       if passesPreselection_iso_jet(j, pt_threshold=15.) and btaglistDeepCSV[ij] > loosewpDeepCSV])
         bjetsforisoLoose30 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
-                                       if passesPreselection_iso_jet(j, pt_threshold=30.) and btaglist[ij] > loosewp])
+                                       if passesPreselection_iso_jet(j, pt_threshold=30.) and btaglistDeepCSV[ij] > loosewpDeepCSV])
         bjetsforisoMedium15 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
-                                       if passesPreselection_iso_jet(j, pt_threshold=15.) and btaglist[ij] > mediumwp])
+                                       if passesPreselection_iso_jet(j, pt_threshold=15.) and btaglistDeepCSV[ij] > mediumwpDeepCSV])
         bjetsforisoMedium30 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
-                                       if passesPreselection_iso_jet(j, pt_threshold=30.) and btaglist[ij] > mediumwp])
+                                       if passesPreselection_iso_jet(j, pt_threshold=30.) and btaglistDeepCSV[ij] > mediumwpDeepCSV])
         bjetsforisoTight15 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
-                                       if passesPreselection_iso_jet(j, pt_threshold=15.) and btaglist[ij] > tightwp])
+                                       if passesPreselection_iso_jet(j, pt_threshold=15.) and btaglistDeepCSV[ij] > tightwpDeepCSV])
         bjetsforisoTight30 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for ij, j in enumerate(jets)
-                                       if passesPreselection_iso_jet(j, pt_threshold=30.) and btaglist[ij] > tightwp])
+                                       if passesPreselection_iso_jet(j, pt_threshold=30.) and btaglistDeepCSV[ij] > tightwpDeepCSV])
 
         # see https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideParticleFlow#Output
         neutralhadrons0 = [p for p in pfcands if p.particleId() == 5]
@@ -4604,7 +4700,7 @@ for ifile, f in enumerate(options.inputFiles):
 
             # TODO: adapt preselection
             if not abs(track.dz(pv_pos)) < 10: continue
-            jetiso30, jetisomulti30, jetdrmin30, jetisobtag30, jetminv30 = calcIso_jet_new(track, jetsforiso30, isTrack=True, btagvalues=btagvalues)
+            jetiso30, jetisomulti30, jetdrmin30, jetisobtag30, jetminv30 = calcIso_jet_new(track, jetsforiso30, isTrack=True, btagvalues=btagvaluesDeepCSV)
             if not jetdrmin30 > 0.4: continue
             
             track_idx_map[itrack] = i
@@ -4845,10 +4941,10 @@ for ifile, f in enumerate(options.inputFiles):
             track_level_var_array['track_tkAbsIso5'][i], track_level_var_array['track_tkRelIso5'][i], track_level_var_array['track_drminTrack5'][i], track_level_var_array['track_drmin2ndTrack5'][i], track_level_var_array['track_numneighboursTrack5'][i] = calcIso_pf_or_track_new_withDrmin2nd(track, tracksforiso5, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=5.))
             track_level_var_array['track_tkAbsIso10'][i], track_level_var_array['track_tkRelIso10'][i], track_level_var_array['track_drminTrack10'][i], track_level_var_array['track_drmin2ndTrack10'][i], track_level_var_array['track_numneighboursTrack10'][i] = calcIso_pf_or_track_new_withDrmin2nd(track, tracksforiso10, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=10.))
 
-            track_level_var_array['track_jetIso0'][i], track_level_var_array['track_jetIsoMulti0'][i], track_level_var_array['track_drminJet0'][i], track_level_var_array['track_btagJet0'][i], track_level_var_array['track_minvJet0'][i] = calcIso_jet_new(track, jetsforiso0, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['track_jetIso10'][i], track_level_var_array['track_jetIsoMulti10'][i], track_level_var_array['track_drminJet10'][i], track_level_var_array['track_btagJet10'][i], track_level_var_array['track_minvJet10'][i] = calcIso_jet_new(track, jetsforiso10, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['track_jetIso15'][i], track_level_var_array['track_jetIsoMulti15'][i], track_level_var_array['track_drminJet15'][i], track_level_var_array['track_btagJet15'][i], track_level_var_array['track_minvJet15'][i] = calcIso_jet_new(track, jetsforiso15, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['track_jetIso20'][i], track_level_var_array['track_jetIsoMulti20'][i], track_level_var_array['track_drminJet20'][i], track_level_var_array['track_btagJet20'][i], track_level_var_array['track_minvJet20'][i] = calcIso_jet_new(track, jetsforiso20, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_jetIso0'][i], track_level_var_array['track_jetIsoMulti0'][i], track_level_var_array['track_drminJet0'][i], track_level_var_array['track_btagJet0'][i], track_level_var_array['track_minvJet0'][i] = calcIso_jet_new(track, jetsforiso0, isTrack=True, btagvalues=btagvaluesDeepCSV)
+            track_level_var_array['track_jetIso10'][i], track_level_var_array['track_jetIsoMulti10'][i], track_level_var_array['track_drminJet10'][i], track_level_var_array['track_btagJet10'][i], track_level_var_array['track_minvJet10'][i] = calcIso_jet_new(track, jetsforiso10, isTrack=True, btagvalues=btagvaluesDeepCSV)
+            track_level_var_array['track_jetIso15'][i], track_level_var_array['track_jetIsoMulti15'][i], track_level_var_array['track_drminJet15'][i], track_level_var_array['track_btagJet15'][i], track_level_var_array['track_minvJet15'][i] = calcIso_jet_new(track, jetsforiso15, isTrack=True, btagvalues=btagvaluesDeepCSV)
+            track_level_var_array['track_jetIso20'][i], track_level_var_array['track_jetIsoMulti20'][i], track_level_var_array['track_drminJet20'][i], track_level_var_array['track_btagJet20'][i], track_level_var_array['track_minvJet20'][i] = calcIso_jet_new(track, jetsforiso20, isTrack=True, btagvalues=btagvaluesDeepCSV)
 
             track_level_var_array['track_jetIso30'][i] = jetiso30
             track_level_var_array['track_jetIsoMulti30'][i] = jetisomulti30
@@ -4856,14 +4952,14 @@ for ifile, f in enumerate(options.inputFiles):
             track_level_var_array['track_btagJet30'][i] = jetisobtag30
             track_level_var_array['track_minvJet30'][i] = jetminv30
 
-            track_level_var_array['track_jetIsoNoLepton15'][i], track_level_var_array['track_jetIsoMultiNoLepton15'][i], track_level_var_array['track_drminJetNoLepton15'][i], track_level_var_array['track_btagJetNoLepton15'][i], track_level_var_array['track_minvJetNoLepton15'][i] = calcIso_jet_new(track, jetsforisoNoLepton15, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_jetIsoNoLepton15'][i], track_level_var_array['track_jetIsoMultiNoLepton15'][i], track_level_var_array['track_drminJetNoLepton15'][i], track_level_var_array['track_btagJetNoLepton15'][i], track_level_var_array['track_minvJetNoLepton15'][i] = calcIso_jet_new(track, jetsforisoNoLepton15, isTrack=True, btagvalues=btagvaluesDeepCSV)
             
-            track_level_var_array['track_bjetLooseIso15'][i], track_level_var_array['track_bjetLooseIsoMulti15'][i], track_level_var_array['track_drminBjetLoose15'][i], track_level_var_array['track_btagBjetLoose15'][i], track_level_var_array['track_minvBjetLoose15'][i] = calcIso_jet_new(track, bjetsforisoLoose15, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['track_bjetLooseIso30'][i], track_level_var_array['track_bjetLooseIsoMulti30'][i], track_level_var_array['track_drminBjetLoose30'][i], track_level_var_array['track_btagBjetLoose30'][i], track_level_var_array['track_minvBjetLoose30'][i] = calcIso_jet_new(track, bjetsforisoLoose30, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['track_bjetMediumIso15'][i], track_level_var_array['track_bjetMediumIsoMulti15'][i], track_level_var_array['track_drminBjetMedium15'][i], track_level_var_array['track_btagBjetMedium15'][i], track_level_var_array['track_minvBjetMedium15'][i] = calcIso_jet_new(track, bjetsforisoMedium15, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['track_bjetMediumIso30'][i], track_level_var_array['track_bjetMediumIsoMulti30'][i], track_level_var_array['track_drminBjetMedium30'][i], track_level_var_array['track_btagBjetMedium30'][i], track_level_var_array['track_minvBjetMedium30'][i] = calcIso_jet_new(track, bjetsforisoMedium30, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['track_bjetTightIso15'][i], track_level_var_array['track_bjetTightIsoMulti15'][i], track_level_var_array['track_drminBjetTight15'][i], track_level_var_array['track_btagBjetTight15'][i], track_level_var_array['track_minvBjetTight15'][i] = calcIso_jet_new(track, bjetsforisoTight15, isTrack=True, btagvalues=btagvalues)
-            track_level_var_array['track_bjetTightIso30'][i], track_level_var_array['track_bjetTightIsoMulti30'][i], track_level_var_array['track_drminBjetTight30'][i], track_level_var_array['track_btagBjetTight30'][i], track_level_var_array['track_minvBjetTight30'][i] = calcIso_jet_new(track, bjetsforisoTight30, isTrack=True, btagvalues=btagvalues)
+            track_level_var_array['track_bjetLooseIso15'][i], track_level_var_array['track_bjetLooseIsoMulti15'][i], track_level_var_array['track_drminBjetLoose15'][i], track_level_var_array['track_btagBjetLoose15'][i], track_level_var_array['track_minvBjetLoose15'][i] = calcIso_jet_new(track, bjetsforisoLoose15, isTrack=True, btagvalues=btagvaluesDeepCSV)
+            track_level_var_array['track_bjetLooseIso30'][i], track_level_var_array['track_bjetLooseIsoMulti30'][i], track_level_var_array['track_drminBjetLoose30'][i], track_level_var_array['track_btagBjetLoose30'][i], track_level_var_array['track_minvBjetLoose30'][i] = calcIso_jet_new(track, bjetsforisoLoose30, isTrack=True, btagvalues=btagvaluesDeepCSV)
+            track_level_var_array['track_bjetMediumIso15'][i], track_level_var_array['track_bjetMediumIsoMulti15'][i], track_level_var_array['track_drminBjetMedium15'][i], track_level_var_array['track_btagBjetMedium15'][i], track_level_var_array['track_minvBjetMedium15'][i] = calcIso_jet_new(track, bjetsforisoMedium15, isTrack=True, btagvalues=btagvaluesDeepCSV)
+            track_level_var_array['track_bjetMediumIso30'][i], track_level_var_array['track_bjetMediumIsoMulti30'][i], track_level_var_array['track_drminBjetMedium30'][i], track_level_var_array['track_btagBjetMedium30'][i], track_level_var_array['track_minvBjetMedium30'][i] = calcIso_jet_new(track, bjetsforisoMedium30, isTrack=True, btagvalues=btagvaluesDeepCSV)
+            track_level_var_array['track_bjetTightIso15'][i], track_level_var_array['track_bjetTightIsoMulti15'][i], track_level_var_array['track_drminBjetTight15'][i], track_level_var_array['track_btagBjetTight15'][i], track_level_var_array['track_minvBjetTight15'][i] = calcIso_jet_new(track, bjetsforisoTight15, isTrack=True, btagvalues=btagvaluesDeepCSV)
+            track_level_var_array['track_bjetTightIso30'][i], track_level_var_array['track_bjetTightIsoMulti30'][i], track_level_var_array['track_drminBjetTight30'][i], track_level_var_array['track_btagBjetTight30'][i], track_level_var_array['track_minvBjetTight30'][i] = calcIso_jet_new(track, bjetsforisoTight30, isTrack=True, btagvalues=btagvaluesDeepCSV)
 
 
             trackTlv = ROOT.TLorentzVector()
