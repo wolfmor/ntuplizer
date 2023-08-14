@@ -670,6 +670,24 @@ def converter(func):
     return helper
 
 
+def converter_withDrmin2nd(func):
+    """Converts physics object "one" to tuple to be used in jit compiled function.
+    Also accounts for case if many is empty (numba would fail).
+    """
+
+    def helper(one, many, isMini=False, subtractObject=True):
+        if len(many) > 0:
+            return func(np.array((one.pt(), one.eta(), one.phi())), many, isMini, subtractObject)
+        else:
+            if subtractObject:
+                return -one.pt(), -1, 9, 9, -1
+            else:
+                return 0, 0, 9, 9, 0
+
+
+    return helper
+
+
 	
 """Calculates isolation-variables for a vtx inside vtxs.
 """
@@ -693,6 +711,7 @@ def calcIso_vtx(one, many):
             num += 1
             
     return ptsum/one.pt(), dRmin, num
+
 
 @converter
 @jit(nopython=True)
@@ -731,7 +750,7 @@ def calcIso_pf_or_track_new(one, many, isMini=False, subtractObject=True):
     return ptsum, ptsum/one[0], dRmin, num
 
 
-@converter
+@converter_withDrmin2nd
 @jit(nopython=True)
 def calcIso_pf_or_track_new_withDrmin2nd(one, many, isMini=False, subtractObject=True):
     """Calculates isolation variables for an object inside PFs or tracks.
