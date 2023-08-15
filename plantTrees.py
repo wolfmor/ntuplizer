@@ -1388,7 +1388,6 @@ label_pv = ('offlinePrimaryVertices')
 handle_met = Handle('std::vector<reco::PFMET>')
 label_met = ('pfMet')
 
-# TODO: change to not ancient btag algo
 handle_btag = Handle('edm::AssociationVector<edm::RefToBaseProd<reco::Jet>,vector<float>,edm::RefToBase<reco::Jet>,unsigned int,edm::helper::AssociationIdenticalKeyReference>')
 label_btag = ('pfCombinedSecondaryVertexV2BJetTags')
 
@@ -2263,6 +2262,7 @@ for ifile, f in enumerate(options.inputFiles):
         nofastsimcorrmetpt = met.pt()
         nofastsimcorrmetphi = met.phi()
 
+        # TODO: is this still needed?
         if 'fastsim' in options.tag:
 
             met.setP4(ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(0.5 * (genmet.px() + met.px())
