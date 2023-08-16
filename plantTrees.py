@@ -2263,7 +2263,7 @@ for ifile, f in enumerate(options.inputFiles):
         nofastsimcorrmetphi = met.phi()
 
         # TODO: is this still needed?
-        if 'fastsim' in options.tag:
+        if 'fastsim' in options.tag and '_UL' not in options.tag:  # only if not UL
 
             met.setP4(ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(0.5 * (genmet.px() + met.px())
                                                                                , 0.5 * (genmet.py() + met.py())
