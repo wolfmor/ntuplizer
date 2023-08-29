@@ -132,12 +132,13 @@ def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, second
 
             badjets.append(idx)
 
-        for nSV, secondary in enumerate(secondaries):
-            for k in range(secondary.numberOfDaughters()):
-                #_, ClassicIdx, ClassicDrmin, _ = findMinDr_track(secondary.daughter(k), l, 20.)
-                ClassicDrmin = deltaR(l.eta(),secondary.daughter(k).eta(), l.phi(),secondary.daughter(k).phi())
-                if ClassicDrmin < 0.05:  
-                    badsvs.append(nSV)
+        if secondaries is not None:
+            for nSV, secondary in enumerate(secondaries):
+                for k in range(secondary.numberOfDaughters()):
+                    #_, ClassicIdx, ClassicDrmin, _ = findMinDr_track(secondary.daughter(k), l, 20.)
+                    ClassicDrmin = deltaR(l.eta(),secondary.daughter(k).eta(), l.phi(),secondary.daughter(k).phi())
+                    if ClassicDrmin < 0.05:
+                        badsvs.append(nSV)
 
 
         met.setP4(met.p4() + ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(l.px(), l.py(), 0, l.energy()))
@@ -145,7 +146,8 @@ def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, second
     jets = [j for (ij, j) in enumerate(jets) if ij not in badjets]
     tracks = [t for (it, t) in enumerate(tracks) if it not in badtracks]
     pfcands = [p for (ip, p) in enumerate(pfcands) if ip not in badpfcands]
-    secondaries = [sv for (isv, sv) in enumerate(secondaries) if isv not in badsvs]
+    if secondaries is not None:
+        secondaries = [sv for (isv, sv) in enumerate(secondaries) if isv not in badsvs]
 
     collection = [c for (ic, c) in enumerate(collection) if ic not in [zl1Idx, zl2Idx]]
 
@@ -909,7 +911,7 @@ if True:
         , ('track_numValidHits', 'I'), ('track_numLostHits', 'I')
 
         , ('track_isSignalTrack', 'I'), ('track_isSusyTrack', 'I'), ('track_susyTrackPdgIdMother', 'I'), ('track_susyTrackPdgId', 'I')
-        ,('track_isSVdaughter', 'I')
+        , ('track_isSVdaughter', 'I')
         
 
         , ('track_hasGenMatch', 'I'), ('track_genMatchTmin', 'F')
@@ -2189,7 +2191,14 @@ for ifile, f in enumerate(options.inputFiles):
                 l2absisodbeta = calcIso_dBeta(collection[l2Idx].pfIsolationR03())
                 l2relisodbeta = calcIso_dBeta(collection[l2Idx].pfIsolationR03()) / collection[l2Idx].pt()
 
-            collection, tracks, pfcands, jets, met , filesWithSV[ifile][event_id] = cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, jets, met, filesWithSV[ifile][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet)
+            if 'skipSVs' not in options.tag:
+                if 'crab' in options.tag:
+                    collection, tracks, pfcands, jets, met, filesWithSV[0][event_id] = cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, jets, met, filesWithSV[0][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet)
+                else:
+                    collection, tracks, pfcands, jets, met, filesWithSV[ifile][event_id] = cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, jets, met, filesWithSV[ifile][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet)
+            else:
+                collection, tracks, pfcands, jets, met, _ = cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, jets, met, None, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet)
+
 
             if tracks is None: continue
 
@@ -3955,10 +3964,16 @@ for ifile, f in enumerate(options.inputFiles):
         trackSVPairs={}
 
         if not 'skipSVs' in options.tag:
-            n_sv_total = len(filesWithSV[ifile][event_id]) 
-            numSVs = len(filesWithSV[ifile][event_id]) 
+
+            if 'crab' in options.tag:
+                sv_list = filesWithSV[0][event_id]
+            else:
+                sv_list = filesWithSV[ifile][event_id]
+
+            n_sv_total = len(sv_list)
+            numSVs = len(sv_list)
             
-            for nSV, secondary in enumerate(filesWithSV[ifile][event_id]):
+            for nSV, secondary in enumerate(sv_list):
 
                 isSignal = 0
                 proceed = False	
@@ -3968,8 +3983,10 @@ for ifile, f in enumerate(options.inputFiles):
                 ######################################
                 #### "filling tree on SV level"
                 ######################################
-                
-                SV_level_var_array['vtxDCA'][nSV] = filesWithDCA[ifile][event_id][nSV]
+                if 'crab' in options.tag:
+                    SV_level_var_array['vtxDCA'][nSV] = filesWithDCA[0][event_id][nSV]
+                else:
+                    SV_level_var_array['vtxDCA'][nSV] = filesWithDCA[ifile][event_id][nSV]
                 SV_level_var_array['log10vtxChi2'][nSV] = ROOT.TMath.Log10(secondary.vertexChi2())
                 SV_level_var_array['vtxChi2Ndof'][nSV] = ROOT.TMath.Log10(secondary.vertexNormalizedChi2())
                 SV_level_var_array['vtxVx'][nSV] = secondary.vx()
@@ -5219,17 +5236,23 @@ for ifile, f in enumerate(options.inputFiles):
 
         ### need to adjust the index of the matched SV tracks (~itrack) to the cleaned index (i)
         if not 'skipSVs' in options.tag:
-            n_sv_total = len(filesWithSV[ifile][event_id]) 
-            numSVs = len(filesWithSV[ifile][event_id]) 
+
+            if 'crab' in options.tag:
+                sv_list = filesWithSV[0][event_id]
+            else:
+                sv_list = filesWithSV[ifile][event_id]
+
+            n_sv_total = len(sv_list)
+            numSVs = len(sv_list)
             
-            for nSV, secondary in enumerate(filesWithSV[ifile][event_id]):
-                    old_idx_Low =  SV_level_var_array['trackId_Low'][nSV]
-                    if not old_idx_Low==-1:
-                        new_idx_low = track_idx_map[old_idx_Low]
-                    else: new_idx_low = old_idx_Low
-                    SV_level_var_array['trackId_Low'][nSV] = new_idx_low
+            for nSV, secondary in enumerate(sv_list):
+                old_idx_Low = SV_level_var_array['trackId_Low'][nSV]
+                if not old_idx_Low == -1:
+                    new_idx_low = track_idx_map[old_idx_Low]
+                else: new_idx_low = old_idx_Low
+                SV_level_var_array['trackId_Low'][nSV] = new_idx_low
                     
-                    #print "event", ievent, "sv no.", nSV, "old idx", old_idx_Low, "new idx", new_idx_low
+                #print "event", ievent, "sv no.", nSV, "old idx", old_idx_Low, "new idx", new_idx_low
 
         event_level_var_array['cutflow'][0] = cutflow
 
