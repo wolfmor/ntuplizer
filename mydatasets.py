@@ -42,6 +42,22 @@ template = {
     'DYJetsToLL_M-50_Zpt-200toInf_cleaned':
         '',
 
+    'WW':
+        '',
+    'WZ':
+        '',
+    'ZZ':
+        '',
+
+    'ST_t-channel_antitop':
+        '',
+    'ST_t-channel_top':
+        '',
+    'ST_tW_antitop':
+        '',
+    'ST_tW_top':
+        '',
+
     'TTJets_DiLept':
         '',
     'TTJets_SingleLeptFromT':
