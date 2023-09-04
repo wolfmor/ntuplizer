@@ -443,7 +443,7 @@ if True:
             , 'eeBadScFilter'
             #, 'hfNoisyHitsFilter'
         ]
-    elif 'era17_UL' in options.tag or 'era18_UL' in options.tag:
+    elif 'era17_UL' in options.tag or 'era18_UL' in options.tag:  # TODO: other flags for 17/18?
         trigger_flags = [
             'goodVertices'
             , 'globalSuperTightHalo2016Filter'
@@ -523,7 +523,8 @@ if True:
         event_level_var_array[tf] = array('i', [0])
         tEvent.Branch(tf, event_level_var_array[tf], tf + '/I')
 
-    # TODO: add triggers for SingleMuon datastream
+    # TODO: add triggers for 17/18
+    # TODO: add MET no mu trigger?
     trigger_hlt = [
         'HLT_PFMET90_PFMHT90_IDTight_v'
         , 'HLT_PFMET100_PFMHT100_IDTight_BeamHaloCleaned_v'
@@ -3439,6 +3440,8 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['weight_PU_SigBkg'][0] = weight_PU_SigBkg
         event_level_var_array['weight_PU_SigBkg_rebin'][0] = weight_PU_SigBkg_rebin
 
+
+        # TODO: implement PU reweighting to _full_ 2016 (at least needed for signal additional to preVFP/pastVFP only)
         weight_PU_DataMC = 1.
         weight_PU_SignalMC = 1.
         weight_PU_SignalData = 1.
