@@ -219,7 +219,7 @@ c1.Print("pileup_2016_eras.png")
 ####
 
 c2 = r.TCanvas("c2", "c2", 1200, 600)
-c2.Divide(2, 1)
+c2.Divide(3, 1)
 c2.cd(1)
 h16preVFP_ratio = h16preVFP_norm.Clone()
 
@@ -251,6 +251,21 @@ h16postVFP_ratio.GetXaxis().SetTitle("Pileup")
 h16postVFP_ratio.GetYaxis().SetTitle("Weight factor")
 h16postVFP_ratio.GetYaxis().SetRangeUser(-3, 5)
 
+c2.cd(3)
+h16all_ratio = h16all_norm.Clone()
+
+# hs2r.GetXaxis().SetRangeUser(0., 100.)
+# h3n.GetXaxis().SetRangeUser(0., 100.)
+
+h16all_ratio.Divide(h16mc_norm)
+h16all_ratio.Draw()
+# hs1r.SetLineColor(r.kRed)
+# hs1r.SetMarkerColor(r.kRed)
+h16all_ratio.SetTitle("Reweighting 2016 MC #rightarrow Data B-H")
+h16all_ratio.GetXaxis().SetTitle("Pileup")
+h16all_ratio.GetYaxis().SetTitle("Weight factor")
+h16all_ratio.GetYaxis().SetRangeUser(-3, 5)
+
 c2.Print("ratios_2016.C")
 c2.Print("ratios_2016.pdf")
 c2.Print("ratios_2016.png")
@@ -258,6 +273,7 @@ c2.Print("ratios_2016.png")
 fout.cd()
 h16preVFP_ratio.Write("puweight_2016_HIPM")
 h16postVFP_ratio.Write("puweight_2016")
+h16all_ratio.Write("puweight_2016_full")
 
 ### 2017
 if True:
