@@ -353,6 +353,7 @@ if True:
         , ('weight_PU_SigBkg', 'F'), ('weight_PU_SigBkg_rebin', 'F')
         
         , ('weight_PU_MCData', 'F')
+        , ('weight_PU_SignalData16pre', 'F'), ('weight_PU_SignalData16post', 'F'), ('weight_PU_SignalData16full', 'F')
         , ('weight_PU_SignalMC', 'F')
         , ('weight_PU_SignalData', 'F')
 
@@ -1421,7 +1422,7 @@ lastrun = -1
 # start with SV files
 ###############################################################################################
 '''
-    
+
 if not 'skipSVs' in options.tag:
     print "----------Start loop over SV files----------------"
     
@@ -2272,7 +2273,6 @@ for ifile, f in enumerate(options.inputFiles):
         nofastsimcorrmetpt = met.pt()
         nofastsimcorrmetphi = met.phi()
 
-        # TODO: is this still needed?
         if 'fastsim' in options.tag and '_UL' not in options.tag:  # only if not UL
 
             met.setP4(ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(0.5 * (genmet.px() + met.px())
@@ -3441,8 +3441,12 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['weight_PU_SigBkg_rebin'][0] = weight_PU_SigBkg_rebin
 
 
-        # TODO: implement PU reweighting to _full_ 2016 (at least needed for signal additional to preVFP/pastVFP only)
         weight_PU_DataMC = 1.
+
+        weight_PU_SignalData16pre = 1.
+        weight_PU_SignalData16post = 1.
+        weight_PU_SignalData16full = 1.
+
         weight_PU_SignalMC = 1.
         weight_PU_SignalData = 1.
         #if not 'data' in options.tag and not 'signal' in options.tag:  
@@ -3455,6 +3459,9 @@ for ifile, f in enumerate(options.inputFiles):
             ### https://github.com/CMS-LUMI-POG/PileupTools
 
             if 'signal' in options.tag:  # This should do as signal (fastsim) to MC (fullsim) weighting  # TODO: how are these calculated and are they needed?
+
+                fPUdistribution = ROOT.TFile(localpath + 'pileupweights.root')
+
                 if 'era16_UL' in options.tag:
 
                     fPUdistribution_old = ROOT.TFile(localpath + 'pileupweights_old.root')
@@ -3470,7 +3477,23 @@ for ifile, f in enumerate(options.inputFiles):
 
                     fPUdistribution_old.Close()
 
-            fPUdistribution = ROOT.TFile(localpath + 'pileupweights.root')
+
+                    hPUdistribution_16pre = fPUdistribution.Get('puweight_2016_HIPM')
+                    hPUdistribution_16post = fPUdistribution.Get('puweight_2016')
+                    hPUdistribution_16full = fPUdistribution.Get('puweight_2016_full')
+                    
+                    binPUweight_16pre = hPUdistribution_16pre.GetXaxis().FindBin(n_trueInteractions)
+                    weight_PU_SignalData16pre = hPUdistribution_16pre.GetBinContent(binPUweight_16pre)
+                    
+                    binPUweight_16post = hPUdistribution_16post.GetXaxis().FindBin(n_trueInteractions)
+                    weight_PU_SignalData16post = hPUdistribution_16post.GetBinContent(binPUweight_16post)
+                    
+                    binPUweight_16full = hPUdistribution_16full.GetXaxis().FindBin(n_trueInteractions)
+                    weight_PU_SignalData16full = hPUdistribution_16full.GetBinContent(binPUweight_16full)
+
+            else:
+
+                fPUdistribution = ROOT.TFile(localpath + 'pileupweights.root')
 
             if 'era16_UL_APV' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016_HIPM')
             elif 'era16_UL' in options.tag: hPUdistribution = fPUdistribution.Get('puweight_2016')
@@ -3483,6 +3506,11 @@ for ifile, f in enumerate(options.inputFiles):
             fPUdistribution.Close()
 
         event_level_var_array['weight_PU_MCData'][0] = weight_PU_DataMC
+
+        event_level_var_array['weight_PU_SignalData16pre'][0] = weight_PU_SignalData16pre
+        event_level_var_array['weight_PU_SignalData16post'][0] = weight_PU_SignalData16post
+        event_level_var_array['weight_PU_SignalData16full'][0] = weight_PU_SignalData16full
+
         event_level_var_array['weight_PU_SignalMC'][0] = weight_PU_SignalMC
         event_level_var_array['weight_PU_SignalData'][0] = weight_PU_SignalData
 
