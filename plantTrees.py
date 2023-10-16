@@ -291,7 +291,7 @@ if True:
         event_level_var_names += [('pMSSMid1', 'F'), ('pMSSMid2', 'F')]
 
     var_names_gen_signal = [
-        ('deltamFile', 'F'), ('mchipmFile', 'F'), ('mstopFile', 'F')
+        ('deltamFile', 'F'), ('mchipmFile', 'F'), ('mstopFile', 'F'), ('ctauFile', 'F')
 
         , ('chiC1_deltamN1', 'F'), ('chiC1_m', 'F')
         , ('chiN2_deltamN1', 'F'), ('chiN2_m', 'F')
@@ -1729,6 +1729,7 @@ for ifile, f in enumerate(options.inputFiles):
         chipmmFILE = -1
         deltamFILE = -1
         mstopFILE = -1
+        ctauFILE = -1
 
         chipmmGEN = -1
         deltamGEN = -1
@@ -2777,8 +2778,14 @@ for ifile, f in enumerate(options.inputFiles):
 
             chipmmFILE = float(re.search(r'mChipm(.*?)GeV', f).group(1))
             deltamFILE = float(re.search(r'_dm(.*?)GeV', f).group(1).replace('p', '.'))
+
             try:
                 mstopFILE = float(re.search(r'stopstop_(.*?)GeV', f).group(1))
+            except AttributeError:
+                pass
+
+            try:
+                ctauFILE = float(re.search(r'Chi20ctau(.*?)MM', f).group(1))
             except AttributeError:
                 pass
 
@@ -3193,6 +3200,7 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['mchipmFile'][0] = chipmmFILE
         event_level_var_array['deltamFile'][0] = deltamFILE
         event_level_var_array['mstopFile'][0] = mstopFILE
+        event_level_var_array['ctauFile'][0] = ctauFILE
 
         event_level_var_array['chiC1_m'][0] = chipmmGEN
         event_level_var_array['chiC1_deltamN1'][0] = deltamGEN
@@ -3231,7 +3239,7 @@ for ifile, f in enumerate(options.inputFiles):
         crossSection = 1.
         numSimEvents = 1.
 
-        if 'signal' in options.tag and 'SignalStop' not in options.tag:
+        if 'signal' in options.tag and 'SignalStop' not in options.tag and 'SignalCtau' not in options.tag:
 
             # from https://twiki.cern.ch/twiki/bin/view/LHCPhysics/SUSYCrossSections13TeVhino
             higgsinoxsecfile = ROOT.TFile(localpath + 'CN_hino_13TeV.root')
@@ -3287,6 +3295,25 @@ for ifile, f in enumerate(options.inputFiles):
 
                 binx = hSimEventNumbers_Signal.GetXaxis().FindBin(chipmmFILE)
                 biny = hSimEventNumbers_Signal.GetYaxis().FindBin(deltamFILE)
+                binglob = hSimEventNumbers_Signal.GetBin(binx, biny)
+                numSimEvents = hSimEventNumbers_Signal.GetBinContent(binglob)
+
+                fSimEventNumbers_Signal.Close()
+
+        elif 'SignalCtau' in options.tag:
+
+            # TODO: implement x-secs for handset ctau files?
+
+            fSimEventNumbers_Signal = None
+            hSimEventNumbers_Signal = None
+            if 'era16_UL' in options.tag:
+                fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_SignalCtau_v4_era16_UL.root')
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_SignalCtau_v4_era16_UL')
+
+            if fSimEventNumbers_Signal is not None and hSimEventNumbers_Signal is not None:
+
+                binx = hSimEventNumbers_Signal.GetXaxis().FindBin(deltamFILE)
+                biny = hSimEventNumbers_Signal.GetYaxis().FindBin(ctauFILE)
                 binglob = hSimEventNumbers_Signal.GetBin(binx, biny)
                 numSimEvents = hSimEventNumbers_Signal.GetBinContent(binglob)
 
