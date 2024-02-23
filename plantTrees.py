@@ -91,7 +91,8 @@ from DataFormats.Candidate import *
 
 from commons import *
 
-def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, secondaries, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet):
+
+def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, photons, jets, met, secondaries, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrPhoton, hZllDrJet):
     """DY cleaning: replace leptons with "neutrinos" and update collections: clean jets, tracks, pfcands and adapt MET.
     """
 
@@ -99,6 +100,7 @@ def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, second
 
     badtracks = []
     badpfcands = []
+    badphotons = []
     badjets = []
     badsvs = []
     for l in leptonscleaning:
@@ -124,11 +126,20 @@ def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, second
             badpfcands.append(idx)
 
 
+        idx, drmin = findMatch_jet_old(l, photons)
+
+        hZllDrPhoton.Fill(drmin)
+
+        if idx != -1 and drmin < 0.05:
+
+            badphotons.append(idx)
+
+
         idx, drmin = findMatch_jet_old(l, jets)
 
         hZllDrJet.Fill(drmin)
 
-        if idx != -1 and drmin < 0.2:
+        if idx != -1 and drmin < 0.4:
 
             badjets.append(idx)
 
@@ -143,17 +154,18 @@ def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, jets, met, second
 
         met.setP4(met.p4() + ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(l.px(), l.py(), 0, l.energy()))
 
-    jets = [j for (ij, j) in enumerate(jets) if ij not in badjets]
     tracks = [t for (it, t) in enumerate(tracks) if it not in badtracks]
     pfcands = [p for (ip, p) in enumerate(pfcands) if ip not in badpfcands]
+    photons = [p for (ip, p) in enumerate(photons) if ip not in badphotons]
+    jets = [j for (ij, j) in enumerate(jets) if ij not in badjets]
     if secondaries is not None:
         secondaries = [sv for (isv, sv) in enumerate(secondaries) if isv not in badsvs]
 
     collection = [c for (ic, c) in enumerate(collection) if ic not in [zl1Idx, zl2Idx]]
 
-    if not len(badtracks) == 2: tracks = None
+    # if not len(badtracks) == 2: tracks = None
 
-    return collection, tracks, pfcands, jets, met, secondaries
+    return collection, tracks, pfcands, photons, jets, met, secondaries, len(badtracks), len(badpfcands), len(badphotons), len(badjets), len(badsvs)
 
 
 '''
@@ -332,7 +344,7 @@ if True:
     event_level_var_names += var_names_gen_background
 
     var_names_cleaning = [
-        ('cleaning_electronsCleaned', 'I'), ('cleaning_muonsCleaned', 'I')
+        ('cleaning_leptonsCleaned', 'I'), ('cleaning_electronsCleaned', 'I'), ('cleaning_muonsCleaned', 'I')
         , ('cleaning_invm', 'F'), ('cleaning_zPt', 'F')
         , ('cleaning_l1Pt', 'F'), ('cleaning_l2Pt', 'F')
         , ('cleaning_l1Eta', 'F'), ('cleaning_l2Eta', 'F')
@@ -340,6 +352,7 @@ if True:
         , ('cleaning_l1dBetaAbsIso', 'F'), ('cleaning_l2dBetaAbsIso', 'F')
         , ('cleaning_l1dBetaRelIso', 'F'), ('cleaning_l2dBetaRelIso', 'F')
         , ('cleaning_metPtBeforeCleaning', 'F'), ('cleaning_metPhiBeforeCleaning', 'F')
+        , ('cleaning_tracksRemoved', 'F'), ('cleaning_pfcandsRemoved', 'F'), ('cleaning_photonsRemoved', 'F'), ('cleaning_jetsRemoved', 'F'), ('cleaning_svsRemoved', 'F')
         ]
     event_level_var_names += var_names_cleaning
 
@@ -1088,8 +1101,9 @@ if True:
 
     hZllLeptonPt = ROOT.TH1F('hZllLeptonPt', 'hZllLeptonPt', 1000, 0., 1000.)
 
-    hZllDrTrack = ROOT.TH1F('hZllDrTrack', 'hZllDrTrack', 100, 0., 1.)
-    hZllDrPfc = ROOT.TH1F('hZllDrPfc', 'hZllDrPfc', 100, 0., 1.)
+    hZllDrTrack = ROOT.TH1F('hZllDrTrack', 'hZllDrTrack', 100, 0., 0.1)
+    hZllDrPfc = ROOT.TH1F('hZllDrPfc', 'hZllDrPfc', 100, 0., 0.1)
+    hZllDrPhoton = ROOT.TH1F('hZllDrPhoton', 'hZllDrPhoton', 100, 0., 0.1)
     hZllDrJet = ROOT.TH1F('hZllDrJet', 'hZllDrJet', 100, 0., 1.)
 
 
@@ -2097,6 +2111,7 @@ for ifile, f in enumerate(options.inputFiles):
         l2phi = -1
         l1absisodbeta, l1relisodbeta = -1, -1
         l2absisodbeta, l2relisodbeta = -1, -1
+        nbadtracks, nbadpfcands, nbadphotons, nbadjets, nbadsvs = -1, -1, -1, -1, -1
 
         if 'cleanleptons' in options.tag:
 
@@ -2107,6 +2122,9 @@ for ifile, f in enumerate(options.inputFiles):
 
                 for ie1, e1 in enumerate(electrons):
 
+                    if not e1.pt() > 30: continue
+                    if not calcIso_dBeta(e1.pfIsolationVariables()) / e1.pt() < 0.2: continue
+
                     e1Tlv = ROOT.TLorentzVector()
                     e1Tlv.SetPxPyPzE(e1.px(), e1.py(), e1.pz(), e1.energy())
 
@@ -2115,6 +2133,9 @@ for ifile, f in enumerate(options.inputFiles):
                         if ie2 == ie1: continue
 
                         if e1.charge() * e2.charge() > 0: continue
+
+                        if not e2.pt() > 30: continue
+                        if not calcIso_dBeta(e2.pfIsolationVariables()) / e2.pt() < 0.2: continue
 
                         e2Tlv = ROOT.TLorentzVector()
                         e2Tlv.SetPxPyPzE(e2.px(), e2.py(), e2.pz(), e2.energy())
@@ -2138,6 +2159,9 @@ for ifile, f in enumerate(options.inputFiles):
 
                 for im1, m1 in enumerate(muons):
 
+                    if not m1.pt() > 30: continue
+                    if not calcIso_dBeta(m1.pfIsolationR03()) / m1.pt() < 0.2: continue
+
                     m1Tlv = ROOT.TLorentzVector()
                     m1Tlv.SetPxPyPzE(m1.px(), m1.py(), m1.pz(), m1.energy())
 
@@ -2147,14 +2171,23 @@ for ifile, f in enumerate(options.inputFiles):
 
                         if m1.charge() * m2.charge() > 0: continue
 
+                        if not m2.pt() > 30: continue
+                        if not calcIso_dBeta(m2.pfIsolationR03()) / m2.pt() < 0.2: continue
+
                         m2Tlv = ROOT.TLorentzVector()
                         m2Tlv.SetPxPyPzE(m2.px(), m2.py(), m2.pz(), m2.energy())
 
-                        invm = (m1Tlv + m2Tlv).M()
-                        zpt = (m1Tlv + m2Tlv).Pt()
+                        invm_mu = (m1Tlv + m2Tlv).M()
+                        zpt_mu = (m1Tlv + m2Tlv).Pt()
 
-                        if not invm > 75: continue
-                        if not invm < 105: continue
+                        if not invm_mu > 75: continue
+                        if not invm_mu < 105: continue
+
+                        if electronsCleaned:
+                            if (91 - invm) < (91 - invm_mu): continue
+
+                        invm = invm_mu
+                        zpt = zpt_mu
 
                         l1Idx = im1
                         l2Idx = im2
@@ -2196,14 +2229,16 @@ for ifile, f in enumerate(options.inputFiles):
 
             if 'skipSVs' not in options.tag:
                 if 'crab' in options.tag:
-                    collection, tracks, pfcands, jets, met, filesWithSV[0][event_id] = cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, jets, met, filesWithSV[0][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet)
+                    collection, tracks, pfcands, photons, jets, met, filesWithSV[0][event_id], nbadtracks, nbadpfcands, nbadphotons, nbadjets, nbadsvs = \
+                        cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, photons, jets, met, filesWithSV[0][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrPhoton, hZllDrJet)
                 else:
-                    collection, tracks, pfcands, jets, met, filesWithSV[ifile][event_id] = cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, jets, met, filesWithSV[ifile][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet)
+                    collection, tracks, pfcands, photons, jets, met, filesWithSV[ifile][event_id], nbadtracks, nbadpfcands, nbadphotons, nbadjets, nbadsvs = \
+                        cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, photons, jets, met, filesWithSV[ifile][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrPhoton, hZllDrJet)
             else:
-                collection, tracks, pfcands, jets, met, _ = cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, jets, met, None, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrJet)
+                collection, tracks, pfcands, photons, jets, met, _, nbadtracks, nbadpfcands, nbadphotons, nbadjets, _ = \
+                    cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, photons, jets, met, None, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrPhoton, hZllDrJet)
 
-
-            if tracks is None: continue
+            # if tracks is None: continue
 
             if electronsCleaned: electrons = collection
             else: muons = collection
@@ -2215,6 +2250,7 @@ for ifile, f in enumerate(options.inputFiles):
         cutflow = 5
         hCutflow.Fill(cutflow)
 
+        event_level_var_array['cleaning_leptonsCleaned'][0] = electronsCleaned + muonsCleaned
         event_level_var_array['cleaning_electronsCleaned'][0] = electronsCleaned
         event_level_var_array['cleaning_muonsCleaned'][0] = muonsCleaned
         event_level_var_array['cleaning_invm'][0] = invm
@@ -2231,6 +2267,11 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['cleaning_l2dBetaRelIso'][0] = l2relisodbeta
         event_level_var_array['cleaning_metPtBeforeCleaning'][0] = metptBeforeCleaning
         event_level_var_array['cleaning_metPhiBeforeCleaning'][0] = metphiBeforeCleaning
+        event_level_var_array['cleaning_tracksRemoved'][0] = nbadtracks
+        event_level_var_array['cleaning_pfcandsRemoved'][0] = nbadpfcands
+        event_level_var_array['cleaning_photonsRemoved'][0] = nbadphotons
+        event_level_var_array['cleaning_jetsRemoved'][0] = nbadjets
+        event_level_var_array['cleaning_svsRemoved'][0] = nbadsvs
 
         '''
         ###############################################################################################
@@ -5353,6 +5394,7 @@ if saveOutputFile:
     hZllLeptonPt.Write()
     hZllDrTrack.Write()
     hZllDrPfc.Write()
+    hZllDrPhoton.Write()
     hZllDrJet.Write()
 
     hNPVsPerEvent.Write()
