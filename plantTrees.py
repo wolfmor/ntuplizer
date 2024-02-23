@@ -411,7 +411,7 @@ if True:
         , ('n_lepton', 'I'), ('n_lepton_iso', 'I')
         , ('n_tau', 'I'), ('n_tau_vloose', 'I'), ('n_tau_loose', 'I'), ('n_tau_medium', 'I'), ('n_tau_tight', 'I'), ('n_tau_vtight', 'I'), ('n_tau_vvtight', 'I')
         , ('n_tau_20', 'I'), ('n_tau_20_vloose', 'I'), ('n_tau_20_loose', 'I'), ('n_tau_20_medium', 'I'), ('n_tau_20_tight', 'I'), ('n_tau_20_vtight', 'I'), ('n_tau_20_vvtight', 'I')
-        , ('n_track_total', 'I'), ('n_track_basic', 'I'), ('n_track', 'I')
+        , ('n_track_total', 'I'), ('n_track_basic', 'I'), ('n_track_disaptrackcandidate', 'I'), ('n_track', 'I')
         
         , ('numSVs', 'I'), ('n_sv_total', 'I'), ('n_sv', 'I')
         , ('n_sv_daughter', 'I')
@@ -455,9 +455,9 @@ if True:
             , 'BadPFMuonFilter'
             # , 'BadChargedCandidateFilter'
             , 'eeBadScFilter'
-            #, 'hfNoisyHitsFilter'
+            # , 'hfNoisyHitsFilter'
         ]
-    elif 'era17_UL' in options.tag or 'era18_UL' in options.tag:  # TODO: other flags for 17/18?
+    elif 'era17_UL' in options.tag or 'era18_UL' in options.tag:
         trigger_flags = [
             'goodVertices'
             , 'globalSuperTightHalo2016Filter'
@@ -466,9 +466,10 @@ if True:
             , 'EcalDeadCellTriggerPrimitiveFilter'
             , 'BadPFMuonFilter'
             , 'BadPFMuonDzFilter'
+            # , 'hfNoisyHitsFilter'
             # , 'BadChargedCandidateFilter'
             , 'eeBadScFilter'
-            #, 'hfNoisyHitsFilter'
+            , 'ecalBadCalibFilter'
         ]
     elif 'era17_17Nov2017' in options.tag:
         raise NotImplementedError('MET filters: not implemented for', 'era17_17Nov2017')
@@ -1218,7 +1219,6 @@ if True:
         else:
             raise NotImplementedError('tauIDalgo unknown or not specified')
 
-    ### ToDo: not updated to 17UL
     elif 'era17_17Nov2017' in options.tag:
 
         # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
@@ -1233,7 +1233,7 @@ if True:
             # jet_energy_corrections = []
             # DataJECs = DataJEC(jet_energy_corrections, jettype)
         elif 'fastsim' in options.tag:
-            jecAK4 = createJEC(localpath + 'Fall17_FastSimV1_MC/Fall17_FastSimV1_MC',
+            jecAK4 = createJEC(localpath + 'JECs/Fall17_FastSimV1_MC/Fall17_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
         else:  # FullSim
             jecAK4 = createJEC(localpath + 'JECs/Fall17_17Nov2017_V32_MC/Fall17_17Nov2017_V32_MC',
@@ -1242,6 +1242,38 @@ if True:
         # tau energy scale (TES)
         # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
         if tauIDalgo == 'MVArun2v1DBoldDMwLT':
+            tesfile = ROOT.TFile(localpath + 'TES/TauES_dm_MVAoldDM2017v2_2017ReReco.root')
+            teshist = tesfile.Get('tes')
+        else:
+            raise NotImplementedError('tauIDalgo unknown or not specified')
+
+    elif 'era17_UL' in options.tag:
+
+        # TODO: implement goldenjson for 2017 UL
+        # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
+        # from https://twiki.cern.ch/twiki/bin/viewauth/CMS/DCUserPage
+        # with open(localpath + 'goldenjson_era17_17Nov2017.json') as goldenjsonfile:
+        #     goldenjson = json.load(goldenjsonfile)
+        goldenjson = None
+
+        # from https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
+        if 'data' in options.tag:  # data
+            raise NotImplementedError('no JECs yet for 2017 data')
+            # TODO: implement JECs for 2017 data
+            # jet_energy_corrections = []
+            # DataJECs = DataJEC(jet_energy_corrections, jettype)
+        elif 'fastsim' in options.tag:
+            # TODO: same as for 'era17_17Nov2017'; not available so far
+            jecAK4 = createJEC(localpath + 'JECs/Fall17_FastSimV1_MC/Fall17_FastSimV1_MC',
+                               ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+        else:  # FullSim
+            jecAK4 = createJEC(localpath + 'JECs/Summer19UL17_V5_MC/Summer19UL17_V5_MC',
+                               ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+
+        # tau energy scale (TES)
+        # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
+        if tauIDalgo == 'MVArun2v1DBoldDMwLT':
+            # TODO: same as for 'era17_17Nov2017'; not available so far
             tesfile = ROOT.TFile(localpath + 'TES/TauES_dm_MVAoldDM2017v2_2017ReReco.root')
             teshist = tesfile.Get('tes')
         else:
@@ -1293,19 +1325,19 @@ if True:
             # DataJECs = DataJEC(jet_energy_corrections, jettype)
 
         elif 'fastsim' in options.tag:
-            ## toDo: same as for 'era18_17Sep2018'; not available so far
+            # TODO: same as for 'era18_17Sep2018'; not available so far
             jecAK4 = createJEC(localpath + 'JECs/Autumn18_FastSimV1_MC/Autumn18_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 
         else:  # FullSim
-            raise NotImplementedError('no JECs yet for 2018 data')
-            # TODO: implement JECs for 2018 UL FullSim
+            jecAK4 = createJEC(localpath + 'JECs/Summer19UL18_V5_MC/Summer19UL18_V5_MC',
+                               ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
 
 
         # tau energy scale (TES)
         # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
         if tauIDalgo == 'MVArun2v1DBoldDMwLT':
-            #TODO: same as for 'era18_17Sep2018'; not available so far
+            # TODO: same as for 'era18_17Sep2018'; not available so far
             tesfile = ROOT.TFile(localpath + 'TES/TauES_dm_MVAoldDM2017v2_2018ReReco.root')
             teshist = tesfile.Get('tes')
         else:
@@ -4802,6 +4834,7 @@ for ifile, f in enumerate(options.inputFiles):
 
         numtracksbasicpreselection = 0
         numtracksfinalpreselection = 0
+        numtracksdisaptrackpreselection = 0
 
         i = 0
         ### this maps the track idx to the idx after the track preselection; key: itrack (index in the whole track collection), value: i (index in the cleaned collection of isolated tracks)
@@ -5190,6 +5223,9 @@ for ifile, f in enumerate(options.inputFiles):
             track_level_var_array['track_numLostHits'][i] = track.numberOfLostHits()
 
 
+            if track.pt() > 25 and abs(track.eta()) < 2 and abs(track.dxy(pv_pos)) < 0.1 and abs(track.dz(pv_pos)) < 0.1 and not ispfcand and quality > 2:
+                numtracksdisaptrackpreselection += 1
+
             hasGenMatch = -1
             tmingen = -1
             genmatchpdgid = -1
@@ -5331,6 +5367,7 @@ for ifile, f in enumerate(options.inputFiles):
 
         event_level_var_array['n_track_total'][0] = len(tracks)
         event_level_var_array['n_track_basic'][0] = numtracksbasicpreselection
+        event_level_var_array['n_track_disaptrackcandidate'][0] = numtracksdisaptrackpreselection
         event_level_var_array['n_track'][0] = numtracksfinalpreselection
 
         ### need to adjust the index of the matched SV tracks (~itrack) to the cleaned index (i)
