@@ -257,7 +257,7 @@ else: isTest = False
 if 'crab' in options.tag: localpath = ''
 else: localpath = '/nfs/dust/cms/user/wolfmor/NTupleStuff/'
 
-nEventsTest = 100  # number of events that are analyzed in case of test
+nEventsTest = 10  # number of events that are analyzed in case of test
 printevery = 10
 
 # TODO: check thresholds for "new" matching
@@ -370,7 +370,7 @@ if True:
         , ('weight_PU_SignalMC', 'F')
         , ('weight_PU_SignalData', 'F')
 
-        , ('n_pv', 'I'), ('n_trueInteractions', 'F'), ('rho', 'F')
+        , ('n_trueInteractions', 'F'), ('n_pv', 'I'), ('n_inclusivesv', 'I'), ('rho', 'F')
 
         , ('met_pt', 'F'), ('met_phi', 'F')
         , ('met_ptNoFastSimCorr', 'F'), ('met_phiNoFastSimCorr', 'F')
@@ -690,7 +690,7 @@ if True:
         
 
     var_names_pv = [
-        ('pv_idx', 'I'), ('pv_numTracks', 'F')
+        ('pv_idx', 'I'), ('pv_numTracks', 'F'), ('pv_normalizedChi2', 'F')
         , ('pv_x', 'F'), ('pv_y', 'F'), ('pv_z', 'F')
         ]
 
@@ -698,6 +698,17 @@ if True:
     for n in var_names_pv:
         pv_var_array[n[0]] = array('f', 500*[0.])
         tEvent.Branch(nice_string(n[0]), pv_var_array[n[0]], nice_string(n[0]) + '[n_pv]/F')
+
+
+    var_names_inclusivesv = [
+        ('inclusivesv_idx', 'I'), ('inclusivesv_numTracks', 'F'), ('inclusivesv_normalizedChi2', 'F')
+        , ('inclusivesv_x', 'F'), ('inclusivesv_y', 'F'), ('inclusivesv_z', 'F')
+        ]
+
+    inclusivesv_var_array = {}
+    for n in var_names_inclusivesv:
+        inclusivesv_var_array[n[0]] = array('f', 500*[0.])
+        tEvent.Branch(nice_string(n[0]), inclusivesv_var_array[n[0]], nice_string(n[0]) + '[n_inclusivesv]/F')
 
 
     var_names_genjet = [
@@ -841,17 +852,23 @@ if True:
         , ('track_pfCandPt', 'F'), ('track_pfCandEta', 'F'), ('track_pfCandPhi', 'F'), ('track_pfCandPdgId', 'F'), ('track_pfCandParticleId', 'F')
         , ('track_pfCandEnergy', 'F'), ('track_pfCandEcalEnergy', 'F'), ('track_pfCandHcalEnergy', 'F')
 
-        , ('track_associatedPV', 'I')
+        , ('track_associatedPV', 'I'), ('track_hasAssociatedPV', 'I')
         , ('track_associatedPU', 'I')
         , ('track_associatedPUAssPV', 'I')
 
         , ('track_distPVAssPVxy', 'F'), ('track_distPVAssPVz', 'F')
 
-        , ('track_IPsig', 'F'), ('track_IPxyz', 'F'), ('track_IPxy', 'F'), ('track_IPz', 'F')
-        , ('track_log10(IPsig)', 'F'), ('track_log10(IPxyz)', 'F'), ('track_log10(IPxy)', 'F'), ('track_log10(IPz)', 'F')
+        , ('track_associatedSV', 'I'), ('track_hasAssociatedSV', 'I')
+        , ('track_distPVAssSVxy', 'F'), ('track_distPVAssSVz', 'F')
+        
+        , ('track_IPsigSV', 'F'), ('track_IPxyzSV', 'F'), ('track_IPxySV', 'F'), ('track_IPzSV', 'F')
+        , ('track_log10(IPsigSV)', 'F'), ('track_log10(IPxyzSV)', 'F'), ('track_log10(IPxySV)', 'F'), ('track_log10(IPzSV)', 'F')
 
-        , ('track_IPsigPU', 'F'), ('track_IPxyzPU', 'F'), ('track_IPxyPU', 'F'), ('track_IPzPU', 'F')
-        , ('track_log10(IPsigPU)', 'F'), ('track_log10(IPxyzPU)', 'F'), ('track_log10(IPxyPU)', 'F'), ('track_log10(IPzPU)', 'F')
+        , ('track_IPsig', 'F'), ('track_IPsigXY', 'F'), ('track_IPsigZ', 'F'), ('track_IPxyz', 'F'), ('track_IPxy', 'F'), ('track_IPz', 'F')
+        , ('track_log10(IPsig)', 'F'), ('track_log10(IPsigXY)', 'F'), ('track_log10(IPsigZ)', 'F'), ('track_log10(IPxyz)', 'F'), ('track_log10(IPxy)', 'F'), ('track_log10(IPz)', 'F')
+
+        , ('track_IPsigPU', 'F'), ('track_IPsigXYPU', 'F'), ('track_IPsigZPU', 'F'), ('track_IPxyzPU', 'F'), ('track_IPxyPU', 'F'), ('track_IPzPU', 'F')
+        , ('track_log10(IPsigPU)', 'F'), ('track_log10(IPsigXYPU)', 'F'), ('track_log10(IPsigZPU)', 'F'), ('track_log10(IPxyzPU)', 'F'), ('track_log10(IPxyPU)', 'F'), ('track_log10(IPzPU)', 'F')
 
         , ('track_dxy0', 'F'), ('track_dz0', 'F')
         , ('track_log10(dxy0)', 'F'), ('track_log10(dz0)', 'F')
@@ -864,11 +881,11 @@ if True:
         , ('track_log10(dxy)', 'F'), ('track_log10(dxyHandmade)', 'F'), ('track_log10(dxyPU)', 'F')
         , ('track_log10(dz)', 'F'), ('track_log10(dzHandmade)', 'F'), ('track_log10(dzPU)', 'F')
 
-        , ('track_IPsigAssPV', 'F'), ('track_IPxyzAssPV', 'F'), ('track_IPxyAssPV', 'F'), ('track_IPzAssPV', 'F')
-        , ('track_log10(IPsigAssPV)', 'F'), ('track_log10(IPxyzAssPV)', 'F'), ('track_log10(IPxyAssPV)', 'F'), ('track_log10(IPzAssPV)', 'F')
+        , ('track_IPsigAssPV', 'F'), ('track_IPsigXYAssPV', 'F'), ('track_IPsigZAssPV', 'F'), ('track_IPxyzAssPV', 'F'), ('track_IPxyAssPV', 'F'), ('track_IPzAssPV', 'F')
+        , ('track_log10(IPsigAssPV)', 'F'), ('track_log10(IPsigXYAssPV)', 'F'), ('track_log10(IPsigZAssPV)', 'F'), ('track_log10(IPxyzAssPV)', 'F'), ('track_log10(IPxyAssPV)', 'F'), ('track_log10(IPzAssPV)', 'F')
 
-        , ('track_IPsigPUAssPV', 'F'), ('track_IPxyzPUAssPV', 'F'), ('track_IPxyPUAssPV', 'F'), ('track_IPzPUAssPV', 'F')
-        , ('track_log10(IPsigPUAssPV)', 'F'), ('track_log10(IPxyzPUAssPV)', 'F'), ('track_log10(IPxyPUAssPV)', 'F'), ('track_log10(IPzPUAssPV)', 'F')
+        , ('track_IPsigPUAssPV', 'F'), ('track_IPsigXYPUAssPV', 'F'), ('track_IPsigZPUAssPV', 'F'), ('track_IPxyzPUAssPV', 'F'), ('track_IPxyPUAssPV', 'F'), ('track_IPzPUAssPV', 'F')
+        , ('track_log10(IPsigPUAssPV)', 'F'), ('track_log10(IPsigXYPUAssPV)', 'F'), ('track_log10(IPsigZPUAssPV)', 'F'), ('track_log10(IPxyzPUAssPV)', 'F'), ('track_log10(IPxyPUAssPV)', 'F'), ('track_log10(IPzPUAssPV)', 'F')
 
         , ('track_dxyNoAbsAssPV', 'F'), ('track_dzNoAbsAssPV', 'F')
         , ('track_dxySignAssPV', 'F'), ('track_dzSignAssPV', 'F')
@@ -889,8 +906,8 @@ if True:
         , ('track_tkAbsIso5', 'F'), ('track_tkRelIso5', 'F'), ('track_drminTrack5', 'F'), ('track_drmin2ndTrack5', 'F'), ('track_numneighboursTrack5', 'I')
         , ('track_tkAbsIso10', 'F'), ('track_tkRelIso10', 'F'), ('track_drminTrack10', 'F'), ('track_drmin2ndTrack10', 'F'), ('track_numneighboursTrack10', 'I')
         
-        , ('track_jetIso0', 'F'), ('track_jetIsoMulti0', 'F'), ('track_drminJet0', 'F'), ('track_btagJet0', 'F'), ('track_minvJet0', 'F')
-        , ('track_jetIso10', 'F'), ('track_jetIsoMulti10', 'F'), ('track_drminJet10', 'F'), ('track_btagJet10', 'F'), ('track_minvJet10', 'F')
+        # , ('track_jetIso0', 'F'), ('track_jetIsoMulti0', 'F'), ('track_drminJet0', 'F'), ('track_btagJet0', 'F'), ('track_minvJet0', 'F')
+        # , ('track_jetIso10', 'F'), ('track_jetIsoMulti10', 'F'), ('track_drminJet10', 'F'), ('track_btagJet10', 'F'), ('track_minvJet10', 'F')
         , ('track_jetIso15', 'F'), ('track_jetIsoMulti15', 'F'), ('track_drminJet15', 'F'), ('track_btagJet15', 'F'), ('track_minvJet15', 'F')
         , ('track_jetIso20', 'F'), ('track_jetIsoMulti20', 'F'), ('track_drminJet20', 'F'), ('track_btagJet20', 'F'), ('track_minvJet20', 'F')
         , ('track_jetIso30', 'F'), ('track_jetIsoMulti30', 'F'), ('track_drminJet30', 'F'), ('track_btagJet30', 'F'), ('track_minvJet30', 'F')
@@ -928,9 +945,9 @@ if True:
 
         , ('track_isSignalTrack', 'I'), ('track_isSusyTrack', 'I'), ('track_susyTrackPdgIdMother', 'I'), ('track_susyTrackPdgId', 'I')
         , ('track_isSVdaughter', 'I')
-        
 
         , ('track_hasGenMatch', 'I'), ('track_genMatchTmin', 'F')
+        , ('track_genMatchDrmin', 'F'), ('track_genMatchDxyzmin', 'F'), ('track_genMatchDrminold', 'F')
         , ('track_genMatchPdgId', 'F'), ('track_genMatchPt', 'F'), ('track_genMatchStatus', 'F')
         , ('track_genMatchIsHardProcess', 'F'), ('track_genMatchIsFromHardProcess', 'F')
         , ('track_genMatchIsPrompt', 'F'), ('track_genMatchIsDirectHadronDecayProduct', 'F'), ('track_genMatchIsDirectTauDecayProduct', 'F')
@@ -1259,7 +1276,7 @@ if True:
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
         if 'data' in options.tag:  # data
             raise NotImplementedError('no JECs yet for 2017 data')
-            # TODO: implement JECs for 2017 data
+            # TODO: implement JECs for 2017 UL data
             # jet_energy_corrections = []
             # DataJECs = DataJEC(jet_energy_corrections, jettype)
         elif 'fastsim' in options.tag:
@@ -1434,6 +1451,9 @@ label_rhos = ('fixedGridRhoFastjetAll')
 
 handle_pv = Handle('std::vector<reco::Vertex>')
 label_pv = ('offlinePrimaryVertices')
+
+handle_inclusivesv = Handle('std::vector<reco::Vertex>')
+label_inclusivesv = ('inclusiveSecondaryVertices')
 
 handle_met = Handle('std::vector<reco::PFMET>')
 label_met = ('pfMet')
@@ -1898,6 +1918,11 @@ for ifile, f in enumerate(options.inputFiles):
             event.getByLabel(label_genmet, handle_genmet)
             event.getByLabel(label_genjets, handle_genjets)
             event.getByLabel(label_pileupInfo, handle_pileupInfo)
+
+        event.getByLabel(label_inclusivesv, handle_inclusivesv)
+        inclusivesecondaryvertices = handle_inclusivesv.product()
+        inclusivesecondaryvertices = [sv for sv in inclusivesecondaryvertices if sv.isValid()]
+        n_inclusivesv = len(inclusivesecondaryvertices)
         
         event.getByLabel(label_pfcands, handle_pfcands)
         event.getByLabel(label_jets, handle_jets)
@@ -2376,6 +2401,7 @@ for ifile, f in enumerate(options.inputFiles):
 
         event_level_var_array['n_trueInteractions'][0] = n_trueInteractions
         event_level_var_array['n_pv'][0] = n_pv
+        event_level_var_array['n_inclusivesv'][0] = n_inclusivesv
         event_level_var_array['rho'][0] = rho
 
         hasISRJet = False
@@ -3462,16 +3488,16 @@ for ifile, f in enumerate(options.inputFiles):
                         numSimEvents = bkgnsim[processid]
 
                 elif 'era16_UL_APV' in options.tag:
-                    with open(localpath + 'crossSections_Bkg_era16_UL_APV.json') as bkgxsecfile:
+                    with open(localpath + 'crossSections_Bkg_computedFrom_era16_UL.json') as bkgxsecfile:  # use the same values as for era16_UL
                         bkgxsec = json.load(bkgxsecfile)
-                        crossSection = bkgxsec[processid]
+                        crossSection = bkgxsec['/' + processid.split('/')[1]]
 
                     with open(localpath + 'simEventNumbers_Bkg_era16_UL_APV.json') as bkgnsimfile:
                         bkgnsim = json.load(bkgnsimfile)
                         numSimEvents = bkgnsim[processid]
                         
                 elif 'era16_UL' in options.tag:
-                    with open(localpath + 'crossSections_Bkg_era16_UL.json') as bkgxsecfile:  # these are just the same values as for era16_UL_APV
+                    with open(localpath + 'crossSections_Bkg_era16_UL.json') as bkgxsecfile:
                         bkgxsec = json.load(bkgxsecfile)
                         crossSection = bkgxsec[processid]
 
@@ -3480,22 +3506,20 @@ for ifile, f in enumerate(options.inputFiles):
                         numSimEvents = bkgnsim[processid]
 
                 elif 'era17_UL' in options.tag:
-                    ### ToDo: update json files here for 17UL
-                    with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
+                    with open(localpath + 'crossSections_Bkg_computedFrom_era16_UL.json') as bkgxsecfile:  # use the same values as for era16_UL
                         bkgxsec = json.load(bkgxsecfile)
-                        crossSection = bkgxsec[processid]
+                        crossSection = bkgxsec['/' + processid.split('/')[1]]
 
-                    with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
+                    with open(localpath + 'simEventNumbers_Bkg_era17_UL.json') as bkgnsimfile:
                         bkgnsim = json.load(bkgnsimfile)
                         numSimEvents = bkgnsim[processid]
 
                 elif 'era18_UL' in options.tag:
-                    ### ToDo: update json files here for 18UL
-                    with open(localpath + 'BkgCrossSections.json') as bkgxsecfile:
+                    with open(localpath + 'crossSections_Bkg_computedFrom_era16_UL.json') as bkgxsecfile:  # use the same values as for era16_UL
                         bkgxsec = json.load(bkgxsecfile)
-                        crossSection = bkgxsec[processid]
+                        crossSection = bkgxsec['/' + processid.split('/')[1]]
 
-                    with open(localpath + 'simEventNumbers_Bkg.json') as bkgnsimfile:
+                    with open(localpath + 'simEventNumbers_Bkg_era18_UL.json') as bkgnsimfile:
                         bkgnsim = json.load(bkgnsimfile)
                         numSimEvents = bkgnsim[processid]
                         
@@ -3892,10 +3916,22 @@ for ifile, f in enumerate(options.inputFiles):
 
             pv_var_array['pv_idx'][ipv] = ipv
             pv_var_array['pv_numTracks'][ipv] = pv.tracksSize()
+            pv_var_array['pv_normalizedChi2'][ipv] = pv.normalizedChi2()
             pv_var_array['pv_x'][ipv] = pv.position().x()
             pv_var_array['pv_y'][ipv] = pv.position().y()
             pv_var_array['pv_z'][ipv] = pv.position().z()
             tracksByPV[ipv] = [pv.trackRefAt(i).get() for i in range(pv.tracksSize())]
+            
+        tracksBySV = {}
+        for isv, sv in enumerate(inclusivesecondaryvertices):
+
+            inclusivesv_var_array['inclusivesv_idx'][isv] = isv
+            inclusivesv_var_array['inclusivesv_numTracks'][isv] = sv.tracksSize()
+            inclusivesv_var_array['inclusivesv_normalizedChi2'][isv] = sv.normalizedChi2()
+            inclusivesv_var_array['inclusivesv_x'][isv] = sv.position().x()
+            inclusivesv_var_array['inclusivesv_y'][isv] = sv.position().y()
+            inclusivesv_var_array['inclusivesv_z'][isv] = sv.position().z()
+            tracksBySV[isv] = [sv.trackRefAt(i).get() for i in range(sv.tracksSize())]
 
         if 'era16' in options.tag:
             # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco
@@ -4787,8 +4823,6 @@ for ifile, f in enumerate(options.inputFiles):
         ###############################################################################################
         '''
 
-        # TODO: add (ch)PF iso with pT cut
-
         tracksforiso0 = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
                                   if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=0.)])
         tracksforiso1 = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
@@ -4798,10 +4832,10 @@ for ifile, f in enumerate(options.inputFiles):
         tracksforiso10 = np.array([(t.pt(), t.eta(), t.phi()) for t in tracks
                                    if passesPreselection_iso_track(t, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=10.)])
 
-        jetsforiso0 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
-                                if passesPreselection_iso_jet(j, pt_threshold=0.)])
-        jetsforiso10 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
-                                if passesPreselection_iso_jet(j, pt_threshold=10.)])
+        # jetsforiso0 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
+        #                         if passesPreselection_iso_jet(j, pt_threshold=0.)])
+        # jetsforiso10 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
+        #                         if passesPreselection_iso_jet(j, pt_threshold=10.)])
         jetsforiso20 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
                                 if passesPreselection_iso_jet(j, pt_threshold=20.)])
         jetsforiso30 = np.array([(j.pt(), j.eta(), j.phi(), j.energy(), j.numberOfDaughters()) for j in jets
@@ -4848,7 +4882,7 @@ for ifile, f in enumerate(options.inputFiles):
             numtracksbasicpreselection += 1
 
             # TODO: adapt preselection
-            if not abs(track.dz(pv_pos)) < 10: continue
+            if not abs(track.dz(pv_pos)) < 1: continue
             jetiso30, jetisomulti30, jetdrmin30, jetisobtag30, jetminv30 = calcIso_jet_new(track, jetsforiso30, isTrack=True, btagvalues=btagvaluesDeepCSV)
             if not jetdrmin30 > 0.4: continue
             
@@ -4911,11 +4945,15 @@ for ifile, f in enumerate(options.inputFiles):
 
 
             assPV = -1
+            hasAssPV = 0
             for ipv in range(n_pv):
                 if track in tracksByPV[ipv]:
                     assPV = ipv
+                    hasAssPV = 1
                     break
             track_level_var_array['track_associatedPV'][i] = assPV
+            track_level_var_array['track_hasAssociatedPV'][i] = hasAssPV
+
             if assPV > -1:
                 assPV_pos = primaryvertices[assPV].position()
             else:  # not consistent but ok
@@ -4926,12 +4964,66 @@ for ifile, f in enumerate(options.inputFiles):
                                                                               + pow(assPV_pos.y() - pv_pos.y(), 2))
             track_level_var_array['track_distPVAssPVz'][i] = abs(assPV_pos.z() - pv_pos.z())
 
+
+            assSV = -1
+            hasAssSV = 0
+            for isv in range(n_inclusivesv):
+                if track in tracksBySV[isv]:
+                    assSV = isv
+                    hasAssSV = 1
+                    break
+            track_level_var_array['track_associatedSV'][i] = assSV
+            track_level_var_array['track_hasAssociatedSV'][i] = hasAssSV
+
+            if assSV > -1:
+                assSV_pos = inclusivesecondaryvertices[assSV].position()
+                track_level_var_array['track_distPVAssSVxy'][i] = ROOT.TMath.Sqrt(pow(assSV_pos.x() - pv_pos.x(), 2)
+                                                                                  + pow(assSV_pos.y() - pv_pos.y(), 2))
+                track_level_var_array['track_distPVAssSVz'][i] = abs(assSV_pos.z() - pv_pos.z())
+            else:
+                track_level_var_array['track_distPVAssSVxy'][i] = 0.
+                track_level_var_array['track_distPVAssSVz'][i] = 0.
+                
+            minipSV = None
+            minivSV = -1
+            minIPsignificanceSV = float('inf')
+            for iv, v in enumerate(inclusivesecondaryvertices):
+                thisipSV = IPcalculator(track, v)
+                thisIPsignificanceSV = thisipSV.getIPsignificance()
+                if thisIPsignificanceSV < minIPsignificanceSV:
+                    minipSV = thisipSV
+                    minivSV = iv
+                    minIPsignificanceSV = thisIPsignificanceSV
+
+            if not minivSV == -1:
+                track_level_var_array['track_IPsigSV'][i] = minipSV.getIPsignificance()
+                track_level_var_array['track_IPxyzSV'][i] = minipSV.getIP()
+                track_level_var_array['track_IPxySV'][i] = minipSV.getDxy()
+                track_level_var_array['track_IPzSV'][i] = minipSV.getDz()
+                track_level_var_array['track_log10(IPsigSV)'][i] = ROOT.TMath.Log10(minipSV.getIPsignificance())
+                track_level_var_array['track_log10(IPxyzSV)'][i] = ROOT.TMath.Log10(minipSV.getIP())
+                track_level_var_array['track_log10(IPxySV)'][i] = ROOT.TMath.Log10(minipSV.getDxy())
+                track_level_var_array['track_log10(IPzSV)'][i] = ROOT.TMath.Log10(minipSV.getDz())
+            else:
+                track_level_var_array['track_IPsigSV'][i] = -1
+                track_level_var_array['track_IPxyzSV'][i] = -1
+                track_level_var_array['track_IPxySV'][i] = -1
+                track_level_var_array['track_IPzSV'][i] = -1
+                track_level_var_array['track_log10(IPsigSV)'][i] = -10
+                track_level_var_array['track_log10(IPxyzSV)'][i] = -10
+                track_level_var_array['track_log10(IPxySV)'][i] = -10
+                track_level_var_array['track_log10(IPzSV)'][i] = -10
+
             ip = IPcalculator(track, primaryvertices[0])
             track_level_var_array['track_IPsig'][i] = ip.getIPsignificance()
+            track_level_var_array['track_IPsigXY'][i] = ip.getIPsignificanceXY()
+            track_level_var_array['track_IPsigZ'][i] = ip.getIPsignificanceZ()
             track_level_var_array['track_IPxyz'][i] = ip.getIP()
             track_level_var_array['track_IPxy'][i] = ip.getDxy()
             track_level_var_array['track_IPz'][i] = ip.getDz()
             track_level_var_array['track_log10(IPsig)'][i] = ROOT.TMath.Log10(ip.getIPsignificance())
+            track_level_var_array['track_log10(IPsigXY)'][i] = ROOT.TMath.Log10(ip.getIPsignificanceXY())
+            track_level_var_array['track_log10(IPsigZ)'][i] = ROOT.TMath.Log10(ip.getIPsignificanceZ())
             track_level_var_array['track_log10(IPxyz)'][i] = ROOT.TMath.Log10(ip.getIP())
             track_level_var_array['track_log10(IPxy)'][i] = ROOT.TMath.Log10(ip.getDxy())
             track_level_var_array['track_log10(IPz)'][i] = ROOT.TMath.Log10(ip.getDz())
@@ -4950,20 +5042,28 @@ for ifile, f in enumerate(options.inputFiles):
             if not minivPU == -1:
                 track_level_var_array['track_associatedPU'][i] = minivPU+1
                 track_level_var_array['track_IPsigPU'][i] = minipPU.getIPsignificance()
+                track_level_var_array['track_IPsigXYPU'][i] = minipPU.getIPsignificanceXY()
+                track_level_var_array['track_IPsigZPU'][i] = minipPU.getIPsignificanceZ()
                 track_level_var_array['track_IPxyzPU'][i] = minipPU.getIP()
                 track_level_var_array['track_IPxyPU'][i] = minipPU.getDxy()
                 track_level_var_array['track_IPzPU'][i] = minipPU.getDz()
                 track_level_var_array['track_log10(IPsigPU)'][i] = ROOT.TMath.Log10(minipPU.getIPsignificance())
+                track_level_var_array['track_log10(IPsigXYPU)'][i] = ROOT.TMath.Log10(minipPU.getIPsignificanceXY())
+                track_level_var_array['track_log10(IPsigZPU)'][i] = ROOT.TMath.Log10(minipPU.getIPsignificanceZ())
                 track_level_var_array['track_log10(IPxyzPU)'][i] = ROOT.TMath.Log10(minipPU.getIP())
                 track_level_var_array['track_log10(IPxyPU)'][i] = ROOT.TMath.Log10(minipPU.getDxy())
                 track_level_var_array['track_log10(IPzPU)'][i] = ROOT.TMath.Log10(minipPU.getDz())
             else:
                 track_level_var_array['track_associatedPU'][i] = -1
                 track_level_var_array['track_IPsigPU'][i] = -1
+                track_level_var_array['track_IPsigXYPU'][i] = -1
+                track_level_var_array['track_IPsigZPU'][i] = -1
                 track_level_var_array['track_IPxyzPU'][i] = -1
                 track_level_var_array['track_IPxyPU'][i] = -1
                 track_level_var_array['track_IPzPU'][i] = -1
                 track_level_var_array['track_log10(IPsigPU)'][i] = -10
+                track_level_var_array['track_log10(IPsigXYPU)'][i] = -10
+                track_level_var_array['track_log10(IPsigZPU)'][i] = -10
                 track_level_var_array['track_log10(IPxyzPU)'][i] = -10
                 track_level_var_array['track_log10(IPxyPU)'][i] = -10
                 track_level_var_array['track_log10(IPzPU)'][i] = -10
@@ -4971,10 +5071,14 @@ for ifile, f in enumerate(options.inputFiles):
 
             ipAssPV = IPcalculator(track, primaryvertices[assPV])
             track_level_var_array['track_IPsigAssPV'][i] = ipAssPV.getIPsignificance()
+            track_level_var_array['track_IPsigXYAssPV'][i] = ipAssPV.getIPsignificanceXY()
+            track_level_var_array['track_IPsigZAssPV'][i] = ipAssPV.getIPsignificanceZ()
             track_level_var_array['track_IPxyzAssPV'][i] = ipAssPV.getIP()
             track_level_var_array['track_IPxyAssPV'][i] = ipAssPV.getDxy()
             track_level_var_array['track_IPzAssPV'][i] = ipAssPV.getDz()
             track_level_var_array['track_log10(IPsigAssPV)'][i] = ROOT.TMath.Log10(ipAssPV.getIPsignificance())
+            track_level_var_array['track_log10(IPsigXYAssPV)'][i] = ROOT.TMath.Log10(ipAssPV.getIPsignificanceXY())
+            track_level_var_array['track_log10(IPsigZAssPV)'][i] = ROOT.TMath.Log10(ipAssPV.getIPsignificanceZ())
             track_level_var_array['track_log10(IPxyzAssPV)'][i] = ROOT.TMath.Log10(ipAssPV.getIP())
             track_level_var_array['track_log10(IPxyAssPV)'][i] = ROOT.TMath.Log10(ipAssPV.getDxy())
             track_level_var_array['track_log10(IPzAssPV)'][i] = ROOT.TMath.Log10(ipAssPV.getDz())
@@ -4993,20 +5097,28 @@ for ifile, f in enumerate(options.inputFiles):
             if not minivPUAssPV == -1:
                 track_level_var_array['track_associatedPUAssPV'][i] = minivPUAssPV if minivPUAssPV < assPV else minivPUAssPV+1
                 track_level_var_array['track_IPsigPUAssPV'][i] = minipPUAssPV.getIPsignificance()
+                track_level_var_array['track_IPsigXYPUAssPV'][i] = minipPUAssPV.getIPsignificanceXY()
+                track_level_var_array['track_IPsigZPUAssPV'][i] = minipPUAssPV.getIPsignificanceZ()
                 track_level_var_array['track_IPxyzPUAssPV'][i] = minipPUAssPV.getIP()
                 track_level_var_array['track_IPxyPUAssPV'][i] = minipPUAssPV.getDxy()
                 track_level_var_array['track_IPzPUAssPV'][i] = minipPUAssPV.getDz()
                 track_level_var_array['track_log10(IPsigPUAssPV)'][i] = ROOT.TMath.Log10(minipPUAssPV.getIPsignificance())
+                track_level_var_array['track_log10(IPsigXYPUAssPV)'][i] = ROOT.TMath.Log10(minipPUAssPV.getIPsignificanceXY())
+                track_level_var_array['track_log10(IPsigZPUAssPV)'][i] = ROOT.TMath.Log10(minipPUAssPV.getIPsignificanceZ())
                 track_level_var_array['track_log10(IPxyzPUAssPV)'][i] = ROOT.TMath.Log10(minipPUAssPV.getIP())
                 track_level_var_array['track_log10(IPxyPUAssPV)'][i] = ROOT.TMath.Log10(minipPUAssPV.getDxy())
                 track_level_var_array['track_log10(IPzPUAssPV)'][i] = ROOT.TMath.Log10(minipPUAssPV.getDz())
             else:
                 track_level_var_array['track_associatedPUAssPV'][i] = -1
                 track_level_var_array['track_IPsigPUAssPV'][i] = -1
+                track_level_var_array['track_IPsigXYPUAssPV'][i] = -1
+                track_level_var_array['track_IPsigZPUAssPV'][i] = -1
                 track_level_var_array['track_IPxyzPUAssPV'][i] = -1
                 track_level_var_array['track_IPxyPUAssPV'][i] = -1
                 track_level_var_array['track_IPzPUAssPV'][i] = -1
                 track_level_var_array['track_log10(IPsigPUAssPV)'][i] = -10
+                track_level_var_array['track_log10(IPsigXYPUAssPV)'][i] = -10
+                track_level_var_array['track_log10(IPsigZPUAssPV)'][i] = -10
                 track_level_var_array['track_log10(IPxyzPUAssPV)'][i] = -10
                 track_level_var_array['track_log10(IPxyPUAssPV)'][i] = -10
                 track_level_var_array['track_log10(IPzPUAssPV)'][i] = -10
@@ -5090,8 +5202,8 @@ for ifile, f in enumerate(options.inputFiles):
             track_level_var_array['track_tkAbsIso5'][i], track_level_var_array['track_tkRelIso5'][i], track_level_var_array['track_drminTrack5'][i], track_level_var_array['track_drmin2ndTrack5'][i], track_level_var_array['track_numneighboursTrack5'][i] = calcIso_pf_or_track_new_withDrmin2nd(track, tracksforiso5, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=5.))
             track_level_var_array['track_tkAbsIso10'][i], track_level_var_array['track_tkRelIso10'][i], track_level_var_array['track_drminTrack10'][i], track_level_var_array['track_drmin2ndTrack10'][i], track_level_var_array['track_numneighboursTrack10'][i] = calcIso_pf_or_track_new_withDrmin2nd(track, tracksforiso10, subtractObject=passesPreselection_iso_track(track, pv_pos, dz_threshold=0.1, dxy_threshold=0.1, pt_threshold=10.))
 
-            track_level_var_array['track_jetIso0'][i], track_level_var_array['track_jetIsoMulti0'][i], track_level_var_array['track_drminJet0'][i], track_level_var_array['track_btagJet0'][i], track_level_var_array['track_minvJet0'][i] = calcIso_jet_new(track, jetsforiso0, isTrack=True, btagvalues=btagvaluesDeepCSV)
-            track_level_var_array['track_jetIso10'][i], track_level_var_array['track_jetIsoMulti10'][i], track_level_var_array['track_drminJet10'][i], track_level_var_array['track_btagJet10'][i], track_level_var_array['track_minvJet10'][i] = calcIso_jet_new(track, jetsforiso10, isTrack=True, btagvalues=btagvaluesDeepCSV)
+            # track_level_var_array['track_jetIso0'][i], track_level_var_array['track_jetIsoMulti0'][i], track_level_var_array['track_drminJet0'][i], track_level_var_array['track_btagJet0'][i], track_level_var_array['track_minvJet0'][i] = calcIso_jet_new(track, jetsforiso0, isTrack=True, btagvalues=btagvaluesDeepCSV)
+            # track_level_var_array['track_jetIso10'][i], track_level_var_array['track_jetIsoMulti10'][i], track_level_var_array['track_drminJet10'][i], track_level_var_array['track_btagJet10'][i], track_level_var_array['track_minvJet10'][i] = calcIso_jet_new(track, jetsforiso10, isTrack=True, btagvalues=btagvaluesDeepCSV)
             track_level_var_array['track_jetIso15'][i], track_level_var_array['track_jetIsoMulti15'][i], track_level_var_array['track_drminJet15'][i], track_level_var_array['track_btagJet15'][i], track_level_var_array['track_minvJet15'][i] = calcIso_jet_new(track, jetsforiso15, isTrack=True, btagvalues=btagvaluesDeepCSV)
             track_level_var_array['track_jetIso20'][i], track_level_var_array['track_jetIsoMulti20'][i], track_level_var_array['track_drminJet20'][i], track_level_var_array['track_btagJet20'][i], track_level_var_array['track_minvJet20'][i] = calcIso_jet_new(track, jetsforiso20, isTrack=True, btagvalues=btagvaluesDeepCSV)
 
@@ -5228,6 +5340,9 @@ for ifile, f in enumerate(options.inputFiles):
 
             hasGenMatch = -1
             tmingen = -1
+            drmingen = -1
+            dxyzmingen = -1
+            drmingenold = -1
             genmatchpdgid = -1
             genmatchmotherpdgid = -1
             genmatchpt = -1
@@ -5319,6 +5434,9 @@ for ifile, f in enumerate(options.inputFiles):
 
             track_level_var_array['track_hasGenMatch'][i] = hasGenMatch
             track_level_var_array['track_genMatchTmin'][i] = tmingen
+            track_level_var_array['track_genMatchDrmin'][i] = drmingen
+            track_level_var_array['track_genMatchDxyzmin'][i] = dxyzmingen
+            track_level_var_array['track_genMatchDrminold'][i] = drmingenold
             track_level_var_array['track_genMatchPdgId'][i] = genmatchpdgid
             track_level_var_array['track_genMatchMotherPdgId'][i] = genmatchmotherpdgid
             track_level_var_array['track_genMatchPt'][i] = genmatchpt

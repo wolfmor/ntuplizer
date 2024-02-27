@@ -1956,6 +1956,9 @@ class IPcalculator:
 
         self.IPerror = np.sqrt(np.dot(self.IPvectorNorm, np.dot(self.IPcovariance, self.IPvectorNorm)))
 
+        self.IPerrorXY = np.sqrt(np.dot(self.IPvectorNorm[:2], np.dot(self.IPcovariance[:2, :2], self.IPvectorNorm[:2])))
+        self.IPerrorZ = np.sqrt(np.dot(self.IPvectorNorm[2:], np.dot(self.IPcovariance[2:, 2:], self.IPvectorNorm[2:])))
+
         if self.verbose:
             print 'vertex', (self.vtx_x, self.vtx_y, self.vtx_z)
 
@@ -1969,6 +1972,9 @@ class IPcalculator:
 
             print 'IPcovariance', self.IPcovariance
             print 'IPerror', self.IPerror
+
+            print 'IPerrorXY', np.sqrt(np.dot(self.IPvectorNorm[:2], np.dot(self.IPcovariance[:2, :2], self.IPvectorNorm[:2])))
+            print 'IPerrorZ', np.sqrt(np.dot(self.IPvectorNorm[2:], np.dot(self.IPcovariance[2:, 2:], self.IPvectorNorm[2:])))
 
     def calculateIPvector(self):
 
@@ -2077,6 +2083,14 @@ class IPcalculator:
     def getIPsignificance(self):
         if self.IPerror == 0: return 0.
         return self.getIP() / self.IPerror
+
+    def getIPsignificanceXY(self):
+        if self.IPerrorXY == 0: return 0.
+        return self.getDxy() / self.IPerrorXY
+
+    def getIPsignificanceZ(self):
+        if self.IPerrorZ == 0: return 0.
+        return self.getDz() / self.IPerrorZ
 
 
 ###############################################################################################
