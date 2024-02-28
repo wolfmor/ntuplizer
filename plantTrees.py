@@ -944,7 +944,7 @@ if True:
         , ('track_numValidHits', 'I'), ('track_numLostHits', 'I')
 
         , ('track_isSignalTrack', 'I'), ('track_isSusyTrack', 'I'), ('track_susyTrackPdgIdMother', 'I'), ('track_susyTrackPdgId', 'I')
-        , ('track_isSVdaughter', 'I')
+        , ('track_isSVdaughter', 'I'), ('track_isDisaptrackcandidate', 'I')
 
         , ('track_hasGenMatch', 'I'), ('track_genMatchTmin', 'F')
         , ('track_genMatchDrmin', 'F'), ('track_genMatchDxyzmin', 'F'), ('track_genMatchDrminold', 'F')
@@ -5335,8 +5335,13 @@ for ifile, f in enumerate(options.inputFiles):
             track_level_var_array['track_numLostHits'][i] = track.numberOfLostHits()
 
 
+            isdisaptrackcandidate = 0
             if track.pt() > 25 and abs(track.eta()) < 2 and abs(track.dxy(pv_pos)) < 0.1 and abs(track.dz(pv_pos)) < 0.1 and not ispfcand and quality > 2:
+                isdisaptrackcandidate = 1
                 numtracksdisaptrackpreselection += 1
+
+            track_level_var_array['track_isDisaptrackcandidate'][i] = isdisaptrackcandidate
+
 
             hasGenMatch = -1
             tmingen = -1
