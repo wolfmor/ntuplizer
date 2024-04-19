@@ -53,6 +53,111 @@ class Dummy:
     def energy(self):
         return self._energy
 
+
+class DummyJet:
+    """Implements dummy jet class."""
+
+    def __init__(self, jet, systs):
+
+        self._pt_raw = jet.pt()
+        self._eta = jet.eta()
+        self._phi = jet.phi()
+        self._px_raw = jet.px()
+        self._py_raw = jet.py()
+        self._pz_raw = jet.pz()
+        self._energy_raw = jet.energy()
+        self._numberOfDaughters = jet.numberOfDaughters()
+
+        self._JECdn = systs[0][0]
+        self._JEC = systs[0][1]
+        self._JECup = systs[0][2]
+
+        self._JERdn = systs[1][0]
+        self._JER = systs[1][1]
+        self._JERup = systs[1][2]
+
+        self._resolution = systs[2]
+        self._stochasticSmearing = systs[3]
+
+    def pt(self, jec=0, jer=0, raw=False):
+        if raw: return self._pt_raw
+        corr = {-1: self._JECdn, 0: self._JEC, 1: self._JECup}[jec]
+        smear = {-1: self._JERdn, 0: self._JER, 1: self._JERup}[jer]
+        return self._pt_raw * corr * smear
+
+    def eta(self):
+        return self._eta
+
+    def phi(self):
+        return self._phi
+
+    def px(self, jec=0, jer=0, raw=False):
+        if raw: return self._px_raw
+        corr = {-1: self._JECdn, 0: self._JEC, 1: self._JECup}[jec]
+        smear = {-1: self._JERdn, 0: self._JER, 1: self._JERup}[jer]
+        return self._px_raw * corr * smear
+
+    def py(self, jec=0, jer=0, raw=False):
+        if raw: return self._py_raw
+        corr = {-1: self._JECdn, 0: self._JEC, 1: self._JECup}[jec]
+        smear = {-1: self._JERdn, 0: self._JER, 1: self._JERup}[jer]
+        return self._py_raw * corr * smear
+
+    def pz(self, jec=0, jer=0, raw=False):
+        if raw: return self._pz_raw
+        corr = {-1: self._JECdn, 0: self._JEC, 1: self._JECup}[jec]
+        smear = {-1: self._JERdn, 0: self._JER, 1: self._JERup}[jer]
+        return self._pz_raw * corr * smear
+
+    def energy(self, jec=0, jer=0, raw=False):
+        if raw: return self._energy_raw
+        corr = {-1: self._JECdn, 0: self._JEC, 1: self._JECup}[jec]
+        smear = {-1: self._JERdn, 0: self._JER, 1: self._JERup}[jer]
+        return self._energy_raw * corr * smear
+
+    def numberOfDaughters(self):
+        return self._numberOfDaughters
+
+
+class DummyMet:
+    """Implements dummy MET class."""
+
+    def __init__(self, pt_list, phi_list):
+
+        self._pt_raw, self._pt_nom = pt_list[0]
+        self._pt_JECdn, self._pt_JECup = pt_list[1]
+        self._pt_JERdn, self._pt_JERup = pt_list[2]
+
+        self._phi_raw, self._phi_nom = phi_list[0]
+        self._phi_JECdn, self._phi_JECup = phi_list[1]
+        self._phi_JERdn, self._phi_JERup = phi_list[2]
+
+    def pt(self, jec=0, jer=0, raw=False):
+        if raw: return self._pt_raw
+        if abs(jec) + abs(jer) == 0: return self._pt_nom
+        elif abs(jec) + abs(jer) > 1:
+            raise NotImplementedError('MET variation not implemented for simultaneous JEC and JER variation')
+        else:
+            if abs(jec) > 0: return {-1: self._pt_JECdn, 1: self._pt_JECup}[jec]
+            if abs(jer) > 0: return {-1: self._pt_JERdn, 1: self._pt_JERup}[jer]
+
+    def phi(self, jec=0, jer=0, raw=False):
+        if raw: return self._phi_raw
+        if abs(jec) + abs(jer) == 0: return self._phi_nom
+        elif abs(jec) + abs(jer) > 1:
+            raise NotImplementedError('MET variation not implemented for simultaneous JEC and JER variation')
+        else:
+            if abs(jec) > 0: return {-1: self._phi_JECdn, 1: self._phi_JECup}[jec]
+            if abs(jer) > 0: return {-1: self._phi_JERdn, 1: self._phi_JERup}[jer]
+
+    def __str__(self):
+        return '\n'.join([
+            '\t'.join(['', 'raw', '\tnominal', '\tJECdn', '\tJECup', '\tJERdn', '\tJERup']),
+            '\t'.join(['MET p_T'] + [str(p) for p in [self._pt_raw, self._pt_nom, self._pt_JECdn, self._pt_JECup, self._pt_JERdn, self._pt_JERup]]),
+            '\t'.join(['MET phi'] + [str(p) for p in [self._phi_raw, self._phi_nom, self._phi_JECdn, self._phi_JECup, self._phi_JERdn, self._phi_JERup]])
+        ])
+
+
 ###############################################################################################
 
 
@@ -984,29 +1089,42 @@ def findMinDr_track(aTrack, tracks, threshold):
     return match, idx, drmin, matchingTrack
 
 
-def getTauDecayMode(tau, decaymode):
+def getTauDecayMode(tau, decaymode, decaymode_alt):
 
     nprongs = 0
     nneutral = 0
 
+    nprongs_alt = 0
+    nneutral_alt = 0
+
     for k in range(tau.numberOfDaughters()):
 
         taudaughterpdgid = abs(tau.daughter(k).pdgId())
+        taudaughtercharge = abs(tau.daughter(k).charge())
 
         # see: https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauIDRecommendationForRun2#Decay_Mode_Reconstruction
         if taudaughterpdgid in [12, 14, 16]:  # skip the neutrinos
             continue
         elif taudaughterpdgid in [11, 13]:  # charged lepton
             decaymode = 10 + taudaughterpdgid
-        elif taudaughterpdgid == 111:  # neutral pion
-            nneutral += 1
-        else:  # has to be a charged hadron
-            nprongs += 1
+            decaymode_alt = 10 + taudaughterpdgid
+        else:
+
+            if taudaughterpdgid == 111:  # neutral pion
+                nneutral += 1
+            else:  # has to be a charged hadron (but has it? somehow this gives 2-prong taus...)
+                nprongs += 1
+
+            if taudaughtercharge > 0:
+                nprongs_alt += 1
+            else:
+                nneutral_alt += 1
 
     if decaymode not in [21, 23]:
         decaymode = 5 * (nprongs - 1) + nneutral
+        decaymode_alt = 5 * (nprongs_alt - 1) + nneutral_alt
 
-    return decaymode
+    return decaymode, decaymode_alt
 
 
 ###############################################################################################

@@ -92,7 +92,7 @@ from DataFormats.Candidate import *
 from commons import *
 
 
-def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, photons, jets, met, secondaries, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrPhoton, hZllDrJet):
+def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, photons, jets, met_raw, met, met_JECdn, met_JECup, met_JERdn, met_JERup, secondaries, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrPhoton, hZllDrJet):
     """DY cleaning: replace leptons with "neutrinos" and update collections: clean jets, tracks, pfcands and adapt MET.
     """
 
@@ -152,7 +152,12 @@ def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, photons, jets, me
                         badsvs.append(nSV)
 
 
+        met_raw.setP4(met_raw.p4() + ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(l.px(), l.py(), 0, l.energy()))
         met.setP4(met.p4() + ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(l.px(), l.py(), 0, l.energy()))
+        met_JECdn.setP4(met_JECdn.p4() + ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(l.px(), l.py(), 0, l.energy()))
+        met_JECup.setP4(met_JECup.p4() + ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(l.px(), l.py(), 0, l.energy()))
+        met_JERdn.setP4(met_JERdn.p4() + ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(l.px(), l.py(), 0, l.energy()))
+        met_JERup.setP4(met_JERup.p4() + ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(l.px(), l.py(), 0, l.energy()))
 
     tracks = [t for (it, t) in enumerate(tracks) if it not in badtracks]
     pfcands = [p for (ip, p) in enumerate(pfcands) if ip not in badpfcands]
@@ -165,7 +170,7 @@ def cleanZllEvent(zl1Idx, zl2Idx, collection, tracks, pfcands, photons, jets, me
 
     # if not len(badtracks) == 2: tracks = None
 
-    return collection, tracks, pfcands, photons, jets, met, secondaries, len(badtracks), len(badpfcands), len(badphotons), len(badjets), len(badsvs)
+    return collection, tracks, pfcands, photons, jets, met_raw, met, met_JECdn, met_JECup, met_JERdn, met_JERup, secondaries, len(badtracks), len(badpfcands), len(badphotons), len(badjets), len(badsvs)
 
 
 '''
@@ -190,16 +195,85 @@ def createJEC(jecSrc, jecLevelList, jetAlgo):
     return ROOT.FactorizedJetCorrector(jecParameterList)
 
 
-def getJEC(jecSrc, jet, area, rho, nPV):
+def getJEC(jecSrc, uncSrc, jet, area, rho, nPV):
 
-    jecSrc.setJetEta(jet.Eta())
+    jet_eta = jet.Eta()
+    if jet_eta >= 5.0:
+        jet_eta = 4.99
+    if jet_eta <= -5.0:
+        jet_eta = -4.99
+
+    # Give jet properties to JEC source
+    jecSrc.setJetEta(jet_eta)
     jecSrc.setJetPt(jet.Perp())
     jecSrc.setJetE(jet.E())
     jecSrc.setJetA(area)
     jecSrc.setRho(rho)
     jecSrc.setNPV(nPV)
+    jec = jecSrc.getCorrection()  # get jet energy correction
 
-    return jecSrc.getCorrection()
+    # Give jet properties to JEC uncertainty source
+    uncSrc.setJetPhi(jet.Phi())
+    uncSrc.setJetEta(jet_eta)
+    uncSrc.setJetPt(jet.Perp() * jec)
+    jecDn = 1. - uncSrc.getUncertainty(0)  # get jet energy uncertainty (0 = false = down)
+
+    uncSrc.setJetPhi(jet.Phi())
+    uncSrc.setJetEta(jet_eta)
+    uncSrc.setJetPt(jet.Perp() * jec)
+    jecUp = 1. + uncSrc.getUncertainty(1)  # get jet energy uncertainty (1 = true = up)
+
+    # see: https://github.com/cms-sw/cmssw/blob/master/CondFormats/JetMETObjects/src/SimpleJetCorrectionUncertainty.cc#L47
+    # and: https://cms-opendata-guide.web.cern.ch/analysis/systematics/objectsuncertain/jetmetuncertain/
+
+    return jec, jec * jecDn, jec * jecUp
+
+
+def createJER_SF(jerPath, jetAlgo):
+
+    # see: https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookJetEnergyResolution
+
+    jerFile = jerPath + '/' + jerPath.split('/')[-1] + '_SF_' + jetAlgo + '.txt'
+
+    jerStrings = open(jerFile).read().split('\n')[1:]
+
+    return [[float(val) for val in jer.split()] for jer in jerStrings if len(jer) > 0]
+
+
+def getJER_SF(jetEta, jerSrc):
+
+    for (etamin, etamax, _, scale_nom, scale_dn, scale_up) in jerSrc:
+        if etamin <= jetEta < etamax:
+            return scale_nom, scale_dn, scale_up
+
+    raise Exception('ERROR: Unable to get JER for jets at eta = %.3f!' % jetEta)
+
+
+def createJER_Res(jerPath, jetAlgo):
+
+    # see: https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookJetEnergyResolution
+
+    jerFile = jerPath + '/' + jerPath.split('/')[-1] + '_PtResolution_' + jetAlgo + '.txt'
+
+    jerFileContent = open(jerFile).read().split('\n')
+
+    jerFormula = ROOT.TFormula('jerRes', jerFileContent[0].split()[5])
+    jerStrings = jerFileContent[1:]
+
+    return jerFormula, [[float(val) for val in jer.split()] for jer in jerStrings if len(jer) > 0]
+
+
+def getJER_Res(jetPt, jetEta, rho, jerSrc):
+
+    for (etamin, etamax, rhomin, rhomax, _, _, _, p0, p1, p2, p3) in jerSrc[1]:
+        if etamin <= jetEta < etamax and rhomin <= rho < rhomax:
+            jerSrc[0].SetParameter(0, p0)
+            jerSrc[0].SetParameter(1, p1)
+            jerSrc[0].SetParameter(2, p2)
+            jerSrc[0].SetParameter(3, p3)
+            return jerSrc[0].Eval(jetPt)
+
+    raise Exception('ERROR: Unable to get JER Resolution')
 
 
 class DataJEC:
@@ -209,19 +283,23 @@ class DataJEC:
     def __init__(self, inputmap, jettype):
         for minrun, maxrun, version in inputmap:
             JECMap = {}
-            JECMap['jecAK4'] = createJEC(globals()['localpath'] + 'JECs/'+version+'/'+version, ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            JECMap['jecAK4'] = createJEC(globals()['localpath'] + 'JECs/' + version + '/' + version, ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            JECMap['jecUncAK4'] = ROOT.JetCorrectionUncertainty(ROOT.std.string(globals()['localpath'] + 'JECs/' + version + '/' + version + '_Uncertainty_' + jettype + '.txt'))
             self.JECList.append([minrun, maxrun, JECMap])
 
     def GetJECMap(self, run):
-        for minrun,maxrun,returnmap in self.JECList:
+        for minrun, maxrun, returnmap in self.JECList:
             if run >= minrun and run <= maxrun:
                 return returnmap
-        raise Exception('Error! Run '+str(run)+' not found in run ranges')
+        raise Exception('Error! Run ' + str(run) + ' not found in run ranges')
 
     def jecAK4(self, run):
         JECMap = self.GetJECMap(run)
         return JECMap['jecAK4']
 
+    def jecUncAK4(self, run):
+        JECMap = self.GetJECMap(run)
+        return JECMap['jecUncAK4']
 
 
 '''
@@ -261,6 +339,7 @@ nEventsTest = 10  # number of events that are analyzed in case of test
 printevery = 10
 
 # TODO: check thresholds for "new" matching
+# TODO: also think about pT and eta cuts in the matching functions
 matchingDrThreshold = 0.05
 matchingDxyzThreshold = 0.2
 
@@ -327,19 +406,19 @@ if True:
 
         , ('n_zGamma', 'I'), ('zGamma_pdgId', 'F')
         , ('zGamma_pt', 'F'), ('zGamma_eta', 'F'), ('zGamma_phi', 'F')
-        , ('zGamma_neutrinoSumPt', 'F'), ('zGamma_tauDecayMode', 'F')
+        , ('zGamma_neutrinoSumPt', 'F'), ('zGamma_tauDecayMode', 'F'), ('zGamma_tauDecayMode_alt', 'F')
         , ('n_zDaughter', 'I')
 
         , ('n_wBoson', 'I'), ('wBoson_pdgId', 'F')
         , ('wBoson_pt', 'F'), ('wBoson_eta', 'F'), ('wBoson_phi', 'F')
         , ('wBoson_neutrinoPt', 'F')
-        , ('wBoson_tauDecayMode', 'F')
+        , ('wBoson_tauDecayMode', 'F'), ('wBoson_tauDecayMode_alt', 'F')
         , ('wBoson_tauDecaylengthXYZ', 'F'), ('wBoson_tauDecaylengthXY', 'F'), ('wBoson_tauDecaylengthZ', 'F')
         , ('wBoson_tauPt', 'F'), ('wBoson_tauEta', 'F'), ('wBoson_tauPhi', 'F')
         , ('wBoson_tauPtVis', 'F'), ('wBoson_tauEtaVis', 'F'), ('wBoson_tauPhiVis', 'F')
         , ('n_wDaughter', 'I')
 
-        , ('n_genParticle', 'I')
+        , ('n_genParticle', 'I'), ('weight_genInfo', 'F')
         ]
     event_level_var_names += var_names_gen_background
 
@@ -357,7 +436,7 @@ if True:
     event_level_var_names += var_names_cleaning
 
     var_names_event = [
-        ('cutflow', 'I'), ('random', 'I')
+        ('cutflow', 'I'), ('random', 'I'), ('era', 'I')
 
         , ('crossSection', 'F'), ('numSimEvents', 'F')
 
@@ -373,9 +452,18 @@ if True:
         , ('n_trueInteractions', 'F'), ('n_pv', 'I'), ('n_inclusivesv', 'I'), ('rho', 'F')
 
         , ('met_pt', 'F'), ('met_phi', 'F')
+        , ('met_ptRaw', 'F'), ('met_phiRaw', 'F')
         , ('met_ptNoFastSimCorr', 'F'), ('met_phiNoFastSimCorr', 'F')
+        , ('met_ptJECup', 'F'), ('met_phiJECup', 'F')
+        , ('met_ptJECdn', 'F'), ('met_phiJECdn', 'F')
+        , ('met_ptJERup', 'F'), ('met_phiJERup', 'F')
+        , ('met_ptJERdn', 'F'), ('met_phiJERdn', 'F')
 
         , ('ht', 'F'), ('ht5', 'F'), ('htMiss', 'F')
+        , ('htJECup', 'F'), ('ht5JECup', 'F'), ('htMissJECup', 'F')
+        , ('htJECdn', 'F'), ('ht5JECdn', 'F'), ('htMissJECdn', 'F')
+        , ('htJERup', 'F'), ('ht5JERup', 'F'), ('htMissJERup', 'F')
+        , ('htJERdn', 'F'), ('ht5JERdn', 'F'), ('htMissJERdn', 'F')
 
         , ('n_genJet', 'I')
 
@@ -392,6 +480,10 @@ if True:
         
         , ('n_jet', 'I')
         , ('n_jet_15', 'I'), ('n_jet_30', 'I'), ('n_jet_50', 'I'), ('n_jet_100', 'I'), ('n_jet_200', 'I')
+        , ('n_jet_HEM1516veto', 'I')
+
+        , ('n_jet_100JECup', 'I'), ('n_jet_100JECdn', 'I')
+        , ('n_jet_100JERup', 'I'), ('n_jet_100JERdn', 'I')
 
         , ('n_jet_30_btagloose', 'I'), ('n_jet_15_btagloose', 'I')
         , ('n_jet_30_btagmedium', 'I'), ('n_jet_15_btagmedium', 'I')
@@ -401,8 +493,14 @@ if True:
         , ('n_jet_30_btagDeepCSVmedium', 'I'), ('n_jet_15_btagDeepCSVmedium', 'I')
         , ('n_jet_30_btagDeepCSVtight', 'I'), ('n_jet_15_btagDeepCSVtight', 'I')
 
+        , ('n_jet_30_btagDeepCSVmediumJECup', 'I'), ('n_jet_30_btagDeepCSVmediumJECdn', 'I')
+        , ('n_jet_30_btagDeepCSVmediumJERup', 'I'), ('n_jet_30_btagDeepCSVmediumJERdn', 'I')
+
         , ('mtMetLeadingJet', 'F')
         , ('dphiminMetJets', 'F')
+
+        , ('dphiminMetJetsJECup', 'F'), ('dphiminMetJetsJECdn', 'F')
+        , ('dphiminMetJetsJERup', 'F'), ('dphiminMetJetsJERdn', 'F')
 
         , ('n_photon', 'I'), ('n_photon_iso', 'I')
         , ('n_pfLepton', 'I'), ('n_pfLepton_iso', 'I')
@@ -416,7 +514,7 @@ if True:
         , ('numSVs', 'I'), ('n_sv_total', 'I'), ('n_sv', 'I')
         , ('n_sv_daughter', 'I')
         , ('n_selTracks' , 'I')
-        ,('hasSignalSV', 'F')
+        , ('hasSignalSV', 'F')
         ]
     event_level_var_names += var_names_event
 
@@ -538,23 +636,60 @@ if True:
         event_level_var_array[tf] = array('i', [0])
         tEvent.Branch(tf, event_level_var_array[tf], tf + '/I')
 
-    # TODO: add triggers for 17/18
     # TODO: add MET no mu trigger?
     trigger_hlt = [
-        'HLT_PFMET90_PFMHT90_IDTight_v'
-        , 'HLT_PFMET100_PFMHT100_IDTight_BeamHaloCleaned_v'
-        , 'HLT_PFMET100_PFMHT100_IDTight_v'
-        , 'HLT_PFMET110_PFMHT110_IDTight_v'
-        , 'HLT_PFMET120_PFMHT120_IDTight_v'
-        , 'triggerfired'
+        'HLT_PFMET90_PFMHT90_IDTight_v',
+        'HLT_PFMET100_PFMHT100_IDTight_v',
+        'HLT_PFMET110_PFMHT110_IDTight_v',
+        'HLT_PFMET120_PFMHT120_IDTight_v',
+        'HLT_PFMET130_PFMHT130_IDTight_v',
+        'HLT_PFMET140_PFMHT140_IDTight_v',
+
+        'HLT_PFMET100_PFMHT100_IDTight_PFHT60_v',
+        'HLT_PFMET110_PFMHT110_IDTight_PFHT60_v',
+        'HLT_PFMET120_PFMHT120_IDTight_PFHT60_v',
+        'HLT_PFMET130_PFMHT130_IDTight_PFHT60_v',
+        'HLT_PFMET140_PFMHT140_IDTight_PFHT60_v',
+
+        'HLT_PFMETNoMu90_PFMHTNoMu90_IDTight_v',
+        'HLT_PFMETNoMu100_PFMHTNoMu100_IDTight_v',
+        'HLT_PFMETNoMu110_PFMHTNoMu110_IDTight_v',
+        'HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_v',
+        'HLT_PFMETNoMu130_PFMHTNoMu130_IDTight_v',
+        'HLT_PFMETNoMu140_PFMHTNoMu140_IDTight_v',
+
+        'HLT_PFMETNoMu100_PFMHTNoMu100_IDTight_PFHT60_v',
+        'HLT_PFMETNoMu110_PFMHTNoMu110_IDTight_PFHT60_v',
+        'HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60_v',
+        'HLT_PFMETNoMu130_PFMHTNoMu130_IDTight_PFHT60_v',
+        'HLT_PFMETNoMu140_PFMHTNoMu140_IDTight_PFHT60_v',
+
+        'HLT_PFMETTypeOne90_PFMHTNoMu90_IDTight_v',
+        'HLT_PFMETTypeOne100_PFMHTNoMu100_IDTight_v',
+        'HLT_PFMETTypeOne110_PFMHTNoMu110_IDTight_v',
+        'HLT_PFMETTypeOne120_PFMHTNoMu120_IDTight_v',
+        'HLT_PFMETTypeOne130_PFMHTNoMu130_IDTight_v',
+        'HLT_PFMETTypeOne140_PFMHTNoMu140_IDTight_v',
+
+        'HLT_PFMETTypeOne100_PFMHTNoMu100_IDTight_PFHT60_v',
+        'HLT_PFMETTypeOne110_PFMHTNoMu110_IDTight_PFHT60_v',
+        'HLT_PFMETTypeOne120_PFMHTNoMu120_IDTight_PFHT60_v',
+        'HLT_PFMETTypeOne130_PFMHTNoMu130_IDTight_PFHT60_v',
+        'HLT_PFMETTypeOne140_PFMHTNoMu140_IDTight_PFHT60_v',
+
+        'triggerfired',
     ]
 
     if 'SingleMuon' in options.dataset:
         trigger_hlt = [
-            'HLT_IsoMu24_v'
-            , 'HLT_IsoMu27_v'
-            , 'HLT_Mu50_v'
-            , 'triggerfired'
+            'HLT_IsoMu24_v',
+            'HLT_IsoMu27_v',
+            'HLT_IsoMu30_v',
+
+            'HLT_Mu50_v',
+            'HLT_Mu55_v',
+
+            'triggerfired',
         ]
 
     for t_hlt in trigger_hlt:
@@ -730,6 +865,9 @@ if True:
         , ('jet_btagDeepCSV', 'F'), ('jet_btagDeepCSV_probb', 'F'), ('jet_btagDeepCSV_probbb', 'F')
         , ('jet_drminLepton', 'F'), ('jet_ptClosestLepton', 'F'), ('jet_isLepton', 'F')
         , ('jet_drminGenJet', 'F'), ('jet_ptClosestGenJet', 'F'), ('jet_isGenJet', 'F')
+        , ('jet_JEC', 'F'), ('jet_JECup', 'F'), ('jet_JECdn', 'F')
+        , ('jet_JER', 'F'), ('jet_JERup', 'F'), ('jet_JERdn', 'F')
+        , ('jet_resolution', 'F'), ('jet_stochasticSmearing', 'I')
         ]
 
     jet_var_array = {}
@@ -948,12 +1086,12 @@ if True:
 
         , ('track_hasGenMatch', 'I'), ('track_genMatchTmin', 'F')
         , ('track_genMatchDrmin', 'F'), ('track_genMatchDxyzmin', 'F'), ('track_genMatchDrminold', 'F')
-        , ('track_genMatchPdgId', 'F'), ('track_genMatchPt', 'F'), ('track_genMatchStatus', 'F')
+        , ('track_genMatchPdgId', 'F'), ('track_genMatchPt', 'F'), ('track_genMatchEta', 'F'), ('track_genMatchPhi', 'F'), ('track_genMatchStatus', 'F')
         , ('track_genMatchIsHardProcess', 'F'), ('track_genMatchIsFromHardProcess', 'F')
         , ('track_genMatchIsPrompt', 'F'), ('track_genMatchIsDirectHadronDecayProduct', 'F'), ('track_genMatchIsDirectTauDecayProduct', 'F')
         , ('track_genMatchMotherPdgId', 'F'), ('track_genMatchMotherPt', 'F'), ('track_genMatchMotherStatus', 'F')
         , ('track_genMatchMotherIsHardProcess', 'F')
-        , ('track_genMatchMotherIsTheTau', 'I'), ('track_genMatchMotherTauDecay', 'F')
+        , ('track_genMatchMotherIsTheTau', 'I'), ('track_genMatchMotherTauDecay', 'F'), ('track_genMatchMotherTauDecay_alt', 'F')
 
         , ('track_drminGenTauJet', 'F'), ('track_genTauJetPt', 'F')
         ]
@@ -1165,6 +1303,8 @@ if True:
     # tauIDdecaymode = 'NewDMs'
     # tauIDalgo = 'MVArun2v1DBnewDMwLT'
 
+    era_id = -1
+
     if 'era16_07Aug17' in options.tag:
 
         # https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
@@ -1185,9 +1325,14 @@ if True:
         elif 'fastsim' in options.tag:
             jecAK4 = createJEC(localpath + 'JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            jecUncAK4 = None
         else:  # FullSim
             jecAK4 = createJEC(localpath + 'JECs/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            jecUncAK4 = None
+
+        jet_energy_resolution_SF = None
+        jet_energy_resolution_Res = None
 
         # tau energy scale (TES)
         # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
@@ -1217,16 +1362,27 @@ if True:
         elif 'fastsim' in options.tag:
             ## toDo: same as for 'era16_07Aug17'; not available so far
             jecAK4 = createJEC(localpath + 'JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC',
-                            ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+                               ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            jecUncAK4 = ROOT.JetCorrectionUncertainty(ROOT.std.string(localpath + 'JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_Uncertainty_' + jettype + '.txt'))
 
         else:  # FullSim
             if 'era16_UL_APV' in options.tag:
                 jecAK4 = createJEC(localpath + 'JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC',
                                    ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+                jecUncAK4 = ROOT.JetCorrectionUncertainty(ROOT.std.string(localpath + 'JECs/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_Uncertainty_' + jettype + '.txt'))
             else:
                 jecAK4 = createJEC(localpath + 'JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC',
                                    ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+                jecUncAK4 = ROOT.JetCorrectionUncertainty(ROOT.std.string(localpath + 'JECs/Summer19UL16_V7_MC/Summer19UL16_V7_MC_Uncertainty_' + jettype + '.txt'))
 
+        if 'era16_UL_APV' in options.tag:
+            jet_energy_resolution_SF = createJER_SF(localpath + 'JERs/Summer20UL16APV_JRV3_MC', jettype)
+            jet_energy_resolution_Res = createJER_Res(localpath + 'JERs/Summer20UL16APV_JRV3_MC', jettype)
+            era_id = 0
+        else:
+            jet_energy_resolution_SF = createJER_SF(localpath + 'JERs/Summer20UL16_JRV3_MC', jettype)
+            jet_energy_resolution_Res = createJER_Res(localpath + 'JERs/Summer20UL16_JRV3_MC', jettype)
+            era_id = 1
 
         # tau energy scale (TES)
         # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
@@ -1246,15 +1402,19 @@ if True:
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
         if 'data' in options.tag:  # data
             raise NotImplementedError('no JECs yet for 2017 data')
-            # TODO: implement JECs for 2017 data
             # jet_energy_corrections = []
             # DataJECs = DataJEC(jet_energy_corrections, jettype)
         elif 'fastsim' in options.tag:
             jecAK4 = createJEC(localpath + 'JECs/Fall17_FastSimV1_MC/Fall17_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            jecUncAK4 = None
         else:  # FullSim
             jecAK4 = createJEC(localpath + 'JECs/Fall17_17Nov2017_V32_MC/Fall17_17Nov2017_V32_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            jecUncAK4 = None
+
+        jet_energy_resolution_SF = None
+        jet_energy_resolution_Res = None
 
         # tau energy scale (TES)
         # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
@@ -1283,9 +1443,16 @@ if True:
             # TODO: same as for 'era17_17Nov2017'; not available so far
             jecAK4 = createJEC(localpath + 'JECs/Fall17_FastSimV1_MC/Fall17_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            jecUncAK4 = ROOT.JetCorrectionUncertainty(ROOT.std.string(localpath + 'JECs/Fall17_FastSimV1_MC/Fall17_FastSimV1_MC_Uncertainty_' + jettype + '.txt'))
         else:  # FullSim
             jecAK4 = createJEC(localpath + 'JECs/Summer19UL17_V5_MC/Summer19UL17_V5_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            jecUncAK4 = ROOT.JetCorrectionUncertainty(ROOT.std.string(localpath + 'JECs/Summer19UL17_V5_MC/Summer19UL17_V5_MC_Uncertainty_' + jettype + '.txt'))
+
+        jet_energy_resolution_SF = createJER_SF(localpath + 'JERs/Summer19UL17_JRV2_MC', jettype)
+        jet_energy_resolution_Res = createJER_Res(localpath + 'JERs/Summer19UL17_JRV2_MC', jettype)
+
+        era_id = 2
 
         # tau energy scale (TES)
         # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
@@ -1306,15 +1473,19 @@ if True:
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
         if 'data' in options.tag:  # data
             raise NotImplementedError('no JECs yet for 2018 data')
-            # TODO: implement JECs for 2018 data
             # jet_energy_corrections = []
             # DataJECs = DataJEC(jet_energy_corrections, jettype)
         elif 'fastsim' in options.tag:
             jecAK4 = createJEC(localpath + 'JECs/Autumn18_FastSimV1_MC/Autumn18_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            jecUncAK4 = None
         else:  # FullSim
             jecAK4 = createJEC(localpath + 'JECs/Autumn18_V19_MC/Autumn18_V19_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            jecUncAK4 = None
+
+        jet_energy_resolution_SF = None
+        jet_energy_resolution_Res = None
 
         # tau energy scale (TES)
         # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
@@ -1345,11 +1516,17 @@ if True:
             # TODO: same as for 'era18_17Sep2018'; not available so far
             jecAK4 = createJEC(localpath + 'JECs/Autumn18_FastSimV1_MC/Autumn18_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            jecUncAK4 = ROOT.JetCorrectionUncertainty(ROOT.std.string(localpath + 'JECs/Autumn18_FastSimV1_MC/Autumn18_FastSimV1_MC_Uncertainty_' + jettype + '.txt'))
 
         else:  # FullSim
             jecAK4 = createJEC(localpath + 'JECs/Summer19UL18_V5_MC/Summer19UL18_V5_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
+            jecUncAK4 = ROOT.JetCorrectionUncertainty(ROOT.std.string(localpath + 'JECs/Summer19UL18_V5_MC/Summer19UL18_V5_MC_Uncertainty_' + jettype + '.txt'))
 
+        jet_energy_resolution_SF = createJER_SF(localpath + 'JERs/Summer19UL18_JRV2_MC', jettype)
+        jet_energy_resolution_Res = createJER_Res(localpath + 'JERs/Summer19UL18_JRV2_MC', jettype)
+
+        era_id = 3
 
         # tau energy scale (TES)
         # from https://github.com/cms-tau-pog/TauIDSFs#dm-dependent-tau-energy-scale
@@ -1385,6 +1562,9 @@ if 'data' in options.tag:
     label_trigger_flags = ('TriggerResults', '', 'RECO')
 
 else:
+
+    handle_geninfo = Handle('GenEventInfoProduct')
+    label_geninfo = ('generator')
 
     handle_genparticles = Handle('std::vector<reco::GenParticle>')
     label_genparticles = ('genParticles')
@@ -1639,7 +1819,7 @@ for ifile, f in enumerate(options.inputFiles):
         fname = 'root://' + redir + '/' + f.strip()
         
         if 'crab' in options.tag: 
-            fname = 'root://' + redir + '/' + '/pnfs/desy.de/cms/tier2' +  f.strip()  # TODO: maybe this always fails? And xrd is used 
+            fname = 'root://' + redir + '/' + '/pnfs/desy.de/cms/tier2' + f.strip()  # TODO: maybe this always fails? And xrd is used
         
             
         fin = ROOT.TFile.Open(fname)
@@ -1710,6 +1890,8 @@ for ifile, f in enumerate(options.inputFiles):
 
         random.seed()
         event_level_var_array['random'][0] = random.randrange(10)
+
+        event_level_var_array['era'][0] = era_id
 
         '''
         ###############################################################################################
@@ -1914,6 +2096,7 @@ for ifile, f in enumerate(options.inputFiles):
 
         n_trueInteractions = -1.0
         if 'data' not in options.tag:
+            event.getByLabel(label_geninfo, handle_geninfo)
             event.getByLabel(label_genparticles, handle_genparticles)
             event.getByLabel(label_genmet, handle_genmet)
             event.getByLabel(label_genjets, handle_genjets)
@@ -1936,6 +2119,7 @@ for ifile, f in enumerate(options.inputFiles):
         event.getByLabel(label_taus, handle_taus)
 
         if 'data' not in options.tag:
+            geninfo = handle_geninfo.product()
             genparticles = handle_genparticles.product()
             genmet = handle_genmet.product().front()
             genjets = handle_genjets.product()
@@ -2008,6 +2192,11 @@ for ifile, f in enumerate(options.inputFiles):
         btagvalues = [(-2., 0., 0.)]
         btagvaluesDeepCSV = [(-2., 0., 0.)]
 
+        btagvaluesDeepCSV_JECdn = [(-2., 0., 0.)]
+        btagvaluesDeepCSV_JECup = [(-2., 0., 0.)]
+        btagvaluesDeepCSV_JERdn = [(-2., 0., 0.)]
+        btagvaluesDeepCSV_JERup = [(-2., 0., 0.)]
+
 
         '''
         ###############################################################################################
@@ -2045,8 +2234,7 @@ for ifile, f in enumerate(options.inputFiles):
         ###############################################################################################
         '''
 
-        jetsP4Raw = []
-        jetsP4Corr = []
+        jetsSysts = []
         jetsIdxGood = []
         numBadJets = 0
         minetaabsbadjets = 9
@@ -2057,15 +2245,55 @@ for ifile, f in enumerate(options.inputFiles):
         for ijet, jet in enumerate(jets):
 
             jetP4Raw = ROOT.TLorentzVector(jet.px(), jet.py(), jet.pz(), jet.energy())
-            jetsP4Raw.append(jetP4Raw)
+
+            ptsmear = 1.
+            ptsmearUp = 1.
+            ptsmearDn = 1.
+
+            stochastic_smearing = 0
+            jet_resolution = 1.
 
             if 'data' in options.tag:
-                correction = getJEC(DataJECs.jecAK4(runnum), jetP4Raw, jet.jetArea(), rho, n_pv)
-            else:
-                correction = getJEC(jecAK4, jetP4Raw, jet.jetArea(), rho, n_pv)
 
-            jetP4Corr = jetP4Raw * correction
-            jetsP4Corr.append(jetP4Corr)
+                correction, corrDn, corrUp = getJEC(DataJECs.jecAK4(runnum), DataJECs.jecUncAK4(runnum), jetP4Raw, jet.jetArea(), rho, n_pv)
+
+            else:
+
+                correction, corrDn, corrUp = getJEC(jecAK4, jecUncAK4, jetP4Raw, jet.jetArea(), rho, n_pv)
+
+                recojet_pt = jetP4Raw.Perp() * correction
+
+                recojet_eta = jetP4Raw.Eta()
+                if recojet_eta >= 4.7:
+                    recojet_eta = 4.69
+                if recojet_eta <= -4.7:
+                    recojet_eta = -4.69
+
+                smear, smearDn, smearUp = getJER_SF(recojet_eta,  jerSrc=jet_energy_resolution_SF)
+                jet_resolution = getJER_Res(recojet_pt, recojet_eta, rho, jerSrc=jet_energy_resolution_Res)
+
+                idx_genjet, drmingenjetjet = findMatch_gen_old_easy(jet, genjets)
+
+                if not idx_genjet == -1 and drmingenjetjet < 0.2 and abs(genjets[idx_genjet].pt() - recojet_pt) < 3 * jet_resolution * recojet_pt:
+                    genjet_pt = genjets[idx_genjet].pt()
+                    deltapt = (recojet_pt - genjet_pt) * (smear - 1.0)
+                    deltaptUp = (recojet_pt - genjet_pt) * (smearUp - 1.0)
+                    deltaptDn = (recojet_pt - genjet_pt) * (smearDn - 1.0)
+                    ptsmear = max(0.0, (recojet_pt + deltapt) / recojet_pt)
+                    ptsmearUp = max(0.0, (recojet_pt + deltaptUp) / recojet_pt)
+                    ptsmearDn = max(0.0, (recojet_pt + deltaptDn) / recojet_pt)
+                elif recojet_pt > 15.:
+                    # see: https://github.com/cms-opendata-analyses/PhysObjectExtractorTool/blob/master/PhysObjectExtractor/src/PatJetAnalyzer.cc
+                    trandom = ROOT.TRandom3()
+                    trandom.SetSeed(int(abs(jet.phi() * 1e4)))
+                    ptsmear = max(0.0, 1.0 + trandom.Gaus(0, jet_resolution) * sqrt(max(0.0, smear*smear - 1.0)))
+                    trandom.SetSeed(int(abs(jet.phi() * 1e4)))
+                    ptsmearUp = max(0.0, 1.0 + trandom.Gaus(0, jet_resolution) * sqrt(max(0.0, smearDn*smearDn - 1.0)))
+                    trandom.SetSeed(int(abs(jet.phi() * 1e4)))
+                    ptsmearDn = max(0.0, 1.0 + trandom.Gaus(0, jet_resolution) * sqrt(max(0.0, smearUp*smearUp - 1.0)))
+                    stochastic_smearing = 1
+
+            jetsSysts.append([[corrDn, correction, corrUp], [ptsmearDn, ptsmear, ptsmearUp], jet_resolution, stochastic_smearing])
 
             if jetP4Raw.E() > 0:
                 nhf = jet.neutralHadronEnergy() / jetP4Raw.E()
@@ -2086,7 +2314,7 @@ for ifile, f in enumerate(options.inputFiles):
             goodJet = jetID(options.tag, jet.eta(), nhf, nef, chf, cef, mef, nconstituents, cm, nm, lepveto=False)
             goodJetLepVeto = jetID(options.tag, jet.eta(), nhf, nef, chf, cef, mef, nconstituents, cm, nm, lepveto=True)
 
-            if jet.pt() > 30 and abs(jet.eta()) < 5.0:
+            if jet.pt() * correction * ptsmear > 30 and abs(jet.eta()) < 5.0:
                 for v in jetIDvars:
                     jetIDhistos[v[0] + 'all'].Fill(globals()[v[0].replace('jet', '')])
                     if goodJet: jetIDhistos[v[0] + 'pass'].Fill(globals()[v[0].replace('jet', '')])
@@ -2097,13 +2325,13 @@ for ifile, f in enumerate(options.inputFiles):
             if not goodJet:
                 numBadJets += 1
                 if abs(jet.eta()) < minetaabsbadjets: minetaabsbadjets = abs(jet.eta())
-                if jet.pt() > 30 and abs(jet.eta()) < 5.0:
+                if jet.pt() * correction * ptsmear > 30 and abs(jet.eta()) < 5.0:
                     numBadJetsEventVeto += 1
 
             if not goodJetLepVeto:
                 numBadJetsLepVeto += 1
                 if abs(jet.eta()) < minetaabsbadjetsLepVeto: minetaabsbadjetsLepVeto = abs(jet.eta())
-                if jet.pt() > 30 and abs(jet.eta()) < 5.0:
+                if jet.pt() * correction * ptsmear > 30 and abs(jet.eta()) < 5.0:
                     numBadJetsLepVetoEventVeto += 1
 
         if numBadJetsEventVeto > 0: continue
@@ -2123,13 +2351,10 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['badJets_lepVeto_minEta'][0] = minetaabsbadjetsLepVeto
         event_level_var_array['badJets_lepVeto_nForEventVeto'][0] = numBadJetsLepVetoEventVeto
 
-        jets = [j for ij, j in enumerate(jets) if ij in jetsIdxGood and abs(j.eta()) < 5.]
-
-        if not len(jets) > 0: continue
-        
-        if 'debug' in options.tag: print 'got jets in the event'
-
-        # ########################################################################################### veto
+        jets = [
+            DummyJet(j, jetsSysts[ij]) for ij, j in enumerate(jets)
+            if ij in jetsIdxGood and abs(j.eta()) < 5. and j.pt() * jetsSysts[ij][0][1] * jetsSysts[ij][1][1] > 15
+        ]
 
         '''
         ###############################################################################################
@@ -2139,11 +2364,31 @@ for ifile, f in enumerate(options.inputFiles):
 
         hMetptRaw.Fill(met.pt())
 
-        for j in jetsP4Raw:
-            met.setP4(met.p4() + ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(j.Px(), j.Py(), 0, j.Energy()))
+        met_raw = copy(met)
+        met_JECdn = copy(met)
+        met_JECup = copy(met)
+        met_JERdn = copy(met)
+        met_JERup = copy(met)
 
-        for j in jetsP4Corr:
-            met.setP4(met.p4() - ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(j.Px(), j.Py(), 0, j.Energy()))
+        for j in jets:
+            met.setP4(met.p4() + ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(j.px(raw=True), j.py(raw=True), 0, j.energy(raw=True)))
+            met.setP4(met.p4() - ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(j.px(), j.py(), 0, j.energy()))
+
+        for j in jets:
+            met_JECdn.setP4(met_JECdn.p4() + ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(j.px(raw=True), j.py(raw=True), 0, j.energy(raw=True)))
+            met_JECdn.setP4(met_JECdn.p4() - ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(j.px(jec=-1), j.py(jec=-1), 0, j.energy(jec=-1)))
+
+        for j in jets:
+            met_JECup.setP4(met_JECup.p4() + ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(j.px(raw=True), j.py(raw=True), 0, j.energy(raw=True)))
+            met_JECup.setP4(met_JECup.p4() - ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(j.px(jec=1), j.py(jec=1), 0, j.energy(jec=1)))
+
+        for j in jets:
+            met_JERdn.setP4(met_JERdn.p4() + ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(j.px(raw=True), j.py(raw=True), 0, j.energy(raw=True)))
+            met_JERdn.setP4(met_JERdn.p4() - ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(j.px(jer=-1), j.py(jer=-1), 0, j.energy(jer=-1)))
+
+        for j in jets:
+            met_JERup.setP4(met_JERup.p4() + ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(j.px(raw=True), j.py(raw=True), 0, j.energy(raw=True)))
+            met_JERup.setP4(met_JERup.p4() - ROOT.Math.LorentzVector('ROOT::Math::PxPyPzE4D<double>')(j.px(jer=1), j.py(jer=1), 0, j.energy(jer=1)))
 
         '''
         ###############################################################################################
@@ -2286,14 +2531,14 @@ for ifile, f in enumerate(options.inputFiles):
 
             if 'skipSVs' not in options.tag:
                 if 'crab' in options.tag:
-                    collection, tracks, pfcands, photons, jets, met, filesWithSV[0][event_id], nbadtracks, nbadpfcands, nbadphotons, nbadjets, nbadsvs = \
-                        cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, photons, jets, met, filesWithSV[0][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrPhoton, hZllDrJet)
+                    collection, tracks, pfcands, photons, jets, met_raw, met, met_JECdn, met_JECup, met_JERdn, met_JERup, filesWithSV[0][event_id], nbadtracks, nbadpfcands, nbadphotons, nbadjets, nbadsvs = \
+                        cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, photons, jets, met_raw, met, met_JECdn, met_JECup, met_JERdn, met_JERup, filesWithSV[0][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrPhoton, hZllDrJet)
                 else:
-                    collection, tracks, pfcands, photons, jets, met, filesWithSV[ifile][event_id], nbadtracks, nbadpfcands, nbadphotons, nbadjets, nbadsvs = \
-                        cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, photons, jets, met, filesWithSV[ifile][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrPhoton, hZllDrJet)
+                    collection, tracks, pfcands, photons, jets, met_raw, met, met_JECdn, met_JECup, met_JERdn, met_JERup, filesWithSV[ifile][event_id], nbadtracks, nbadpfcands, nbadphotons, nbadjets, nbadsvs = \
+                        cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, photons, jets, met_raw, met, met_JECdn, met_JECup, met_JERdn, met_JERup, filesWithSV[ifile][event_id], hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrPhoton, hZllDrJet)
             else:
-                collection, tracks, pfcands, photons, jets, met, _, nbadtracks, nbadpfcands, nbadphotons, nbadjets, _ = \
-                    cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, photons, jets, met, None, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrPhoton, hZllDrJet)
+                collection, tracks, pfcands, photons, jets, met_raw, met, met_JECdn, met_JECup, met_JERdn, met_JERup, _, nbadtracks, nbadpfcands, nbadphotons, nbadjets, _ = \
+                    cleanZllEvent(l1Idx, l2Idx, collection, tracks, pfcands, photons, jets, met_raw, met, met_JECdn, met_JECup, met_JERdn, met_JERup, None, hZllLeptonPt, hZllDrTrack, hZllDrPfc, hZllDrPhoton, hZllDrJet)
 
             # if tracks is None: continue
 
@@ -2335,6 +2580,15 @@ for ifile, f in enumerate(options.inputFiles):
         # GEN MET and HT(miss) and FastSim MET correction
         ###############################################################################################
         '''
+
+        met = DummyMet(
+            pt_list=[[met_raw.pt(), met.pt()],
+                     [met_JECdn.pt(), met_JECup.pt()],
+                     [met_JERdn.pt(), met_JERup.pt()]],
+            phi_list=[[met_raw.phi(), met.phi()],
+                      [met_JECdn.phi(), met_JECup.phi()],
+                      [met_JERdn.phi(), met_JERup.phi()]]
+        )
 
         pTneutrinosum = -1
         genmetpt = -1
@@ -2387,8 +2641,18 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['gen_htMiss'][0] = genhtmiss
         event_level_var_array['met_ptNoFastSimCorr'][0] = nofastsimcorrmetpt
         event_level_var_array['met_phiNoFastSimCorr'][0] = nofastsimcorrmetphi
+        event_level_var_array['met_phiRaw'][0] = met.phi(raw=True)
+        event_level_var_array['met_ptRaw'][0] = met.pt(raw=True)
         event_level_var_array['met_phi'][0] = met.phi()
         event_level_var_array['met_pt'][0] = met.pt()
+        event_level_var_array['met_phiJECdn'][0] = met.phi(jec=-1)
+        event_level_var_array['met_ptJECdn'][0] = met.pt(jec=-1)
+        event_level_var_array['met_phiJECup'][0] = met.phi(jec=1)
+        event_level_var_array['met_ptJECup'][0] = met.pt(jec=1)
+        event_level_var_array['met_phiJERdn'][0] = met.phi(jer=-1)
+        event_level_var_array['met_ptJERdn'][0] = met.pt(jer=-1)
+        event_level_var_array['met_phiJERup'][0] = met.phi(jer=1)
+        event_level_var_array['met_ptJERup'][0] = met.pt(jer=1)
 
         hMetpt.Fill(met.pt())
 
@@ -2431,11 +2695,13 @@ for ifile, f in enumerate(options.inputFiles):
         numjets15 = 0
         numjets30 = 0
         numjets50 = 0
-        numjets100 = 0
+        numjets100_list = [0, 0, 0, 0, 0]
         numjets200 = 0
-        ht = 0
-        ht5 = 0
-        htmissTlv = ROOT.TLorentzVector()
+
+        ht_list = [0, 0, 0, 0, 0]
+        ht5_list = [0, 0, 0, 0, 0]
+        htmissTlv_list = [ROOT.TLorentzVector(), ROOT.TLorentzVector(), ROOT.TLorentzVector(), ROOT.TLorentzVector(), ROOT.TLorentzVector()]
+
         idxhighestptjet = 0
         for ijet, jet in enumerate(jets):
 
@@ -2460,18 +2726,23 @@ for ifile, f in enumerate(options.inputFiles):
                     minPt4 = pt
                     lJet4 = jet
                     eta4 = eta
-                    
-            if abs(jet.eta()) < 2.4 and jet.pt() > 30: ht += jet.pt()
-            if abs(jet.eta()) < 5. and jet.pt() > 30:
-                ht5 += jet.pt()
-                jetTlv = ROOT.TLorentzVector(jet.px(), jet.py(), jet.pz(), jet.energy())
-                htmissTlv -= jetTlv
+
+            for ijecjer, (vjec, vjer) in enumerate([(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)]):  # JEC/JER variations: (jec, jer)
+
+                if abs(jet.eta()) < 2.4 and jet.pt(jec=vjec, jer=vjer) > 30:
+                    ht_list[ijecjer] += jet.pt(jec=vjec, jer=vjer)
+
+                if abs(jet.eta()) < 5. and jet.pt(jec=vjec, jer=vjer) > 30:
+                    ht5_list[ijecjer] += jet.pt(jec=vjec, jer=vjer)
+                    htmissTlv_list[ijecjer] -= ROOT.TLorentzVector(jet.px(jec=vjec, jer=vjer), jet.py(jec=vjec, jer=vjer), jet.pz(jec=vjec, jer=vjer), jet.energy(jec=vjec, jer=vjer))
+
+                if jet.pt(jec=vjec, jer=vjer) > 100:
+                    numjets100_list[ijecjer] += 1
 
             jetpt = jet.pt()
             if jetpt > 15: numjets15 += 1
             if jetpt > 30: numjets30 += 1
             if jetpt > 50: numjets50 += 1
-            if jetpt > 100: numjets100 += 1
             if jetpt > 200: numjets200 += 1
 
             if jetpt > jets[idxhighestptjet].pt(): idxhighestptjet = ijet
@@ -2511,34 +2782,63 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['n_jet_15'][0] = numjets15
         event_level_var_array['n_jet_30'][0] = numjets30
         event_level_var_array['n_jet_50'][0] = numjets50
-        event_level_var_array['n_jet_100'][0] = numjets100
+        event_level_var_array['n_jet_100'][0] = numjets100_list[0]
+        event_level_var_array['n_jet_100JECdn'][0] = numjets100_list[1]
+        event_level_var_array['n_jet_100JECup'][0] = numjets100_list[2]
+        event_level_var_array['n_jet_100JERdn'][0] = numjets100_list[3]
+        event_level_var_array['n_jet_100JERup'][0] = numjets100_list[4]
         event_level_var_array['n_jet_200'][0] = numjets200
-        event_level_var_array['ht'][0] = ht
-        event_level_var_array['ht5'][0] = ht5
-        event_level_var_array['htMiss'][0] = htmissTlv.Pt()
+
+        if era_id == 3:
+            # see https://twiki.cern.ch/twiki/bin/view/CMS/SUSRecommendationsRun2UltraLegacy#HEM_issue_in_2018
+            event_level_var_array['n_jet_HEM1516veto'][0] = len([j for j in jets if j.pt() > 30
+                                                                 and abs(deltaPhi(j.phi(), htmissTlv_list[0].Phi())) < 0.5
+                                                                 and -3.2 < j.eta() < -1.2
+                                                                 and -1.77 < j.phi() < -0.67])
+        else:
+            event_level_var_array['n_jet_HEM1516veto'][0] = 0
+
+        event_level_var_array['ht'][0] = ht_list[0]
+        event_level_var_array['htJECdn'][0] = ht_list[1]
+        event_level_var_array['htJECup'][0] = ht_list[2]
+        event_level_var_array['htJERdn'][0] = ht_list[3]
+        event_level_var_array['htJERup'][0] = ht_list[4]
+
+        event_level_var_array['ht5'][0] = ht5_list[0]
+        event_level_var_array['ht5JECdn'][0] = ht5_list[1]
+        event_level_var_array['ht5JECup'][0] = ht5_list[2]
+        event_level_var_array['ht5JERdn'][0] = ht5_list[3]
+        event_level_var_array['ht5JERup'][0] = ht5_list[4]
+
+        event_level_var_array['htMiss'][0] = htmissTlv_list[0].Pt()
+        event_level_var_array['htMissJECdn'][0] = htmissTlv_list[1].Pt()
+        event_level_var_array['htMissJECup'][0] = htmissTlv_list[2].Pt()
+        event_level_var_array['htMissJERdn'][0] = htmissTlv_list[3].Pt()
+        event_level_var_array['htMissJERup'][0] = htmissTlv_list[4].Pt()
 
         hNumjets.Fill(numjets)
         hNumjets30.Fill(numjets30)
         hNumjets50.Fill(numjets50)
-        hNumjets100.Fill(numjets100)
+        hNumjets100.Fill(numjets100_list[0])
         hNumjets200.Fill(numjets200)
 
+        for (vstring, vjec, vjer) in [('', 0, 0), ('JECdn', -1, 0), ('JECup', 1, 0), ('JERdn', 0, -1), ('JERup', 0, 1)]:  # JEC/JER variations: (jec, jer)
 
-        dphimetjets = []
-        for jet in jets:
-            if jet.pt() > 30 and abs(jet.eta()) < 2.4:
+            dphimetjets = []
+            for jet in jets:
+                if jet.pt(jec=vjec, jer=vjer) > 30 and abs(jet.eta()) < 2.4:
 
-                dphimetjet = abs(deltaPhi(met.phi(), jet.phi()))
-                dphimetjets.append(dphimetjet)
+                    dphimetjet = abs(deltaPhi(met.phi(jec=vjec, jer=vjer), jet.phi()))
+                    dphimetjets.append(dphimetjet)
 
-            if len(dphimetjets) > 3: break
+                if len(dphimetjets) > 3: break
 
-        if len(dphimetjets) > 0:
-            event_level_var_array['dphiminMetJets'][0] = min(dphimetjets)
-            hMindphimetjets.Fill(min(dphimetjets))
-        else:
-            event_level_var_array['dphiminMetJets'][0] = -1
-            hMindphimetjets.Fill(-1)
+            if len(dphimetjets) > 0:
+                event_level_var_array['dphiminMetJets' + vstring][0] = min(dphimetjets)
+                if vstring == '': hMindphimetjets.Fill(min(dphimetjets))
+            else:
+                event_level_var_array['dphiminMetJets' + vstring][0] = -1
+                if vstring == '': hMindphimetjets.Fill(-1)
 
 
         hNPVsPerEvent.Fill(n_pv)
@@ -2569,7 +2869,7 @@ for ifile, f in enumerate(options.inputFiles):
         hCutflow.Fill(cutflow)
 
         if 'veto_jet100' in options.tag:
-            if not numjets100 > 0: continue
+            if not numjets100_list[0] > 0: continue
 
         # ########################################################################################### veto
 
@@ -2687,6 +2987,7 @@ for ifile, f in enumerate(options.inputFiles):
         phiZgamma = -1
         numZgammaDaughters = 0
         decayZtau = -1
+        decayZtau_alt = -1
         ptsumZgammaNeutrinos = -1
         if 'ZJetsToNuNu' in options.dataset or 'DYJetsToLL' in options.dataset:
 
@@ -2725,7 +3026,7 @@ for ifile, f in enumerate(options.inputFiles):
                     zdaughter_var_array['zDaughter_phi'][i] = daughter.phi()
 
                     if abs(daughter.pdgId()) == 15 and firstZtau:
-                        decayZtau = getTauDecayMode(daughter, decayZtau)
+                        decayZtau, decayZtau_alt = getTauDecayMode(daughter, decayZtau, decayZtau_alt)
                         firstZtau = False
 
                     if abs(daughter.pdgId()) == 12 or abs(daughter.pdgId()) == 14 or abs(daughter.pdgId()) == 16:
@@ -2741,6 +3042,7 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['zGamma_phi'][0] = phiZgamma
         event_level_var_array['zGamma_neutrinoSumPt'][0] = ptsumZgammaNeutrinos
         event_level_var_array['zGamma_tauDecayMode'][0] = decayZtau
+        event_level_var_array['zGamma_tauDecayMode_alt'][0] = decayZtau_alt
         event_level_var_array['n_zDaughter'][0] = numZgammaDaughters
 
 
@@ -2752,6 +3054,7 @@ for ifile, f in enumerate(options.inputFiles):
         numWDaughters = 0
         ptWneutrino = -1
         decayWtau = -1
+        decayWtau_alt = -1
         decaylengthXYZWtau = -1
         decaylengthXYWtau = -1
         decaylengthZWtau = -1
@@ -2782,6 +3085,7 @@ for ifile, f in enumerate(options.inputFiles):
 
                 ptWneutrino = -1
                 decayWtau = -1
+                decayWtau_alt = -1
                 decaylengthXYZWtau = -1
                 decaylengthXYWtau = -1
                 decaylengthZWtau = -1
@@ -2820,7 +3124,7 @@ for ifile, f in enumerate(options.inputFiles):
 
                     if abs(daughter.pdgId()) == 15:
                         thetau = daughter
-                        decayWtau = getTauDecayMode(daughter, decayWtau)
+                        decayWtau, decayWtau_alt = getTauDecayMode(daughter, decayWtau, decayWtau_alt)
                         decaylengthXYZWtau = ROOT.TMath.Sqrt(pow(daughter.vx() - daughter.daughter(0).vx(), 2)
                                                              + pow(daughter.vy() - daughter.daughter(0).vy(), 2)
                                                              + pow(daughter.vz() - daughter.daughter(0).vz(), 2))
@@ -2844,6 +3148,7 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['wBoson_phi'][0] = phiW
         event_level_var_array['wBoson_neutrinoPt'][0] = ptWneutrino
         event_level_var_array['wBoson_tauDecayMode'][0] = decayWtau
+        event_level_var_array['wBoson_tauDecayMode_alt'][0] = decayWtau_alt
         event_level_var_array['wBoson_tauDecaylengthXYZ'][0] = decaylengthXYZWtau
         event_level_var_array['wBoson_tauDecaylengthXY'][0] = decaylengthXYWtau
         event_level_var_array['wBoson_tauDecaylengthZ'][0] = decaylengthZWtau
@@ -3639,10 +3944,13 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['weight_PU_SignalData'][0] = weight_PU_SignalData
 
 
+        event_level_var_array['weight_genInfo'][0] = 1.
         event_level_var_array['n_genParticle'][0] = 0
         event_level_var_array['n_genJet'][0] = 0
 
         if 'data' not in options.tag:
+
+            event_level_var_array['weight_genInfo'][0] = geninfo.weight()
 
             genparticlesfinalstate = [genparticle for genparticle in genparticles if genparticle.fromHardProcessFinalState() == 1]
                             
@@ -3988,6 +4296,17 @@ for ifile, f in enumerate(options.inputFiles):
             jet_var_array['jet_phi'][ijet] = jet.phi()
             jet_var_array['jet_numConstituents'][ijet] = jet.numberOfDaughters()
 
+            jet_var_array['jet_JEC'][ijet] = jet._JEC
+            jet_var_array['jet_JECdn'][ijet] = jet._JECdn
+            jet_var_array['jet_JECup'][ijet] = jet._JECup
+
+            jet_var_array['jet_JER'][ijet] = jet._JER
+            jet_var_array['jet_JERdn'][ijet] = jet._JERdn
+            jet_var_array['jet_JERup'][ijet] = jet._JERup
+
+            jet_var_array['jet_resolution'][ijet] = jet._resolution
+            jet_var_array['jet_stochasticSmearing'][ijet] = jet._stochasticSmearing
+
             dRmin = 0.1
             thisbtag = -2.
             for ib in range(nbtags):
@@ -4017,6 +4336,11 @@ for ifile, f in enumerate(options.inputFiles):
 
             btaglistDeepCSV.append(thisbtagDeepCSV_probb + thisbtagDeepCSV_probbb)
             btagvaluesDeepCSV.append((thisbtagDeepCSV_probb + thisbtagDeepCSV_probbb, jet.pt(), jet.eta()))
+
+            btagvaluesDeepCSV_JECdn.append((thisbtagDeepCSV_probb + thisbtagDeepCSV_probbb, jet.pt(jec=-1), jet.eta()))
+            btagvaluesDeepCSV_JECup.append((thisbtagDeepCSV_probb + thisbtagDeepCSV_probbb, jet.pt(jec=1), jet.eta()))
+            btagvaluesDeepCSV_JERdn.append((thisbtagDeepCSV_probb + thisbtagDeepCSV_probbb, jet.pt(jer=-1), jet.eta()))
+            btagvaluesDeepCSV_JERup.append((thisbtagDeepCSV_probb + thisbtagDeepCSV_probbb, jet.pt(jer=1), jet.eta()))
 
             if (thisbtagDeepCSV_probb + thisbtagDeepCSV_probbb) > maxbtag and jet.pt() > 15 and abs(jet.eta()) < 2.4:
                 maxbtag = thisbtagDeepCSV_probb + thisbtagDeepCSV_probbb
@@ -4103,8 +4427,17 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['n_jet_15_btagDeepCSVtight'][0] = len([bt for (bt, jetpt, jeteta) in btagvaluesDeepCSV if (bt > tightwpDeepCSV and jetpt > 15 and abs(jeteta) < 2.4)])
 
 
-        mtmetleadingjet = ROOT.TMath.Sqrt(2 * met.pt() * jets[idxhighestptjet].pt()
-                                          * (1 - ROOT.TMath.Cos(deltaPhi(met.phi(), jets[idxhighestptjet].phi()))))
+        event_level_var_array['n_jet_30_btagDeepCSVmediumJECdn'][0] = len([bt for (bt, jetpt, jeteta) in btagvaluesDeepCSV_JECdn if (bt > mediumwpDeepCSV and jetpt > 30 and abs(jeteta) < 2.4)])
+        event_level_var_array['n_jet_30_btagDeepCSVmediumJECup'][0] = len([bt for (bt, jetpt, jeteta) in btagvaluesDeepCSV_JECup if (bt > mediumwpDeepCSV and jetpt > 30 and abs(jeteta) < 2.4)])
+        event_level_var_array['n_jet_30_btagDeepCSVmediumJERdn'][0] = len([bt for (bt, jetpt, jeteta) in btagvaluesDeepCSV_JERdn if (bt > mediumwpDeepCSV and jetpt > 30 and abs(jeteta) < 2.4)])
+        event_level_var_array['n_jet_30_btagDeepCSVmediumJERup'][0] = len([bt for (bt, jetpt, jeteta) in btagvaluesDeepCSV_JERup if (bt > mediumwpDeepCSV and jetpt > 30 and abs(jeteta) < 2.4)])
+
+
+        if len(jets) > 0:
+            mtmetleadingjet = ROOT.TMath.Sqrt(2 * met.pt() * jets[idxhighestptjet].pt()
+                                              * (1 - ROOT.TMath.Cos(deltaPhi(met.phi(), jets[idxhighestptjet].phi()))))
+        else:
+            mtmetleadingjet = 0.
         hMtmetleadingjet.Fill(mtmetleadingjet)
         event_level_var_array['mtMetLeadingJet'][0] = mtmetleadingjet
 
@@ -4312,8 +4645,7 @@ for ifile, f in enumerate(options.inputFiles):
                 ######################################
                 #### "gen match of SV constituent for background SVs"
                 ######################################
-                #if 'signal' in options.tag: #toDo: this can be made for all MC?!
-                if not 'data' in options.tag: #toDo: this can be made for all MC?!
+                if 'data' not in options.tag:
 
                     idxGP = [-1,-1]
                     pdgIds = [-1, -1]
@@ -4882,6 +5214,7 @@ for ifile, f in enumerate(options.inputFiles):
             numtracksbasicpreselection += 1
 
             # TODO: adapt preselection
+            # TODO: dz < 10 ???
             if not abs(track.dz(pv_pos)) < 1: continue
             jetiso30, jetisomulti30, jetdrmin30, jetisobtag30, jetminv30 = calcIso_jet_new(track, jetsforiso30, isTrack=True, btagvalues=btagvaluesDeepCSV)
             if not jetdrmin30 > 0.4: continue
@@ -5317,8 +5650,12 @@ for ifile, f in enumerate(options.inputFiles):
                 track_level_var_array['track_dr4highestWpTau' + suffix][i] = taudr4wp
                 track_level_var_array['track_dr5highestWpTau' + suffix][i] = taudr5wp
 
-            track_level_var_array['track_detaLeadingJet'][i] = abs(track.eta() - jets[idxhighestptjet].eta())
-            track_level_var_array['track_dphiLeadingJet'][i] = deltaPhi(track.phi(), jets[idxhighestptjet].phi())
+            if len(jets) > 0:
+                track_level_var_array['track_detaLeadingJet'][i] = abs(track.eta() - jets[idxhighestptjet].eta())
+                track_level_var_array['track_dphiLeadingJet'][i] = deltaPhi(track.phi(), jets[idxhighestptjet].phi())
+            else:
+                track_level_var_array['track_detaLeadingJet'][i] = -9.
+                track_level_var_array['track_dphiLeadingJet'][i] = -9.
 
             track_level_var_array['track_dphiMet'][i] = deltaPhi(track.phi(), met.phi())
             track_level_var_array['track_dphiMetPca'][i], _, _ = handmadeDphiMetPCA(track, pv_pos, met)
@@ -5351,6 +5688,8 @@ for ifile, f in enumerate(options.inputFiles):
             genmatchpdgid = -1
             genmatchmotherpdgid = -1
             genmatchpt = -1
+            genmatcheta = -1
+            genmatchphi = -1
             genmatchmotherpt = -1
             genmatchstatus = -1
             genmatchmotherstatus = -1
@@ -5416,6 +5755,8 @@ for ifile, f in enumerate(options.inputFiles):
                     genmatchmotherpdgid = genmatchmother.pdgId()
 
                     genmatchpt = genmatch.pt()
+                    genmatcheta = genmatch.eta()
+                    genmatchphi = genmatch.phi()
                     genmatchmotherpt = genmatchmother.pt()
 
                     genmatchstatus = genmatch.status()
@@ -5445,6 +5786,8 @@ for ifile, f in enumerate(options.inputFiles):
             track_level_var_array['track_genMatchPdgId'][i] = genmatchpdgid
             track_level_var_array['track_genMatchMotherPdgId'][i] = genmatchmotherpdgid
             track_level_var_array['track_genMatchPt'][i] = genmatchpt
+            track_level_var_array['track_genMatchEta'][i] = genmatcheta
+            track_level_var_array['track_genMatchPhi'][i] = genmatchphi
             track_level_var_array['track_genMatchMotherPt'][i] = genmatchmotherpt
             track_level_var_array['track_genMatchStatus'][i] = genmatchstatus
             track_level_var_array['track_genMatchMotherStatus'][i] = genmatchmotherstatus
@@ -5456,6 +5799,7 @@ for ifile, f in enumerate(options.inputFiles):
             track_level_var_array['track_genMatchIsDirectTauDecayProduct'][i] = genmatchisdirecttaudecayproduct
             track_level_var_array['track_genMatchMotherIsTheTau'][i] = genmatchmotheristhetau
             track_level_var_array['track_genMatchMotherTauDecay'][i] = decayWtau
+            track_level_var_array['track_genMatchMotherTauDecay_alt'][i] = decayWtau_alt
 
             track_level_var_array['track_drminGenTauJet'][i] = gentaujetmatchdrmin
             track_level_var_array['track_genTauJetPt'][i] = gentaujetmatchpt
