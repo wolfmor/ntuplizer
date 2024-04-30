@@ -224,57 +224,10 @@ def deltaR(eta1, eta2, phi1, phi2):
 
 def jetID(tag, eta, nhf, nef, chf, cef, mef, nconstituents, cm, nm, lepveto=True):
 
-    # https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetID13TeVRun2016
-    # TightLepVeto
+    # old: https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetID13TeVRun2016
+    # new: https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVUL
+
     if 'era16' in tag:
-        if abs(eta) <= 2.4:
-
-            if lepveto:
-                return nhf < 0.9 and \
-                       nef < 0.9 and \
-                       nconstituents > 1 and \
-                       mef < 0.8 and \
-                       chf > 0. and \
-                       cm > 0. and \
-                       cef < 0.9
-            else:
-                return nhf < 0.9 and \
-                       nef < 0.9 and \
-                       nconstituents > 1 and \
-                       chf > 0. and \
-                       cm > 0. and \
-                       cef < 0.99
-
-        elif 2.4 < abs(eta) <= 2.7:
-
-            if lepveto:
-                return nhf < 0.9 and \
-                       nef < 0.9 and \
-                       nconstituents > 1 and \
-                       mef < 0.8
-            else:
-                return nhf < 0.9 and \
-                       nef < 0.9 and \
-                       nconstituents > 1
-
-        elif 2.7 < abs(eta) <= 3.:
-
-            return nhf < 0.98 and \
-                   nef > 0.01 and \
-                   nm > 2
-
-        elif abs(eta) > 3.:
-
-            return nef < 0.9 and \
-                   nm > 10
-
-        else:
-
-            raise NotImplementedError('what is with the eta?')
-
-    # https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVRun2017
-    # TightLepVeto
-    elif 'era17' in tag:
         if abs(eta) <= 2.4:
 
             if lepveto:
@@ -294,24 +247,28 @@ def jetID(tag, eta, nhf, nef, chf, cef, mef, nconstituents, cm, nm, lepveto=True
 
         elif 2.4 < abs(eta) <= 2.7:
 
-            if lepveto:
-                return nhf < 0.9 and \
-                       nef < 0.9 and \
-                       nconstituents > 1 and \
-                       mef < 0.8
-            else:
-                return nhf < 0.9 and \
-                       nef < 0.9 and \
-                       nconstituents > 1
+            return nhf < 0.9 and \
+                   nef < 0.99
+
+            # if lepveto:
+            #     return nhf < 0.9 and \
+            #            nef < 0.9 and \
+            #            nconstituents > 1 and \
+            #            mef < 0.8
+            # else:
+            #     return nhf < 0.9 and \
+            #            nef < 0.9 and \
+            #            nconstituents > 1
 
         elif 2.7 < abs(eta) <= 3.:
 
-            return 0.02 < nef < 0.99 and \
-                   nm > 2
+            return nhf < 0.9 and \
+                   0. < nef < 0.99 and \
+                   nm > 1
 
         elif abs(eta) > 3.:
 
-            return nhf > 0.02 and \
+            return nhf > 0.2 and \
                    nef < 0.9 and \
                    nm > 10
 
@@ -319,9 +276,7 @@ def jetID(tag, eta, nhf, nef, chf, cef, mef, nconstituents, cm, nm, lepveto=True
 
             raise NotImplementedError('what is with the eta?')
 
-    # https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVRun2018
-    # TightLepVeto
-    elif 'era18' in tag:
+    elif 'era17' in tag or 'era18' in tag:
         if abs(eta) <= 2.6:
 
             if lepveto:
@@ -354,22 +309,68 @@ def jetID(tag, eta, nhf, nef, chf, cef, mef, nconstituents, cm, nm, lepveto=True
 
         elif 2.7 < abs(eta) <= 3.:
 
-            return 0.02 < nef < 0.99 and \
-                   nm > 2
+            return 0.01 < nef < 0.99 and \
+                   nm > 1
 
-        elif 3. < abs(eta) <= 5.:
+        elif abs(eta) > 3.:
 
             return nhf > 0.2 and \
                    nef < 0.9 and \
                    nm > 10
 
-        elif abs(eta) > 5.:
-
-            return False
-
         else:
 
             raise NotImplementedError('what is with the eta?')
+
+    # elif 'era18' in tag:
+    #     if abs(eta) <= 2.6:
+    #
+    #         if lepveto:
+    #             return nhf < 0.9 and \
+    #                    nef < 0.9 and \
+    #                    nconstituents > 1 and \
+    #                    mef < 0.8 and \
+    #                    chf > 0. and \
+    #                    cm > 0. and \
+    #                    cef < 0.8
+    #         else:
+    #             return nhf < 0.9 and \
+    #                    nef < 0.9 and \
+    #                    nconstituents > 1 and \
+    #                    chf > 0. and \
+    #                    cm > 0.
+    #
+    #     elif 2.6 < abs(eta) <= 2.7:
+    #
+    #         if lepveto:
+    #             return nhf < 0.9 and \
+    #                    nef < 0.99 and \
+    #                    mef < 0.8 and \
+    #                    cm > 0. and \
+    #                    cef < 0.8
+    #         else:
+    #             return nhf < 0.9 and \
+    #                    nef < 0.99 and \
+    #                    cm > 0.
+    #
+    #     elif 2.7 < abs(eta) <= 3.:
+    #
+    #         return 0.02 < nef < 0.99 and \
+    #                nm > 2
+    #
+    #     elif 3. < abs(eta) <= 5.:
+    #
+    #         return nhf > 0.2 and \
+    #                nef < 0.9 and \
+    #                nm > 10
+    #
+    #     elif abs(eta) > 5.:
+    #
+    #         return False
+    #
+    #     else:
+    #
+    #         raise NotImplementedError('what is with the eta?')
 
     else:
 

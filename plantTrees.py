@@ -440,6 +440,8 @@ if True:
 
         , ('crossSection', 'F'), ('numSimEvents', 'F')
 
+        , ('weight_lepton', 'F')
+
         , ('weight_fastSimBug', 'F')
         , ('weight_PU_FastFull', 'F'), ('weight_PU_FastFull_rebin', 'F')
         , ('weight_PU_SigBkg', 'F'), ('weight_PU_SigBkg_rebin', 'F')
@@ -636,8 +638,8 @@ if True:
         event_level_var_array[tf] = array('i', [0])
         tEvent.Branch(tf, event_level_var_array[tf], tf + '/I')
 
-    # TODO: add MET no mu trigger?
-    trigger_hlt = [
+
+    trigger_hlt_met = [
         'HLT_PFMET90_PFMHT90_IDTight_v',
         'HLT_PFMET100_PFMHT100_IDTight_v',
         'HLT_PFMET110_PFMHT110_IDTight_v',
@@ -677,22 +679,21 @@ if True:
         'HLT_PFMETTypeOne130_PFMHTNoMu130_IDTight_PFHT60_v',
         'HLT_PFMETTypeOne140_PFMHTNoMu140_IDTight_PFHT60_v',
 
-        'triggerfired',
+        'triggerfired_met',
     ]
 
-    if 'SingleMuon' in options.dataset:
-        trigger_hlt = [
-            'HLT_IsoMu24_v',
-            'HLT_IsoMu27_v',
-            'HLT_IsoMu30_v',
+    trigger_hlt_muon = [
+        'HLT_IsoMu24_v',
+        'HLT_IsoMu27_v',
+        'HLT_IsoMu30_v',
 
-            'HLT_Mu50_v',
-            'HLT_Mu55_v',
+        'HLT_Mu50_v',
+        'HLT_Mu55_v',
 
-            'triggerfired',
-        ]
+        'triggerfired_muon',
+    ]
 
-    for t_hlt in trigger_hlt:
+    for t_hlt in trigger_hlt_met + trigger_hlt_muon:
         event_level_var_array[t_hlt] = array('i', [0])
         tEvent.Branch(t_hlt, event_level_var_array[t_hlt], t_hlt + '/I')
 
@@ -1291,6 +1292,8 @@ if True:
 ###############################################################################################
 '''
 
+# TODO: add muon SFs for DY cleaning?
+
 if True:
 
     jettype = 'AK4PFchs'
@@ -1360,7 +1363,7 @@ if True:
             DataJECs = DataJEC(jet_energy_corrections, jettype)
             
         elif 'fastsim' in options.tag:
-            ## toDo: same as for 'era16_07Aug17'; not available so far
+            # TODO: same as for 'era16_07Aug17'; not available so far
             jecAK4 = createJEC(localpath + 'JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC',
                                ['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'], jettype)
             jecUncAK4 = ROOT.JetCorrectionUncertainty(ROOT.std.string(localpath + 'JECs/Summer16_FastSimV1_MC/Summer16_FastSimV1_MC_Uncertainty_' + jettype + '.txt'))
@@ -2063,11 +2066,12 @@ for ifile, f in enumerate(options.inputFiles):
         hCutflow.Fill(cutflow)
                 
         trigger_hlt_accept = {}
-        for t_hlt in trigger_hlt:
-            if t_hlt == 'triggerfired': continue
+        for t_hlt in trigger_hlt_met + trigger_hlt_muon:
+            if 'triggerfired' in t_hlt: continue
             trigger_hlt_accept[t_hlt] = -1
 
-        triggerfired = 0
+        triggerfired_met = 0
+        triggerfired_muon = 0
 
         if 'fastsim' not in options.tag:
 
@@ -2080,19 +2084,30 @@ for ifile, f in enumerate(options.inputFiles):
 
                 tn_hlt = triggernames_hlt.triggerName(i)
 
-                for t_hlt in trigger_hlt:
+                for t_hlt in trigger_hlt_met:
 
                     if re.match(r'' + t_hlt + '.*', tn_hlt):
                         if triggerresults_hlt.accept(i):
                             trigger_hlt_accept[t_hlt] = 1
-                            triggerfired = 1
+                            triggerfired_met = 1
                         else:
                             trigger_hlt_accept[t_hlt] = 0
 
-        for t_hlt in trigger_hlt:
-            if t_hlt == 'triggerfired': continue
+
+                for t_hlt in trigger_hlt_muon:
+
+                    if re.match(r'' + t_hlt + '.*', tn_hlt):
+                        if triggerresults_hlt.accept(i):
+                            trigger_hlt_accept[t_hlt] = 1
+                            triggerfired_muon = 1
+                        else:
+                            trigger_hlt_accept[t_hlt] = 0
+
+        for t_hlt in trigger_hlt_met + trigger_hlt_muon:
+            if 'triggerfired' in t_hlt: continue
             event_level_var_array[t_hlt][0] = trigger_hlt_accept[t_hlt]
-        event_level_var_array['triggerfired'][0] = triggerfired
+        event_level_var_array['triggerfired_met'][0] = triggerfired_met
+        event_level_var_array['triggerfired_muon'][0] = triggerfired_muon
 
         n_trueInteractions = -1.0
         if 'data' not in options.tag:
@@ -2415,6 +2430,8 @@ for ifile, f in enumerate(options.inputFiles):
         l2absisodbeta, l2relisodbeta = -1, -1
         nbadtracks, nbadpfcands, nbadphotons, nbadjets, nbadsvs = -1, -1, -1, -1, -1
 
+        weight_lepton = 1
+
         if 'cleanleptons' in options.tag:
 
             l1Idx = -1
@@ -2574,6 +2591,8 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['cleaning_photonsRemoved'][0] = nbadphotons
         event_level_var_array['cleaning_jetsRemoved'][0] = nbadjets
         event_level_var_array['cleaning_svsRemoved'][0] = nbadsvs
+
+        event_level_var_array['weight_lepton'][0] = weight_lepton
 
         '''
         ###############################################################################################
@@ -5214,7 +5233,6 @@ for ifile, f in enumerate(options.inputFiles):
             numtracksbasicpreselection += 1
 
             # TODO: adapt preselection
-            # TODO: dz < 10 ???
             if not abs(track.dz(pv_pos)) < 1: continue
             jetiso30, jetisomulti30, jetdrmin30, jetisobtag30, jetminv30 = calcIso_jet_new(track, jetsforiso30, isTrack=True, btagvalues=btagvaluesDeepCSV)
             if not jetdrmin30 > 0.4: continue
