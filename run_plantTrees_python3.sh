@@ -30,10 +30,10 @@
 
 
 
-echo "================= getting the input files ===================="
-python -c "import PSet; print(PSet.process.source.fileNames.value())"
-python -c "import PSet; print(PSet.process.dumpPython())" 
-cmsRun -j FrameworkJobReport.xml -p PSet.py #config option crab
+#echo "================= getting the input files ===================="
+#python -c "import PSet; print(PSet.process.source.fileNames.value())"
+#python -c "import PSet; print(PSet.process.dumpPython())"
+#cmsRun -j FrameworkJobReport.xml -p PSet.py #config option crab
 
 echo "================= producing the ntuples ===================="
 
@@ -41,9 +41,11 @@ exitCode=1
 exitMessage="The Ntupelizer Failed"
 errorType="ntupelizer crash"
 
-CRABFILES=$(python -c "import PSet; print(','.join(PSet.process.source.fileNames.value()))" 2>/dev/null| tail -1)
+CRABFILES=$(python3 -c "import PSet; print(','.join(PSet.process.source.fileNames.value()))" 2>/dev/null| tail -1)
+echo $CRABFILES
 echo $2
-python plantTrees.py inputFiles="$CRABFILES" $2 $3
+echo $3
+python3 plantTrees.py inputFiles="$CRABFILES" $2 $3
 
 # At the end of the script modify the FJR
 ret=$?

@@ -157,6 +157,7 @@ def joinTreeByFriend(tree, friendFile, friendTree):
 # # # Info in <TCanvas::MakeDefCanvas>:  created default TCanvas with name c1
 # # # >>> t.Draw("bdt_score")
 
+"""
 def makeFriendTree(
         fin='/nfs/dust/cms/user/tewsalex/CMSSW_10_5_0/src/step3_higgsino_RunIISpring21UL16FS_susyall_mChipm115GeV_dm1p168GeV_Chi20ctau5MM_part5of100_NTuple.root',
         outpath='/nfs/dust/cms/user/tewsalex/rootfiles/friendTrees_V12/',
@@ -237,6 +238,7 @@ def makeFriendTree(
     # friendTree.Write("tFriend", TObject.kOverwrite)
 
     print("added a tFriend to", fin, fout.GetName())
+"""
 
 
 def makeFriendTree_keras(
@@ -1279,7 +1281,8 @@ outpath = '/nfs/dust/cms/user/wolfmor/FrieNdTuples/Test/'
 
 my_model_V15_20240711 = MyModel(
     name='PyKeras_V15_20240711_multiclass',
-    h5file='/afs/desy.de/user/w/wolfmor/cmssw/CMSSW_10_2_18/src/SoftDisplacedTrack/training/NNmulticlass_V15/weights/TrainedModel_PyKeras_V15_20240711_multiclass.h5',
+    # h5file='/afs/desy.de/user/w/wolfmor/cmssw/CMSSW_10_2_18/src/SoftDisplacedTrack/training/NNmulticlass_V15/weights/TrainedModel_PyKeras_V15_20240711_multiclass.h5',
+    h5file='TrainedModel_PyKeras_V15_20240711_multiclass.h5',
     custom_objects={'focal_loss_fn': None, 'OneHotEncodingLastDimension': OneHotEncodingLastDimension},
     inputs=[
         'deltam', 'track_pt', 'track_abs_eta_',
@@ -1299,18 +1302,18 @@ my_model_V15_20240711 = MyModel(
         'track_drminJet30',
         'track_abs_detaLeadingJet_', 'track_abs_dphiLeadingJet_',
         'track_abs_dphiMet_',
-        'met_pt',
+        'met_ptJECup',
         'era'
     ],
     outputs=['Signal', 'Background_nogenmatch', 'Background_prompt', 'Background_secondary', 'Background_fromtruetau'],
-    savemaxscoreinfo=['Signal', 'Background_fromtruetau'],
+    savemaxscoreinfo=['Signal'],  # , 'Background_fromtruetau'],
     parameters={'deltam': [0.3, 0.6, 1.0]},
     specialinputs={'track_abs_eta_': ['track_eta', lambda x: abs(x)],
                    'track_abs_detaLeadingJet_': ['track_detaLeadingJet', lambda x: abs(x)],
                    'track_abs_dphiLeadingJet_': ['track_dphiLeadingJet', lambda x: abs(x)],
                    'track_abs_dphiMet_': ['track_dphiMet', lambda x: abs(x)]
                    },
-    eventlevelintputs=['met_pt', 'era'],
+    eventlevelintputs=['met_ptJECup', 'era'],
     qualitymask=True
 )
 
@@ -1564,13 +1567,13 @@ my_refiner_dummy = MyRefiner(
 #     eventlevelintputs=[],
 # )
 
-my_refiner_20241221_2 = MyRefiner(
-    name='_refined20241221_2',
-    ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20241221_2_cpu.pt',
-    parameters=[],
-    variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
-    eventlevelintputs=[],
-)
+# my_refiner_20241221_2 = MyRefiner(
+#     name='_refined20241221_2',
+#     ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20241221_2_cpu.pt',
+#     parameters=[],
+#     variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
+#     eventlevelintputs=[],
+# )
 
 # my_refiner_20241221_3 = MyRefiner(
 #     name='_refined20241221_3',
@@ -1597,37 +1600,37 @@ my_refiner_20241221_2 = MyRefiner(
 # )
 
 
-my_refiner_20250102 = MyRefiner(
-    name='_refined20250102',
-    ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_cpu.pt',
-    parameters=[],
-    variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
-    eventlevelintputs=[],
-)
-
-my_refiner_20250102_1 = MyRefiner(
-    name='_refined20250102_1',
-    ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_1_cpu.pt',
-    parameters=[],
-    variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
-    eventlevelintputs=[],
-)
-
-my_refiner_20250102_2 = MyRefiner(
-    name='_refined20250102_2',
-    ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_2_cpu.pt',
-    parameters=[],
-    variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
-    eventlevelintputs=[],
-)
-
-my_refiner_20250102_3 = MyRefiner(
-    name='_refined20250102_3',
-    ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_3_cpu.pt',
-    parameters=[],
-    variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
-    eventlevelintputs=[],
-)
+# my_refiner_20250102 = MyRefiner(
+#     name='_refined20250102',
+#     ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_cpu.pt',
+#     parameters=[],
+#     variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
+#     eventlevelintputs=[],
+# )
+#
+# my_refiner_20250102_1 = MyRefiner(
+#     name='_refined20250102_1',
+#     ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_1_cpu.pt',
+#     parameters=[],
+#     variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
+#     eventlevelintputs=[],
+# )
+#
+# my_refiner_20250102_2 = MyRefiner(
+#     name='_refined20250102_2',
+#     ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_2_cpu.pt',
+#     parameters=[],
+#     variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
+#     eventlevelintputs=[],
+# )
+#
+# my_refiner_20250102_3 = MyRefiner(
+#     name='_refined20250102_3',
+#     ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_3_cpu.pt',
+#     parameters=[],
+#     variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
+#     eventlevelintputs=[],
+# )
 
 my_refiner_ensemble_20241221_2 = MyRefinerEnsemble(
     name='_refined20241221_2_ensemble',
@@ -1635,11 +1638,16 @@ my_refiner_ensemble_20241221_2 = MyRefinerEnsemble(
     variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
     eventlevelintputs=[],
     ptfiles=[
-        '/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20241221_2_cpu.pt',
-        '/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_cpu.pt',
-        '/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_1_cpu.pt',
-        '/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_2_cpu.pt',
-        '/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_3_cpu.pt',
+        # '/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20241221_2_cpu.pt',
+        # '/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_cpu.pt',
+        # '/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_1_cpu.pt',
+        # '/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_2_cpu.pt',
+        # '/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_3_cpu.pt',
+        'model_refinement_regression_20241221_2_cpu.pt',
+        'model_refinement_regression_20250102_cpu.pt',
+        'model_refinement_regression_20250102_1_cpu.pt',
+        'model_refinement_regression_20250102_2_cpu.pt',
+        'model_refinement_regression_20250102_3_cpu.pt',
     ]
 )
 
@@ -1650,11 +1658,11 @@ my_models = [
 ]
 my_refiners = [
     my_refiner_dummy,  # to also store the un-refined version
-    my_refiner_20241221_2,
-    my_refiner_20250102,
-    my_refiner_20250102_1,
-    my_refiner_20250102_2,
-    my_refiner_20250102_3,
+    # my_refiner_20241221_2,
+    # my_refiner_20250102,
+    # my_refiner_20250102_1,
+    # my_refiner_20250102_2,
+    # my_refiner_20250102_3,
     my_refiner_ensemble_20241221_2,
 ]
 

@@ -30,10 +30,10 @@
 
 
 
-echo "================= getting the input files ===================="
-python -c "import PSet; print(PSet.process.source.fileNames.value())"
-python -c "import PSet; print(PSet.process.dumpPython())" 
-cmsRun -j FrameworkJobReport.xml -p PSet.py #config option crab
+#echo "================= getting the input files ===================="
+#python -c "import PSet; print(PSet.process.source.fileNames.value())"
+#python -c "import PSet; print(PSet.process.dumpPython())"
+#cmsRun -j FrameworkJobReport.xml -p PSet.py #config option crab
 
 echo "================= producing the ntuples ===================="
 

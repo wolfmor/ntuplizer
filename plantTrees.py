@@ -1,4 +1,4 @@
-#! /usr/bin/env python2
+#! /usr/bin/env python3
 
 
 """
@@ -10,10 +10,11 @@ python plantTrees.py inputFiles="file1, file2,..." tag="tag1 tag2 ..."
 
 minimal example: 
 python plantTrees.py inputFiles="/pnfs/desy.de/cms/tier2/store/user/sbein/CommonSamples/RadiativeMu_2016Fast/v2/higgsino94x_susyall_mChipm115GeV_dm0p77GeV_pu35_part22of25.root" tag="test, local, era16_07Aug17, signal, skipSVs, fastsim"
-python plantTrees.py inputFiles="/nfs/dust/cms/user/beinsam/CommonSamples/MC_BSM/CompressedHiggsino/RadiativeMu_2016Full/v2/higgsino94xfull_susyall_mChipm115GeV_dm0p768GeV_pu35_part22of100.root" tag="local, era16_07Aug17, signal"
-python plantTrees.py inputFiles="/nfs/dust/cms/user/wolfmor/testsamples/ZJetsToNuNu_Zpt-200toInf/B044CEA0-F8C9-E611-8F67-0CC47AD990C4.root" tag="test, local, era16_07Aug17"
-python plantTrees.py inputFiles="/nfs/dust/cms/user/wolfmor/testsamples/WJetsToLNu/80A3D525-0FBC-E611-AF19-549F35AC7EA4.root" tag="local, era16_07Aug17"
-python /nfs/dust/cms/user/tewsalex/CMSSW_10_2_18/src/ntuplizer/plantTrees.py inputFiles="/nfs/dust/cms/user/tewsalex/CRAB3-tutorial/CMSSW_10_6_18/src/06475BE3-CAB1-B044-ADFB-3FD0983B451B.root" tag="era16_UL_APV,local" dataset="/DYJetsToLL_M-50_Zpt-200toInf_BPSFilter_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM"
+python plantTrees.py inputFiles="/data/dust/user/beinsam/CommonSamples/MC_BSM/CompressedHiggsino/RadiativeMu_2016Full/v2/higgsino94xfull_susyall_mChipm115GeV_dm0p768GeV_pu35_part22of100.root" tag="local, era16_07Aug17, signal"
+python plantTrees.py inputFiles="/data/dust/user/wolfmor/testsamples/ZJetsToNuNu_Zpt-200toInf/B044CEA0-F8C9-E611-8F67-0CC47AD990C4.root" tag="test, local, era16_07Aug17"
+python plantTrees.py inputFiles="/data/dust/user/wolfmor/testsamples/WJetsToLNu/80A3D525-0FBC-E611-AF19-549F35AC7EA4.root" tag="local, era16_07Aug17"
+python /data/dust/user/tewsalex/CMSSW_10_2_18/src/ntuplizer/plantTrees.py inputFiles="/data/dust/user/tewsalex/CRAB3-tutorial/CMSSW_10_6_18/src/06475BE3-CAB1-B044-ADFB-3FD0983B451B.root" tag="era16_UL_APV,local" dataset="/DYJetsToLL_M-50_Zpt-200toInf_BPSFilter_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v1/AODSIM"
+python3 plantTrees.py inputFiles="/data/dust/user/wolfmor/testsamples/RunIISummer20UL17RECO_ZJetsToNuNu_Zpt-200toInf_BPSFilter_TuneCP5_13TeV-madgraphMLM-pythia8/4404BDCE-550C-9E44-B28E-B0D3829CD9FE.root" tag="era17_UL,cleanleptons,skipSVs,test,local" dataset="/ZJetsToNuNu_Zpt-200toInf_BPSFilter_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL17RECO-106X_mc2017_realistic_v6-v1/AODSIM"
 ----------------------------------------------------------------------
 
 tags:
@@ -187,7 +188,7 @@ def createJEC(jecSrc, jecLevelList, jetAlgo):
 
     # Load the different JEC levels (the order matters!)
     for jecLevel in jecLevelList:
-        print '%s_%s_%s.txt' % (jecSrc, jecLevel, jetAlgo)
+        print('%s_%s_%s.txt' % (jecSrc, jecLevel, jetAlgo))
         jecParameter = ROOT.JetCorrectorParameters('%s_%s_%s.txt' % (jecSrc, jecLevel, jetAlgo))
         jecParameterList.push_back(jecParameter)
 
@@ -327,15 +328,15 @@ nMaxTracksPerEvent = 10000
 saveOutputFile = True
 
 dataset = options.dataset
-if 'debug' in options.tag: print 'dataset', dataset
+if 'debug' in options.tag: print('dataset', dataset)
 
 if 'test' in options.tag: isTest = True
 else: isTest = False
 
 if 'crab' in options.tag: localpath = ''
-else: localpath = '/nfs/dust/cms/user/wolfmor/NTupleStuff/'
+else: localpath = '/data/dust/user/wolfmor/NTupleStuff/'
 
-nEventsTest = 10  # number of events that are analyzed in case of test
+nEventsTest = 100  # number of events that are analyzed in case of test
 printevery = 10
 
 # TODO: check thresholds for "new" matching
@@ -344,8 +345,8 @@ matchingDrThreshold = 0.05
 matchingDxyzThreshold = 0.2
 
 # TODO: check met threshold for event selection
-metthreshold = 200
-metthresholdtrackgenmatch = 200  # only relevant if "genmatch(all)tracks" in options.tag
+metthreshold = 300  # 200
+metthresholdtrackgenmatch = 300  # 200  # only relevant if "genmatch(all)tracks" in options.tag
 
 '''
 ###############################################################################################
@@ -439,6 +440,8 @@ if True:
         ('cutflow', 'I'), ('random', 'I'), ('era', 'I')
 
         , ('crossSection', 'F'), ('numSimEvents', 'F')
+
+        , ('weight_br_neutralino', 'F'), ('weight_wino', 'F'), ('crossSection_wino', 'F')
 
         , ('weight_lepton', 'F')
 
@@ -579,7 +582,7 @@ if True:
         raise NotImplementedError('MET filters: era unknown or not specified', options.tag)
 
     """
-    flags available in /nfs/dust/cms/user/wolfmor/testsamples/DataMET_16C/8AFF8257-2BAF-E711-BBAC-0CC47A4D7614.root
+    flags available in /data/dust/user/wolfmor/testsamples/DataMET_16C/8AFF8257-2BAF-E711-BBAC-0CC47A4D7614.root
     
     raw2digi_step
     L1Reco_step
@@ -666,18 +669,18 @@ if True:
         'HLT_PFMETNoMu130_PFMHTNoMu130_IDTight_PFHT60_v',
         'HLT_PFMETNoMu140_PFMHTNoMu140_IDTight_PFHT60_v',
 
-        'HLT_PFMETTypeOne90_PFMHTNoMu90_IDTight_v',
-        'HLT_PFMETTypeOne100_PFMHTNoMu100_IDTight_v',
-        'HLT_PFMETTypeOne110_PFMHTNoMu110_IDTight_v',
-        'HLT_PFMETTypeOne120_PFMHTNoMu120_IDTight_v',
-        'HLT_PFMETTypeOne130_PFMHTNoMu130_IDTight_v',
-        'HLT_PFMETTypeOne140_PFMHTNoMu140_IDTight_v',
+        # 'HLT_PFMETTypeOne90_PFMHTNoMu90_IDTight_v',
+        # 'HLT_PFMETTypeOne100_PFMHTNoMu100_IDTight_v',
+        # 'HLT_PFMETTypeOne110_PFMHTNoMu110_IDTight_v',
+        # 'HLT_PFMETTypeOne120_PFMHTNoMu120_IDTight_v',
+        # 'HLT_PFMETTypeOne130_PFMHTNoMu130_IDTight_v',
+        # 'HLT_PFMETTypeOne140_PFMHTNoMu140_IDTight_v',
 
-        'HLT_PFMETTypeOne100_PFMHTNoMu100_IDTight_PFHT60_v',
-        'HLT_PFMETTypeOne110_PFMHTNoMu110_IDTight_PFHT60_v',
-        'HLT_PFMETTypeOne120_PFMHTNoMu120_IDTight_PFHT60_v',
-        'HLT_PFMETTypeOne130_PFMHTNoMu130_IDTight_PFHT60_v',
-        'HLT_PFMETTypeOne140_PFMHTNoMu140_IDTight_PFHT60_v',
+        # 'HLT_PFMETTypeOne100_PFMHTNoMu100_IDTight_PFHT60_v',
+        # 'HLT_PFMETTypeOne110_PFMHTNoMu110_IDTight_PFHT60_v',
+        # 'HLT_PFMETTypeOne120_PFMHTNoMu120_IDTight_PFHT60_v',
+        # 'HLT_PFMETTypeOne130_PFMHTNoMu130_IDTight_PFHT60_v',
+        # 'HLT_PFMETTypeOne140_PFMHTNoMu140_IDTight_PFHT60_v',
 
         'triggerfired_met',
     ]
@@ -1322,7 +1325,7 @@ if True:
                 [1, 276811, 'Summer16_07Aug2017BCD_V11_DATA'],
                 [276831, 278801, 'Summer16_07Aug2017EF_V11_DATA'],
                 [278802, float('inf'), 'Summer16_07Aug2017GH_V11_DATA']]
-            print jet_energy_corrections, jettype
+            print(jet_energy_corrections, jettype)
             DataJECs = DataJEC(jet_energy_corrections, jettype)
             
         elif 'fastsim' in options.tag:
@@ -1351,11 +1354,12 @@ if True:
         # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt
         # from https://twiki.cern.ch/twiki/bin/viewauth/CMS/DCUserPage
         with open(localpath + 'goldenjson_era16_UL.json') as goldenjsonfile:
-                goldenjson = json.load(goldenjsonfile)
+            goldenjson = json.load(goldenjsonfile)
 
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
         # and https://twiki.cern.ch/twiki/bin/view/CMS/PdmVDataReprocessingUL2016
         if 'data' in options.tag:  # data
+
             jet_energy_corrections = [
                 [1, 276811, 'Summer19UL16APV_RunBCD_V7_DATA'],
                 [276831, 278807, 'Summer19UL16APV_RunEF_V7_DATA'],
@@ -1429,19 +1433,31 @@ if True:
 
     elif 'era17_UL' in options.tag:
 
-        # TODO: implement goldenjson for 2017 UL
-        # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
+        # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt
         # from https://twiki.cern.ch/twiki/bin/viewauth/CMS/DCUserPage
-        # with open(localpath + 'goldenjson_era17_17Nov2017.json') as goldenjsonfile:
-        #     goldenjson = json.load(goldenjsonfile)
-        goldenjson = None
+        with open(localpath + 'goldenjson_era17_UL.json') as goldenjsonfile:
+            goldenjson = json.load(goldenjsonfile)
 
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
         if 'data' in options.tag:  # data
-            raise NotImplementedError('no JECs yet for 2017 data')
-            # TODO: implement JECs for 2017 UL data
-            # jet_energy_corrections = []
-            # DataJECs = DataJEC(jet_energy_corrections, jettype)
+
+            if 'Run2017B' in options.dataset:
+                jec_tag = 'Summer19UL17_RunB_V5_DATA'
+            elif 'Run2017C' in options.dataset:
+                jec_tag = 'Summer19UL17_RunC_V5_DATA'
+            elif 'Run2017D' in options.dataset:
+                jec_tag = 'Summer19UL17_RunD_V5_DATA'
+            elif 'Run2017E' in options.dataset:
+                jec_tag = 'Summer19UL17_RunE_V5_DATA'
+            elif 'Run2017F' in options.dataset:
+                jec_tag = 'Summer19UL17_RunF_V5_DATA'
+            else:
+                raise AssertionError('unknown data era')
+
+            jet_energy_corrections = [
+                [1, float('inf'), jec_tag]]
+            DataJECs = DataJEC(jet_energy_corrections, jettype)
+
         elif 'fastsim' in options.tag:
             # TODO: same as for 'era17_17Nov2017'; not available so far
             jecAK4 = createJEC(localpath + 'JECs/Fall17_FastSimV1_MC/Fall17_FastSimV1_MC',
@@ -1500,20 +1516,29 @@ if True:
 
     elif 'era18_UL' in options.tag:
 
-        # TODO: implement goldenjson for 2018 UL
-        # # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt
-        # # from https://twiki.cern.ch/twiki/bin/viewauth/CMS/DCUserPage
-        # with open(localpath + 'goldenjson_era18_UL.json') as goldenjsonfile:
-        #         goldenjson = json.load(goldenjsonfile)
-        goldenjson = None
+        # https://cms-service-dqmdc.web.cern.ch/CAF/certification/Collisions18/13TeV/Legacy_2018/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt
+        # from https://twiki.cern.ch/twiki/bin/viewauth/CMS/DCUserPage
+        with open(localpath + 'goldenjson_era18_UL.json') as goldenjsonfile:
+            goldenjson = json.load(goldenjsonfile)
 
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
         # and https://twiki.cern.ch/twiki/bin/view/CMS/PdmVDataReprocessingUL2016
         if 'data' in options.tag:  # data
-            raise NotImplementedError('no JECs yet for 2018 data')
-            # TODO: implement JECs for 2018 UL data
-            # jet_energy_corrections = []
-            # DataJECs = DataJEC(jet_energy_corrections, jettype)
+
+            if 'Run2018A' in options.dataset:
+                jec_tag = 'Summer19UL18_RunA_V5_DATA'
+            elif 'Run2018B' in options.dataset:
+                jec_tag = 'Summer19UL18_RunB_V5_DATA'
+            elif 'Run2018C' in options.dataset:
+                jec_tag = 'Summer19UL18_RunC_V5_DATA'
+            elif 'Run2018D' in options.dataset:
+                jec_tag = 'Summer19UL18_RunD_V5_DATA'
+            else:
+                raise AssertionError('unknown data era')
+
+            jet_energy_corrections = [
+                [1, float('inf'), jec_tag]]
+            DataJECs = DataJEC(jet_energy_corrections, jettype)
 
         elif 'fastsim' in options.tag:
             # TODO: same as for 'era18_17Sep2018'; not available so far
@@ -1673,7 +1698,7 @@ lastrun = -1
 '''
 
 if not 'skipSVs' in options.tag:
-    print "----------Start loop over SV files----------------"
+    print("----------Start loop over SV files----------------")
     
     filesWithSV = np.array([None]*len(options.inputFiles))
     filesWithDCA = np.array([None]*len(options.inputFiles))
@@ -1710,8 +1735,8 @@ if not 'skipSVs' in options.tag:
                 filesWithDCA[0][event_id][nSV] = dca
 
     else: 
-        localpath_out = '/nfs/dust/cms/user/tewsalex/rootfiles/edmfiles/svfile_'
-        if 'samesign' in options.tag: localpath_out = '/nfs/dust/cms/user/tewsalex/rootfiles/edmfiles/svfile_ss_'
+        localpath_out = '/data/dust/user/tewsalex/rootfiles/edmfiles/svfile_'
+        if 'samesign' in options.tag: localpath_out = '/data/dust/user/tewsalex/rootfiles/edmfiles/svfile_ss_'
        
         for ifile, f in enumerate(options.inputFiles):
             
@@ -1728,7 +1753,7 @@ if not 'skipSVs' in options.tag:
 
                 v_fname = vertexfile.strip()
                 v_fin = ROOT.TFile.Open(v_fname)
-                print vertexfile
+                print(vertexfile)
 
             else:
 
@@ -1742,7 +1767,7 @@ if not 'skipSVs' in options.tag:
                 retry = 1
                 while not v_fin or v_fin.IsZombie() or not v_fin.IsOpen():
 
-                    print 'retry open file ', retry
+                    print('retry open file ', retry)
 
                     retry += 1
                     if retry > 5: break
@@ -1766,7 +1791,7 @@ if not 'skipSVs' in options.tag:
                 dcas = handle_dca.product()
 
                 event_id = str(v_event.eventAuxiliary().run())+"_"+str(v_event.eventAuxiliary().luminosityBlock())+"_"+str(v_event.eventAuxiliary().event())
-                if 'debug' in options.tag: print "filenumber", ifile, "event", v_ievent, "event no", v_event.eventAuxiliary().event(), " run num", v_event.eventAuxiliary().run(), "lumi section", v_event.eventAuxiliary().luminosityBlock()
+                if 'debug' in options.tag: print("filenumber", ifile, "event", v_ievent, "event no", v_event.eventAuxiliary().event(), " run num", v_event.eventAuxiliary().run(), "lumi section", v_event.eventAuxiliary().luminosityBlock())
             
                 filesWithSV[ifile][event_id] = np.array([None]*secondaryVertices.size())
                 filesWithDCA[ifile][event_id] = np.array([-1.]*dcas.size())
@@ -1779,10 +1804,10 @@ if not 'skipSVs' in options.tag:
                     dca = float(dcas[nSV])
                     filesWithDCA[ifile][event_id][nSV] = dca
                     
-                    if 'debug' in options.tag: print 'file', ifile, 'event', v_ievent, 'SV loop', nSV, " vtx vx", secondary.vx()
+                    if 'debug' in options.tag: print('file', ifile, 'event', v_ievent, 'SV loop', nSV, " vtx vx", secondary.vx())
 
 
-print "----------Finished loop over SV files----------------"
+print("----------Finished loop over SV files----------------")
 
 '''
 ###############################################################################################
@@ -1790,16 +1815,16 @@ print "----------Finished loop over SV files----------------"
 ###############################################################################################
 '''
 
-print "----------Start loop over AOD files----------------"
-print ''
-print 'n input files: ' + str(len(options.inputFiles))
+print("----------Start loop over AOD files----------------")
+print('')
+print('n input files: ' + str(len(options.inputFiles)))
 
 
 for ifile, f in enumerate(options.inputFiles):
 
 
-    print 'AOD filename'
-    print f
+    print('AOD filename')
+    print(f)
 
     '''
     ###############################################################################################
@@ -1822,7 +1847,8 @@ for ifile, f in enumerate(options.inputFiles):
         fname = 'root://' + redir + '/' + f.strip()
         
         if 'crab' in options.tag: 
-            fname = 'root://' + redir + '/' + '/pnfs/desy.de/cms/tier2' + f.strip()  # TODO: maybe this always fails? And xrd is used
+            # fname = 'root://' + redir + '/' + '/pnfs/desy.de/cms/tier2' + f.strip()  # TODO: maybe this always fails? And xrd is used
+            fname = 'root://cms-xrd-global.cern.ch/' + f.strip()
         
             
         fin = ROOT.TFile.Open(fname)
@@ -1830,7 +1856,7 @@ for ifile, f in enumerate(options.inputFiles):
         retry = 1
         while not fin or fin.IsZombie() or not fin.IsOpen():
 
-            print 'retry open file ', retry
+            print('retry open file ', retry)
 
             retry += 1
             if retry > 5: break
@@ -1846,11 +1872,11 @@ for ifile, f in enumerate(options.inputFiles):
     # try:
     #     nevents = events.size()
     # except:
-    #     print 'skipping file ' + f
+    #     print('skipping file ' + f)
     #     continue
 
-    print '### with ' + str(nevents) + ' events'
-    print '### printing every ' + str(printevery) + '. event'
+    print('### with ' + str(nevents) + ' events')
+    print('### printing every ' + str(printevery) + '. event')
 
     if saveOutputFile: fout.cd()
 
@@ -1876,20 +1902,20 @@ for ifile, f in enumerate(options.inputFiles):
     for ievent, event in enumerate(events):
         
         if 'crab' in options.tag and isTest and nevents >= nEventsTest:
-            print 'nEventsTest boundary'
+            print('nEventsTest boundary')
             break
         if not 'crab' in options.tag and isTest and ievent >= nEventsTest:
-            print 'nEventsTest boundary'
+            print('nEventsTest boundary')
             break
 
         if 'local' not in options.tag:
             if fin.IsZombie() or not fin.IsOpen():
-                print 'file not usable'
+                print('file not usable')
                 sys.exit(1)
 
         if saveOutputFile and ievent % 100 == 0: fout.Write('', ROOT.TObject.kWriteDelete)
 
-        if ievent % printevery == 0: print 'analyzing event %d of %d' % (ievent, nevents)
+        if ievent % printevery == 0: print('analyzing event %d of %d' % (ievent, nevents))
 
         random.seed()
         event_level_var_array['random'][0] = random.randrange(10)
@@ -1937,21 +1963,21 @@ for ifile, f in enumerate(options.inputFiles):
         if 'data' in options.tag:
 
             if runnum != lastrun or lumisec != lastlumi:
-                if 'debug' in options.tag: print "new runnum ", runnum, " or luminsec", lumisec
-                if 'debug' in options.tag: print "str(runnum) in goldenjson", goldenjsonfile, str(runnum) in goldenjson
+                if 'debug' in options.tag: print("new runnum ", runnum, " or luminsec", lumisec)
+                if 'debug' in options.tag: print("str(runnum) in goldenjson", goldenjsonfile, str(runnum) in goldenjson)
                 
                 if str(runnum) in goldenjson: goodlumisecs = goldenjson[str(runnum)]
                 else: goodlumisecs = []
                 isgood = False
                 for gls in goodlumisecs:
                     if lumisec in range(gls[0], gls[1]+1): isgood = True
-                    print 'lumisec in range(gls[0], gls[1]+1)', gls[0], gls[1]+1, lumisec in range(gls[0], gls[1]+1)
+                    print('lumisec in range(gls[0], gls[1]+1)', gls[0], gls[1]+1, lumisec in range(gls[0], gls[1]+1))
                     if isgood: break
 
             if not isgood:
                 lastrun = runnum
                 lastlumi = lumisec
-                if 'debug' in options.tag: print "data is not good, continue"
+                if 'debug' in options.tag: print("data is not good, continue")
                 continue
         # ########################################################################################### veto
 
@@ -2017,7 +2043,7 @@ for ifile, f in enumerate(options.inputFiles):
         tracks = handle_tracks.product()
         if not len(tracks) > 0: continue
         
-        if 'debug' in options.tag: print 'getting products was successful'
+        if 'debug' in options.tag: print('getting products was successful')
 
         # ########################################################################################### veto
 
@@ -2058,7 +2084,7 @@ for ifile, f in enumerate(options.inputFiles):
 
         if not allfine: continue
         
-        if 'debug' in options.tag: print 'trigger was successful'
+        if 'debug' in options.tag: print('trigger was successful')
 
         # ########################################################################################### veto
 
@@ -2351,7 +2377,7 @@ for ifile, f in enumerate(options.inputFiles):
 
         if numBadJetsEventVeto > 0: continue
         
-        if 'debug' in options.tag: print 'no bad jets in the event'
+        if 'debug' in options.tag: print('no bad jets in the event')
 
         # ########################################################################################### veto
 
@@ -2519,13 +2545,13 @@ for ifile, f in enumerate(options.inputFiles):
                     break
 
             if l1Idx == -1 or l2Idx == -1: 
-                if 'debug' in options.tag: print "found no two leptons for cleaning, continue"
+                if 'debug' in options.tag: print("found no two leptons for cleaning, continue")
                 continue
 
             if electronsCleaned: collection = electrons
             elif muonsCleaned: collection = muons
             else:
-                print 'not tidy...'
+                print('not tidy...')
                 continue
 
             l1pt = collection[l1Idx].pt()
@@ -2563,7 +2589,7 @@ for ifile, f in enumerate(options.inputFiles):
             else: muons = collection
 
 
-        if 'debug' in options.tag and 'cleanleptons' in options.tag: print 'lepton cleaning was successful'
+        if 'debug' in options.tag and 'cleanleptons' in options.tag: print('lepton cleaning was successful')
         # ########################################################################################### veto
 
         cutflow = 5
@@ -2878,7 +2904,7 @@ for ifile, f in enumerate(options.inputFiles):
         # event selection
         ###############################################################################################
         '''
-        if 'debug' in options.tag: print 'checking event selection met >', metthreshold
+        if 'debug' in options.tag: print('checking event selection met >', metthreshold)
         
         if not met.pt() > metthreshold: continue
 
@@ -2903,7 +2929,7 @@ for ifile, f in enumerate(options.inputFiles):
 
         # ########################################################################################### veto
         
-        if 'debug' in options.tag: print 'print event passed event selection'
+        if 'debug' in options.tag: print('event passed event selection')
         
         cutflow = 8
         hCutflow.Fill(cutflow)
@@ -3313,7 +3339,7 @@ for ifile, f in enumerate(options.inputFiles):
             
             for igp, gp in enumerate(N2s):
                 
-                # print "event has N2s"
+                # print("event has N2s")
 
                 chiN2mGEN = round(gp.mass(), 2)
 
@@ -3662,6 +3688,11 @@ for ifile, f in enumerate(options.inputFiles):
         crossSection = 1.
         numSimEvents = 1.
 
+        weight_br_neutralino = 1.
+
+        weight_wino = 1.
+        crossSection_wino = 1.
+
         if 'signal' in options.tag and 'SignalStop' not in options.tag and 'SignalCtau' not in options.tag:
 
             # from https://twiki.cern.ch/twiki/bin/view/LHCPhysics/SUSYCrossSections13TeVhino
@@ -3703,16 +3734,37 @@ for ifile, f in enumerate(options.inputFiles):
                 hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_AOD_v2') 
             elif 'SignalFullV2' in options.tag:  
                 fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_FullSim_AOD_v2.root')
-                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_FullSim_AOD_v2') 
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_FullSim_AOD_v2')
+            elif 'SignalFullV4fullscan' in options.tag:
+                fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_SignalFull_v4fullscan_era18_UL.root')
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_SignalFull_v4fullscan_era18_UL')
+            elif 'SignalFullV4' in options.tag:
+                fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_SignalFull_v4_era18_UL.root')
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_SignalFull_v4_era18_UL')
+            elif 'SignalFullV5' in options.tag:
+                fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_SignalFull_v5fix2_era18_UL.root')
+                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_SignalFull_v5fix2_era18_UL')
             elif 'era16_UL' in options.tag:
-                fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_Signal_v4_era16_UL.root')
-                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v4_era16_UL')  
+                if 'SignalV5' in options.tag:
+                    fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_Signal_v5fix2_era16_UL.root')
+                    hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v5fix2_era16_UL')
+                else:
+                    fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_Signal_v4_era16_UL.root')
+                    hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v4_era16_UL')
             elif 'era17_UL' in options.tag:
-                fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_Signal_v4_era17_UL.root')
-                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v4_era17_UL')  
+                if 'SignalV5' in options.tag:
+                    fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_Signal_v5fix2_era17_UL.root')
+                    hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v5fix2_era17_UL')
+                else:
+                    fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_Signal_v4_era17_UL.root')
+                    hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v4_era17_UL')
             elif 'era18_UL' in options.tag:
-                fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_Signal_v4_era18_UL.root')
-                hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v4_era18_UL')  
+                if 'SignalV5' in options.tag:
+                    fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_Signal_v5fix2_era18_UL.root')
+                    hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v5fix2_era18_UL')
+                else:
+                    fSimEventNumbers_Signal = ROOT.TFile(localpath + 'simEventNumbers_Signal_v4_era18_UL.root')
+                    hSimEventNumbers_Signal = fSimEventNumbers_Signal.Get('simEventNumbers_Signal_v4_era18_UL')
                 
             if fSimEventNumbers_Signal is not None and hSimEventNumbers_Signal is not None:
 
@@ -3722,6 +3774,73 @@ for ifile, f in enumerate(options.inputFiles):
                 numSimEvents = hSimEventNumbers_Signal.GetBinContent(binglob)
 
                 fSimEventNumbers_Signal.Close()
+
+
+            # second neutralino stuff
+
+            numN2lepdaughters = len([n2d for n2d in n2daughters if abs(n2d.pdgId()) == 13 or abs(n2d.pdgId()) == 11])
+
+            if numN2 == 1 and numN2lepdaughters == 2:
+                weight_br_neutralino *= 0.2
+            elif numN2 == 2 and numN2lepdaughters == 4:
+                weight_br_neutralino *= 0.04
+            elif numN2 == 1 and numN2lepdaughters == 0:
+                weight_br_neutralino *= 1.8
+            elif numN2 == 2 and numN2lepdaughters == 0:
+                weight_br_neutralino *= 3.24
+            elif numN2 == 2 and numN2lepdaughters == 2:
+                weight_br_neutralino *= 0.36
+
+
+            # wino stuff
+
+            rawctau = getCTauCmChi1pmHiggsinoFromMassGeV(deltamFILE, chipmmFILE)
+            # targetctau = getCTauCmChi1pmWinoFromMassGeV(deltamFILE, chipmmFILE, localpath)
+            targetctau = rawctau / 4.
+
+            labxymmlist = []
+            for gp in C1s:
+                decaylengthXY = ROOT.TMath.Sqrt(pow(gp.vx() - gp.daughter(0).vx(), 2) + pow(gp.vy() - gp.daughter(0).vy(), 2))
+                labxymmlist.append(decaylengthXY * 10.)
+
+            weight_wino = reweight_ctau(rawctau, targetctau, labxymmlist)
+            if numN2 > 0:
+                weight_wino = 0.
+                
+            winoxsecfiles = [
+                ROOT.TFile(localpath + 'C1C1_wino_13TeV.root'),
+                ROOT.TFile(localpath + 'C1N2_wino_13TeV.root'),
+            ]
+
+            crossSection_wino = 0.
+            for winoxsecfile in winoxsecfiles:
+
+                if 100 <= chipmmFILE < 150:
+                    winoxsec = winoxsecfile.Get('fit_nom_0')
+                elif 150 <= chipmmFILE < 200:
+                    winoxsec = winoxsecfile.Get('fit_nom_1')
+                elif 200 <= chipmmFILE < 300:
+                    winoxsec = winoxsecfile.Get('fit_nom_2')
+                elif 300 <= chipmmFILE < 400:
+                    winoxsec = winoxsecfile.Get('fit_nom_3')
+                elif 400 <= chipmmFILE < 600:
+                    winoxsec = winoxsecfile.Get('fit_nom_4')
+                elif 600 <= chipmmFILE < 800:
+                    winoxsec = winoxsecfile.Get('fit_nom_5')
+                elif 800 <= chipmmFILE < 1000:
+                    winoxsec = winoxsecfile.Get('fit_nom_6')
+                elif 1000 <= chipmmFILE < 1200:
+                    winoxsec = winoxsecfile.Get('fit_nom_7')
+                elif 1200 <= chipmmFILE < 1500:
+                    winoxsec = winoxsecfile.Get('fit_nom_8')
+                else:
+                    winoxsec = None
+
+                if winoxsec is not None:
+                    crossSection_wino += winoxsec.Eval(chipmmFILE)
+
+                winoxsecfile.Close()
+
 
         elif 'SignalCtau' in options.tag:
 
@@ -3851,10 +3970,14 @@ for ifile, f in enumerate(options.inputFiles):
         event_level_var_array['crossSection'][0] = crossSection
         event_level_var_array['numSimEvents'][0] = numSimEvents
 
+        event_level_var_array['weight_br_neutralino'][0] = weight_br_neutralino
+
+        event_level_var_array['weight_wino'][0] = weight_wino
+        event_level_var_array['crossSection_wino'][0] = crossSection_wino
 
         eventWeightFastSimBug = 1.
-        if 'fastsim' in options.tag:
-            eventWeightFastSimBug = computeFastSimBugWeight(genjets, genparticles)
+        # if 'fastsim' in options.tag:
+        #     eventWeightFastSimBug = computeFastSimBugWeight(genjets, genparticles)
         event_level_var_array['weight_fastSimBug'][0] = eventWeightFastSimBug
 
         weight_PU_FastFull = 1.
@@ -4462,7 +4585,7 @@ for ifile, f in enumerate(options.inputFiles):
 
 
         if phifirsttrack == tracks[0].phi() and etafirsttrack == tracks[0].eta():
-            print 'suspicious... better get out of here!'
+            print('suspicious... better get out of here!')
             sys.exit(1)
         phifirsttrack = tracks[0].phi()
         etafirsttrack = tracks[0].eta()
@@ -4497,7 +4620,7 @@ for ifile, f in enumerate(options.inputFiles):
                 isSignal = 0
                 proceed = False	
                 
-                if 'debug' in options.tag: print "filenumber", ifile, "event", ievent, "event no", event.eventAuxiliary().event(), " run num", event.eventAuxiliary().run(), "lumi section", event.eventAuxiliary().luminosityBlock(), "loop over sv no. ", nSV, "vtx vx", secondary.vx()
+                if 'debug' in options.tag: print("filenumber", ifile, "event", ievent, "event no", event.eventAuxiliary().event(), " run num", event.eventAuxiliary().run(), "lumi section", event.eventAuxiliary().luminosityBlock(), "loop over sv no. ", nSV, "vtx vx", secondary.vx())
 
                 ######################################
                 #### "filling tree on SV level"
@@ -4557,7 +4680,7 @@ for ifile, f in enumerate(options.inputFiles):
                     
                     SV_level_var_array[var][nSV] = -1
                 
-                if 'debug' in options.tag: print "filling tree on SV level, nSV", nSV
+                if 'debug' in options.tag: print("filling tree on SV level, nSV", nSV)
                 TLV1 = TLorentzVector()
                 #TLV1.SetPxPyPzE(matchingTrk[0].px(),matchingTrk[0].py(),matchingTrk[0].pz(),matchingTrk[0].pt()*TMath.CosH(matchingTrk[0].eta()))
                 TLV1.SetPxPyPzE(secondary.daughter(0).px(),secondary.daughter(0).py(),secondary.daughter(0).pz(),secondary.daughter(0).pt()*TMath.CosH(secondary.daughter(0).eta()))
@@ -4886,10 +5009,10 @@ for ifile, f in enumerate(options.inputFiles):
                     dxyzminrandom = 999
                     drminrandom = 999         
                                       
-                    if 'debug' in options.tag: print "SV no. ", nSV, "daughter no. ", k, " charge ", secondary.daughter(k).charge()
+                    if 'debug' in options.tag: print("SV no. ", nSV, "daughter no. ", k, " charge ", secondary.daughter(k).charge())
                     idx, dxyzmin, tminmatching, drmin = findMatch_track_new(secondary.daughter(k), tracks)
                     _, dxyzminrandom, _, drminrandom = findMatch_track_new_random(secondary.daughter(k), tracks)
-                    if 'debug' in options.tag: print "dxyzmin", dxyzmin, "drmin", drmin
+                    if 'debug' in options.tag: print("dxyzmin", dxyzmin, "drmin", drmin)
 
                     SV_level_var_array['svdaughter_trackMatching_tmin'][n_sv_daughter] = tminmatching
                     SV_level_var_array['svdaughter_trackMatching_dxyzmin'][n_sv_daughter] = dxyzmin
@@ -4914,7 +5037,7 @@ for ifile, f in enumerate(options.inputFiles):
                
                 trackSVPairs[nSV] = [matchingTrkIdx[0],matchingTrkIdx[1]]
                     
-                if matchingTrkIdx[0] > -1 and matchingTrkIdx[1] > -1 and 'debug' in options.tag: print "SV has two matching tracks", matchingTrkIdx[0], matchingTrkIdx[1]
+                if matchingTrkIdx[0] > -1 and matchingTrkIdx[1] > -1 and 'debug' in options.tag: print("SV has two matching tracks", matchingTrkIdx[0], matchingTrkIdx[1])
                 
                 if matchingTrkIdx[0] in susytracks and matchingTrkIdx[1] in susytracks and (matchingTrk[0].charge()+matchingTrk[1].charge()==0): 
                     isSignal = 1
@@ -5159,7 +5282,7 @@ for ifile, f in enumerate(options.inputFiles):
          
                 numsvsfinalpreselection += 1
 
-        #if len(trackSVPairs)> 0:  print "track SV pairs in the event", trackSVPairs
+        #if len(trackSVPairs)> 0:  print("track SV pairs in the event", trackSVPairs)
         
         event_level_var_array['n_sv'][0] = numsvsfinalpreselection
 
@@ -5822,14 +5945,14 @@ for ifile, f in enumerate(options.inputFiles):
             track_level_var_array['track_drminGenTauJet'][i] = gentaujetmatchdrmin
             track_level_var_array['track_genTauJetPt'][i] = gentaujetmatchpt
             
-            #if len(trackSVPairs)> 0: print "track SV pairs in the event", trackSVPairs, "track", i, "itrack", itrack
+            #if len(trackSVPairs)> 0: print("track SV pairs in the event", trackSVPairs, "track", i, "itrack", itrack)
             track_isSVdaughter = 0
             
             list_of_tuples = trackSVPairs.values()
             list_of_values = [value for sublist in list_of_tuples for value in sublist]
 
             if itrack in list_of_values: track_isSVdaughter = 1
-            #if track_isSVdaughter ==1: print "horray"
+            #if track_isSVdaughter ==1: print("horray")
             track_level_var_array['track_isSVdaughter'][i] = track_isSVdaughter
             
             issignaltrack = 0
@@ -5873,7 +5996,7 @@ for ifile, f in enumerate(options.inputFiles):
                 else: new_idx_low = old_idx_Low
                 SV_level_var_array['trackId_Low'][nSV] = new_idx_low
                     
-                #print "event", ievent, "sv no.", nSV, "old idx", old_idx_Low, "new idx", new_idx_low
+                #print("event", ievent, "sv no.", nSV, "old idx", old_idx_Low, "new idx", new_idx_low)
 
         event_level_var_array['cutflow'][0] = cutflow
 
@@ -5933,7 +6056,7 @@ if saveOutputFile:
 
     fout.Write('', ROOT.TObject.kWriteDelete)
 
-    print 'just created ' + fout.GetName()
+    print('just created ' + fout.GetName())
 
     '''
     ###############################################################################################
@@ -5943,8 +6066,8 @@ if saveOutputFile:
 
     if 'data' in options.tag:
 
-        print 'runs'
-        print runs
+        print('runs')
+        print(runs)
 
         if len(runs) > 0:
             runs_compacted = {}
@@ -5957,20 +6080,20 @@ if saveOutputFile:
                     else:
                         runs_compacted[run].append([lumisec, lumisec])
 
-            print 'runs_compacted'
-            print runs_compacted
+            print('runs_compacted')
+            print(runs_compacted)
 
             json_content = json.dumps(runs_compacted)
             with open(fout.GetName().replace('.root', '.json'), 'w') as fo:
                 fo.write(json_content)
 
-            print 'just created ' + fout.GetName().replace('.root', '.json')
+            print('just created ' + fout.GetName().replace('.root', '.json'))
 
         else:
 
             with open(fout.GetName().replace('.root', '.json'), 'w') as fo:
                 fo.write(' ')
 
-            print 'just created empty ' + fout.GetName().replace('.root', '.json')
+            print('just created empty ' + fout.GetName().replace('.root', '.json'))
 
     fout.Close()

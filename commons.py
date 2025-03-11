@@ -2079,21 +2079,21 @@ class IPcalculator:
         self.IPerrorZ = np.sqrt(np.dot(self.IPvectorNorm[2:], np.dot(self.IPcovariance[2:, 2:], self.IPvectorNorm[2:])))
 
         if self.verbose:
-            print 'vertex', (self.vtx_x, self.vtx_y, self.vtx_z)
+            print('vertex', (self.vtx_x, self.vtx_y, self.vtx_z))
 
-            print 'track parameters'
-            print self.track_parameters
-            print 'track covariance matrix'
-            print self.track_covariance
+            print('track parameters')
+            print(self.track_parameters)
+            print('track covariance matrix')
+            print(self.track_covariance)
 
-            print 'IPvector', self.IPvector
-            print 'IPvectorNorm', self.IPvectorNorm
+            print('IPvector', self.IPvector)
+            print('IPvectorNorm', self.IPvectorNorm)
 
-            print 'IPcovariance', self.IPcovariance
-            print 'IPerror', self.IPerror
+            print('IPcovariance', self.IPcovariance)
+            print('IPerror', self.IPerror)
 
-            print 'IPerrorXY', np.sqrt(np.dot(self.IPvectorNorm[:2], np.dot(self.IPcovariance[:2, :2], self.IPvectorNorm[:2])))
-            print 'IPerrorZ', np.sqrt(np.dot(self.IPvectorNorm[2:], np.dot(self.IPcovariance[2:, 2:], self.IPvectorNorm[2:])))
+            print('IPerrorXY', np.sqrt(np.dot(self.IPvectorNorm[:2], np.dot(self.IPcovariance[:2, :2], self.IPvectorNorm[:2]))))
+            print('IPerrorZ', np.sqrt(np.dot(self.IPvectorNorm[2:], np.dot(self.IPcovariance[2:, 2:], self.IPvectorNorm[2:]))))
 
     def calculateIPvector(self):
 
@@ -2132,14 +2132,14 @@ class IPcalculator:
         IPjacobian[2][5] = -1.
 
         if self.verbose:
-            print 'HelixJacobian'
-            print HelixJacobian
-            print 'HelixCovariance'
-            print HelixCovariance
-            print 'HelixAndPVcovariance'
-            print HelixAndPVcovariance
-            print 'IPjacobian'
-            print IPjacobian
+            print('HelixJacobian')
+            print(HelixJacobian)
+            print('HelixCovariance')
+            print(HelixCovariance)
+            print('HelixAndPVcovariance')
+            print(HelixAndPVcovariance)
+            print('IPjacobian')
+            print(IPjacobian)
 
         return np.dot(IPjacobian, np.dot(HelixAndPVcovariance, IPjacobian.T))
 
@@ -2217,8 +2217,8 @@ def computeFastSimBugWeight(genjets, genparticles):
     """event weight correcting FastSim bug (from Sam)
     """
 
-    # weightfile = ROOT.TFile('/nfs/dust/cms/user/beinsam/pMSSM13TeV/Scan2/FixWeights/rootfiles/fastsim_decay_bug_weights.root')
-    weightfile = ROOT.TFile('/nfs/dust/cms/user/wolfmor/NTupleStuff/fastsim_decay_bug_weights.root')
+    # weightfile = ROOT.TFile('/data/dust/user/beinsam/pMSSM13TeV/Scan2/FixWeights/rootfiles/fastsim_decay_bug_weights.root')
+    weightfile = ROOT.TFile('/data/dust/user/wolfmor/NTupleStuff/fastsim_decay_bug_weights.root')
     weighthist_map = {}
     for iflav in range(1,4):
         weighthist_map[iflav] = weightfile.Get('hRatio_GenJetHadronPtGenJetHadronFlavorLt4')
@@ -2281,3 +2281,116 @@ def computeFastSimBugWeight(genjets, genparticles):
             genjetweight = weighthist_map[genJetHadronFlavor].Interpolate(thept)
             event_weight*=genjetweight
     return event_weight
+
+
+###############################################################################################
+def getCTauCmChi1pmHiggsinoFromMassGeV(dmchipmchi10, mass):
+
+    # https://arxiv.org/pdf/2312.08087
+    width_higgsino_gev_2025 = {"mChipm100GeV_dm0p159GeV": 6.8782e-16, "mChipm115GeV_dm0p168GeV": 9.4264e-16,
+                               "mChipm140GeV_dm0p179GeV": 1.28457e-15, "mChipm160GeV_dm0p187GeV": 1.55914e-15,
+                               "mChipm180GeV_dm0p193GeV": 1.78117e-15, "mChipm200GeV_dm0p198GeV": 1.9772e-15,
+                               "mChipm250GeV_dm0p208GeV": 2.4023e-15, "mChipm300GeV_dm0p215GeV": 2.7274e-15,
+                               "mChipm500GeV_dm0p23GeV": 3.5047e-15, "mChipm100GeV_dm0p259GeV": 5.35684e-15,
+                               "mChipm115GeV_dm0p268GeV": 6.0366e-15, "mChipm140GeV_dm0p279GeV": 6.9396e-15,
+                               "mChipm160GeV_dm0p287GeV": 7.6501e-15, "mChipm180GeV_dm0p293GeV": 8.21257e-15,
+                               "mChipm200GeV_dm0p298GeV": 8.70202e-15, "mChipm250GeV_dm0p308GeV": 9.73785e-15,
+                               "mChipm300GeV_dm0p315GeV": 1.0508e-14, "mChipm500GeV_dm0p33GeV": 1.2302e-14,
+                               "mChipm100GeV_dm0p359GeV": 1.63174e-14, "mChipm115GeV_dm0p368GeV": 1.774198e-14,
+                               "mChipm140GeV_dm0p379GeV": 1.960104e-14, "mChipm160GeV_dm0p387GeV": 2.10386e-14,
+                               "mChipm180GeV_dm0p393GeV": 2.216256e-14, "mChipm200GeV_dm0p398GeV": 2.31328e-14,
+                               "mChipm250GeV_dm0p408GeV": 2.51601e-14, "mChipm300GeV_dm0p415GeV": 2.6652e-14,
+                               "mChipm500GeV_dm0p43GeV": 3.0067e-14, "mChipm100GeV_dm0p459GeV": 3.74352e-14,
+                               "mChipm115GeV_dm0p468GeV": 4.002222e-14, "mChipm140GeV_dm0p479GeV": 4.337052e-14,
+                               "mChipm160GeV_dm0p487GeV": 4.593348e-14, "mChipm180GeV_dm0p493GeV": 4.806868e-14,
+                               "mChipm200GeV_dm0p498GeV": 5.0053e-14, "mChipm250GeV_dm0p508GeV": 5.40178e-14,
+                               "mChipm300GeV_dm0p515GeV": 5.6835e-14, "mChipm500GeV_dm0p53GeV": 6.3145e-14,
+                               "mChipm100GeV_dm0p559GeV": 7.62704e-14, "mChipm115GeV_dm0p568GeV": 8.085926e-14,
+                               "mChipm140GeV_dm0p579GeV": 8.676776e-14, "mChipm160GeV_dm0p587GeV": 9.126204e-14,
+                               "mChipm180GeV_dm0p593GeV": 9.47404e-14, "mChipm200GeV_dm0p598GeV": 9.7725e-14,
+                               "mChipm250GeV_dm0p608GeV": 1.038959e-13, "mChipm300GeV_dm0p615GeV": 1.0842e-13,
+                               "mChipm500GeV_dm0p63GeV": 1.1853e-13, "mChipm100GeV_dm0p759GeV": 2.43352e-13,
+                               "mChipm115GeV_dm0p768GeV": 2.560744e-13, "mChipm140GeV_dm0p779GeV": 2.726332e-13,
+                               "mChipm160GeV_dm0p787GeV": 2.853922e-13, "mChipm180GeV_dm0p793GeV": 2.952944e-13,
+                               "mChipm200GeV_dm0p798GeV": 3.0382e-13, "mChipm250GeV_dm0p808GeV": 3.21528e-13,
+                               "mChipm300GeV_dm0p815GeV": 3.34655e-13, "mChipm500GeV_dm0p83GeV": 3.6414e-13,
+                               "mChipm100GeV_dm0p959GeV": 7.17521e-13, "mChipm115GeV_dm0p968GeV": 7.514406e-13,
+                               "mChipm140GeV_dm0p979GeV": 7.949828e-13, "mChipm160GeV_dm0p987GeV": 8.278256e-13,
+                               "mChipm180GeV_dm0p993GeV": 8.529928e-13, "mChipm200GeV_dm0p998GeV": 8.74514e-13,
+                               "mChipm250GeV_dm1p008GeV": 9.18359e-13, "mChipm300GeV_dm1p015GeV": 9.50445e-13,
+                               "mChipm500GeV_dm1p03GeV": 1.0212e-12, "mChipm100GeV_dm1p259GeV": 2.6587e-12,
+                               "mChipm115GeV_dm1p268GeV": 2.756878e-12, "mChipm140GeV_dm1p279GeV": 2.882924e-12,
+                               "mChipm160GeV_dm1p287GeV": 2.976826e-12, "mChipm180GeV_dm1p293GeV": 3.048252e-12,
+                               "mChipm200GeV_dm1p298GeV": 3.10932e-12, "mChipm250GeV_dm1p308GeV": 3.23196e-12,
+                               "mChipm300GeV_dm1p315GeV": 3.3217e-12, "mChipm500GeV_dm1p33GeV": 3.5173e-12,
+                               "mChipm100GeV_dm1p759GeV": 1.139465e-11, "mChipm115GeV_dm1p768GeV": 1.1599754e-11,
+                               "mChipm140GeV_dm1p779GeV": 1.1863202e-11, "mChipm160GeV_dm1p787GeV": 1.2050756e-11,
+                               "mChipm180GeV_dm1p793GeV": 1.2190312e-11, "mChipm200GeV_dm1p798GeV": 1.23101e-11,
+                               "mChipm250GeV_dm1p808GeV": 1.253442e-11, "mChipm300GeV_dm1p815GeV": 1.26987e-11,
+                               "mChipm500GeV_dm1p83GeV": 1.30381e-11, "mChipm100GeV_dm2p259GeV": 2.136965e-11,
+                               "mChipm115GeV_dm2p268GeV": 2.1598754e-11, "mChipm140GeV_dm2p279GeV": 2.1902202e-11,
+                               "mChipm160GeV_dm2p287GeV": 2.2114756e-11, "mChipm180GeV_dm2p293GeV": 2.2272312e-11,
+                               "mChipm200GeV_dm2p298GeV": 2.24101e-11, "mChipm250GeV_dm2p308GeV": 2.265442e-11,
+                               "mChipm300GeV_dm2p315GeV": 2.28387e-11, "mChipm500GeV_dm2p33GeV": 2.32081e-11,
+                               "mChipm100GeV_dm3p259GeV": 4.131965e-11, "mChipm115GeV_dm3p268GeV": 4.1596754e-11,
+                               "mChipm140GeV_dm3p279GeV": 4.1980202e-11, "mChipm160GeV_dm3p287GeV": 4.2242756e-11,
+                               "mChipm180GeV_dm3p293GeV": 4.2436312e-11, "mChipm200GeV_dm3p298GeV": 4.26101e-11,
+                               "mChipm250GeV_dm3p308GeV": 4.289442e-11, "mChipm300GeV_dm3p315GeV": 4.31187e-11,
+                               "mChipm500GeV_dm3p33GeV": 4.35481e-11, "mChipm100GeV_dm4p259GeV": 6.126965e-11,
+                               "mChipm115GeV_dm4p268GeV": 6.1594754e-11, "mChipm140GeV_dm4p279GeV": 6.2058202e-11,
+                               "mChipm160GeV_dm4p287GeV": 6.2370756e-11, "mChipm180GeV_dm4p293GeV": 6.2600312e-11,
+                               "mChipm200GeV_dm4p298GeV": 6.28101e-11, "mChipm250GeV_dm4p308GeV": 6.313442e-11,
+                               "mChipm300GeV_dm4p315GeV": 6.33987e-11, "mChipm500GeV_dm4p33GeV": 6.38881e-11,
+                               "mChipm100GeV_dm5p259GeV": 8.121965e-11, "mChipm115GeV_dm5p268GeV": 8.1592754e-11,
+                               "mChipm140GeV_dm5p279GeV": 8.2136202e-11, "mChipm160GeV_dm5p287GeV": 8.2498756e-11,
+                               "mChipm180GeV_dm5p293GeV": 8.2764312e-11, "mChipm200GeV_dm5p298GeV": 8.30101e-11,
+                               "mChipm250GeV_dm5p308GeV": 8.337442e-11, "mChipm300GeV_dm5p315GeV": 8.36787e-11,
+                               "mChipm500GeV_dm5p33GeV": 8.42281e-11, "mChipm225GeV_dm0p203GeV": 2.18435e-15,
+                               "mChipm225GeV_dm0p303GeV": 9.21012e-15, "mChipm225GeV_dm0p403GeV": 2.41312e-14,
+                               "mChipm225GeV_dm0p503GeV": 5.204045e-14, "mChipm225GeV_dm0p603GeV": 1.0078758e-13,
+                               "mChipm225GeV_dm0p803GeV": 3.1257325e-13, "mChipm225GeV_dm1p003GeV": 8.96264e-13,
+                               "mChipm225GeV_dm1p303GeV": 3.17023e-12, "mChipm225GeV_dm1p803GeV": 1.242216e-11,
+                               "mChipm225GeV_dm2p303GeV": 2.253216e-11, "mChipm225GeV_dm3p303GeV": 4.275216e-11,
+                               "mChipm400GeV_dm0p224GeV": 3.1799e-15, "mChipm400GeV_dm0p324GeV": 1.15626e-14,
+                               "mChipm400GeV_dm0p424GeV": 2.86678e-14, "mChipm177GeV_dm0p293GeV": 8.21246e-15,
+                               "mChipm300GeV_dm0p165GeV": 8.5555e-16, "mChipm400GeV_dm0p174GeV": 1.1239e-15,
+                               "mChipm500GeV_dm0p18GeV": 1.3169e-15, "mChipm700GeV_dm0p338GeV": 1.33414e-14,
+                               "mChipm900GeV_dm0p342GeV": 1.38818e-14, "mChipm1100GeV_dm0p345GeV": 1.4294e-14,
+                               "mChipm700GeV_dm0p238GeV": 3.96778e-15, "mChipm900GeV_dm0p242GeV": 4.21258e-15,
+                               "mChipm1100GeV_dm0p245GeV": 4.4025e-15, "mChipm700GeV_dm0p138GeV": 7.6e-18,
+                               "mChipm900GeV_dm0p142GeV": 1.9248e-16, "mChipm1100GeV_dm0p145GeV": 2.9766e-16,
+                               "mChipm100GeV_dm1p459GeV": 5.44215e-12, "mChipm140GeV_dm1p479GeV": 5.845922e-12,
+                               "mChipm180GeV_dm1p493GeV": 6.141112e-12, "mChipm250GeV_dm1p508GeV": 6.46242e-12,
+                               "mChipm200GeV_dm1p498GeV": 6.2501e-12, "mChipm500GeV_dm1p53GeV": 6.9361e-12,
+                               "mChipm115GeV_dm1p468GeV": 5.6187e-12, "mChipm160GeV_dm1p487GeV": 6.013892e-12,
+                               "mChipm300GeV_dm1p515GeV": 6.6147e-12}
+    # c in cm / s
+    # hbar in GeV s
+    ctau = 2.998e10 * 6.582119569509067e-25 / width_higgsino_gev_2025['mChipm' + str(int(mass)) + 'GeV_dm' + str(dmchipmchi10).replace('.', 'p') + 'GeV']
+
+    # outdated:
+    # https://arxiv.org/pdf/1410.4549.pdf
+    # mpi = 0.135
+    # ctau = 1.1*pow(dmchipmchi10*1000./300,-3)*pow(1-pow(mpi/dmchipmchi10,2),-0.5)
+
+    return ctau
+
+
+def getCTauCmChi1pmWinoFromMassGeV(dmchipmchi10, mass, localpath):
+    #https://arxiv.org/pdf/1410.4549.pdf
+    fwino = ROOT.TFile(localpath + 'WinoCtauVsDmVsM.root')
+    hctau = fwino.Get('hwinoctaucm')
+    #winoctau = hctau.GetBinContent(hctau.GetXaxis().FindBin(mass), hctau.GetYaxis().FindBin(dmchipmchi10))
+    winoctau = hctau.Interpolate(mass, dmchipmchi10)
+    fwino.Close()
+    return winoctau
+
+
+#re-weight ctau from Viktor
+def reweight_ctau(ctauIn, ctauOut, list_of_labXY):
+    output = 1
+    for labXY in list_of_labXY:
+        t0 = labXY / 10.0          # convert to cm
+        if ctauIn>0 and ctauOut>0:
+            output *= ctauIn/ctauOut * ROOT.TMath.Exp(t0/ctauIn - t0/ctauOut)
+    return output

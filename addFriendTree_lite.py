@@ -1564,13 +1564,13 @@ my_refiner_dummy = MyRefiner(
 #     eventlevelintputs=[],
 # )
 
-my_refiner_20241221_2 = MyRefiner(
-    name='_refined20241221_2',
-    ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20241221_2_cpu.pt',
-    parameters=[],
-    variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
-    eventlevelintputs=[],
-)
+# my_refiner_20241221_2 = MyRefiner(
+#     name='_refined20241221_2',
+#     ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20241221_2_cpu.pt',
+#     parameters=[],
+#     variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
+#     eventlevelintputs=[],
+# )
 
 # my_refiner_20241221_3 = MyRefiner(
 #     name='_refined20241221_3',
@@ -1597,37 +1597,37 @@ my_refiner_20241221_2 = MyRefiner(
 # )
 
 
-my_refiner_20250102 = MyRefiner(
-    name='_refined20250102',
-    ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_cpu.pt',
-    parameters=[],
-    variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
-    eventlevelintputs=[],
-)
-
-my_refiner_20250102_1 = MyRefiner(
-    name='_refined20250102_1',
-    ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_1_cpu.pt',
-    parameters=[],
-    variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
-    eventlevelintputs=[],
-)
-
-my_refiner_20250102_2 = MyRefiner(
-    name='_refined20250102_2',
-    ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_2_cpu.pt',
-    parameters=[],
-    variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
-    eventlevelintputs=[],
-)
-
-my_refiner_20250102_3 = MyRefiner(
-    name='_refined20250102_3',
-    ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_3_cpu.pt',
-    parameters=[],
-    variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
-    eventlevelintputs=[],
-)
+# my_refiner_20250102 = MyRefiner(
+#     name='_refined20250102',
+#     ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_cpu.pt',
+#     parameters=[],
+#     variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
+#     eventlevelintputs=[],
+# )
+#
+# my_refiner_20250102_1 = MyRefiner(
+#     name='_refined20250102_1',
+#     ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_1_cpu.pt',
+#     parameters=[],
+#     variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
+#     eventlevelintputs=[],
+# )
+#
+# my_refiner_20250102_2 = MyRefiner(
+#     name='_refined20250102_2',
+#     ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_2_cpu.pt',
+#     parameters=[],
+#     variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
+#     eventlevelintputs=[],
+# )
+#
+# my_refiner_20250102_3 = MyRefiner(
+#     name='_refined20250102_3',
+#     ptfile='/nfs/dust/cms/user/wolfmor/Refinement/SoftTracks/model_refinement_regression_20250102_3_cpu.pt',
+#     parameters=[],
+#     variables=['track_pt', 'track_log10_dzError_', 'track_log10_dxyError_'],
+#     eventlevelintputs=[],
+# )
 
 my_refiner_ensemble_20241221_2 = MyRefinerEnsemble(
     name='_refined20241221_2_ensemble',
@@ -1650,11 +1650,11 @@ my_models = [
 ]
 my_refiners = [
     my_refiner_dummy,  # to also store the un-refined version
-    my_refiner_20241221_2,
-    my_refiner_20250102,
-    my_refiner_20250102_1,
-    my_refiner_20250102_2,
-    my_refiner_20250102_3,
+    # my_refiner_20241221_2,
+    # my_refiner_20250102,
+    # my_refiner_20250102_1,
+    # my_refiner_20250102_2,
+    # my_refiner_20250102_3,
     my_refiner_ensemble_20241221_2,
 ]
 
